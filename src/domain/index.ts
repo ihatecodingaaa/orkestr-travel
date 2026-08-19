@@ -16,7 +16,11 @@ export * from "./ids.js";
 export * from "./time.js";
 export * from "./money.js";
 
-export type { AssistanceNeed, AssistanceNeedType, AssistanceSupportState } from "./assistance.js";
+export type {
+  AssistanceNeed,
+  AssistanceNeedType,
+  AssistanceOperationalStatus,
+} from "./assistance.js";
 export type { TravelRelationships } from "./relationships.js";
 export type {
   AgeBand,
@@ -27,7 +31,6 @@ export type {
 } from "./traveller.js";
 
 export type {
-  AuthoritativeConstraint,
   Constraint,
   ConstraintConfirmation,
   ConstraintKind,
@@ -36,12 +39,13 @@ export type {
   ConstraintStrength,
   ConstraintValue,
   ConstraintVisibility,
+  DeferredConstraintKind,
   EvaluableConstraintKind,
   NarrativeConstraintKind,
 } from "./constraint.js";
 
 export type { SearchWindowCandidate, TripWindow } from "./tripWindow.js";
-export type { DestinationOption, Trip, TripPace } from "./trip.js";
+export type { DestinationOption, Trip, TripPace, TripStatus } from "./trip.js";
 export type { ReunionAnchor, ReunionPurpose, ReunionStatus } from "./reunion.js";
 export type { TravelWave, WavePlan } from "./travelWave.js";
 
@@ -62,8 +66,11 @@ export type {
 export type {
   ConstraintOutcome,
   FeasibilityReport,
+  MagnitudeUnit,
   OfferFeasibility,
   SoftConstraintOutcome,
+  TravellerOfferFeasibility,
+  TravellerVerdict,
   UnknownOutcome,
   UnknownReason,
 } from "./feasibility.js";

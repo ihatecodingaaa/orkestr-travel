@@ -1,10 +1,12 @@
 import type { TravellerId } from "./ids.js";
-import type { TimeZoneId } from "./time.js";
+import type { IsoDateTime, TimeZoneId } from "./time.js";
 import type { TravelRelationships } from "./relationships.js";
+import type { Constraint } from "./constraint.js";
+import type { AssistanceNeed } from "./assistance.js";
 
 /**
  * Membership lifecycle. Group size is never hard-coded anywhere in this system;
- * the group is whatever `Traveller[]` currently says it is.
+ * the group is whatever the traveller collection currently contains.
  *
  * WITHDRAWN travellers are retained rather than deleted so that plan repair can
  * explain why a decision that mentioned them is still valid or now invalid.
@@ -17,17 +19,16 @@ export type MembershipState =
   | "WITHDRAWN";
 
 /**
- * A coarse age band, used only to shape discovery (what to research and suggest).
+ * A coarse age band, used only to shape discovery.
  *
- * Strict rules, enforced elsewhere and documented in docs/ACCESSIBILITY.md:
+ * Strict rules, documented in docs/ACCESSIBILITY.md:
  *   * Optional. A trip plans perfectly well with this unset for everyone.
  *   * Supplied or approved by a person. Never estimated from a photo or profile.
- *   * Must NEVER create an assistance need or change a hard constraint. Mobility
- *     requirements come from AssistanceNeed, which someone has to state.
+ *   * Must NEVER create an assistance need or set trip pace on its own.
  */
 export type AgeBand = "CHILD" | "TEEN" | "YOUNG_ADULT" | "ADULT" | "OLDER_ADULT";
 
-/** How much a traveller wants packed into a day. See docs/PRODUCT_SPEC.md section pace. */
+/** How much a traveller wants packed into a day. */
 export type PacePreference = "RELAXED" | "BALANCED" | "PACKED";
 
 /** Where a traveller starts from, which need not be the group's main origin. */
@@ -50,12 +51,16 @@ export interface Traveller {
   /** Optional. Absent means "no stated preference", not "balanced". */
   readonly pacePreference?: PacePreference;
 
+  /**
+   * This traveller's own constraints. Every entry must carry
+   * `ownerTravellerId === this.id`; `validateTraveller` enforces it, because a
+   * constraint filed under the wrong person would silently veto the wrong
+   * traveller's flights.
+   */
+  readonly constraints: readonly Constraint[];
+  readonly assistanceNeeds: readonly AssistanceNeed[];
   readonly relationships: TravelRelationships;
 
-  /**
-   * Constraints and assistance needs are stored in the trip-level collections
-   * keyed by travellerId rather than nested here. That keeps a single ordered
-   * list the engines can iterate, and lets a constraint change without
-   * rewriting the traveller record.
-   */
+  readonly createdAt: IsoDateTime;
+  readonly updatedAt: IsoDateTime;
 }
