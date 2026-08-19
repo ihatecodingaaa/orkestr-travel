@@ -79,9 +79,16 @@ export function buildConstraint(
   return confirmed ? { ...base, confirmedAt: FIXED_NOW } : base;
 }
 
-/** Reset the counter so ids are stable within a test file. */
+/**
+ * Reset every fixture counter so ids are reproducible across runs.
+ *
+ * Must reset ALL of them. Resetting only some makes fixtures silently
+ * non-reproducible, which then looks like non-determinism in whatever engine is
+ * under test rather than a problem with the fixture.
+ */
 export function resetFixtureCounters(): void {
   constraintCounter = 0;
+  offerCounter = 0;
 }
 
 export interface TravellerOptions {
