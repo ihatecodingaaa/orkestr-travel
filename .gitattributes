@@ -1,0 +1,19 @@
+# Line-ending policy, pinned in-repo so it does not depend on any one machine's
+# core.autocrlf setting. Without this, a Windows contributor can reintroduce CRLF
+# into the index and bury every later diff in phantom line changes.
+* text=auto eol=lf
+
+*.ps1  text eol=crlf
+*.cmd  text eol=crlf
+*.bat  text eol=crlf
+
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.gif  binary
+*.ico  binary
+*.pdf  binary
+*.woff  binary
+*.woff2 binary
+
+package-lock.json -diff linguist-generated=true

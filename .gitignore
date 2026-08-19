@@ -1,0 +1,25 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+.next/
+out/
+*.tsbuildinfo
+
+# Test / coverage
+coverage/
+
+# Secrets — never commit. See docs/SECURITY.md.
+.env
+.env.local
+.env.*.local
+
+# Recorded provider fixtures that may contain live identifiers.
+# Sanitised fixtures live in src/**/fixtures/ and ARE tracked.
+recordings/
+
+# Editor / OS
+.DS_Store
+.idea/
+*.swp
