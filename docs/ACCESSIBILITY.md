@@ -4,6 +4,17 @@
 integration exists, and the feasibility engine deliberately reports every
 assistance constraint as `DEFERRED_TO_LATER_PHASE` rather than assessing it.
 
+**In wave planning (Phase 2):** an assistance requirement makes its wave
+`UNRESOLVED`, and therefore its whole plan `UNRESOLVED`. It is never dropped and
+never quietly satisfied. A group where one traveller needs step-free access will
+see a plan that says plainly it cannot yet confirm that requirement.
+
+What IS enforceable today is the relationship. A traveller who states a
+must-travel-with companion is grouped with them structurally, so a caregiver is
+never separated from the person they travel with, even though the airline's
+ability to provide assistance remains unconfirmed. Those two facts are tracked
+separately and must never be conflated.
+
 A naming note that matters: the operational status uses `PROVIDER_CONFIRMED`, not
 `CONFIRMED`, so it can never be confused with `AssistanceNeed.confirmedByOwner`.
 Those are confirmed by different parties. The traveller confirms the need is

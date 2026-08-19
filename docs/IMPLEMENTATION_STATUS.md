@@ -7,9 +7,9 @@ If a capability is not marked `IMPLEMENTED` here, it does not work, regardless o
 what any other document, comment or UI label suggests. Any disagreement between
 this table and another document is a bug in the other document.
 
-- **Last updated:** 19 August 2026
-- **Phases completed:** Phase 0 (foundation), Phase 1 (group state + deterministic core)
-- **Phase in progress:** none. Awaiting founder approval to begin Phase 2.
+- **Last updated:** 20 August 2026
+- **Phases completed:** Phase 0 (foundation), Phase 1 (deterministic core), Phase 2 (travel waves)
+- **Phase in progress:** none. Awaiting founder approval to begin Phase 3.
 
 ## Legend
 
@@ -34,7 +34,11 @@ involvement and no network access.
 **There is still no application.** Nothing accepts user input, no UI exists, no
 flight provider is integrated, and no infrastructure has been provisioned.
 
-Verified at the last run: **136 tests across 9 files, all passing.** Lint and
+Travel waves are now built: the engine groups travellers into the smallest
+sensible set of flights, honours must-travel-with relationships, and derives the
+temporal reunion boundary.
+
+Verified at the last run: **249 tests across 13 files, all passing.** Lint and
 typecheck clean.
 
 ---
@@ -44,10 +48,10 @@ typecheck clean.
 | Capability | Status | Evidence |
 | --- | --- | --- |
 | Fresh repository, git initialised | `IMPLEMENTED` | `main`, local commits |
-| Remote git backup | `BLOCKED` | GitHub CLI not installed; awaiting founder-created remote |
+| Remote git backup | `IMPLEMENTED` | `origin` = github.com/ihatecodingaaa/orkestr-travel (private) |
 | TypeScript strict configuration | `IMPLEMENTED` | `tsconfig.json`; `npm run typecheck` passes |
 | Lint with type-aware rules | `IMPLEMENTED` | `eslint.config.mjs`; verified with a deliberate failing probe |
-| Test runner | `IMPLEMENTED` | vitest; 136 tests |
+| Test runner | `IMPLEMENTED` | vitest; 249 tests |
 | Combined quality gate | `IMPLEMENTED` | `npm run check` |
 | Documentation structure | `IMPLEMENTED` | 21 documents in `docs/`, plus `README.md` |
 | CI pipeline | `NOT IMPLEMENTED` | Not yet configured |
@@ -69,7 +73,7 @@ same as implementing the behaviour it describes.
 | Assistance needs with separate operational status | `IMPLEMENTED` |
 | Flight offers, provider interface, capability tri-state | `IMPLEMENTED` |
 | Feasibility result shapes | `IMPLEMENTED` |
-| Travel waves, reunion anchors | `TYPES ONLY` - **no engine, see Phase 2** |
+| Travel waves, travel units, reunion anchors | `IMPLEMENTED` - engine built, see below |
 | Compromise, commitment, trip events, impact, plan repair | `TYPES ONLY` - no engine |
 | Evidence model, research provider interface | `TYPES ONLY` - no provider |
 | Journey package and items | `TYPES ONLY` - no composer |
@@ -92,6 +96,28 @@ same as implementing the behaviour it describes.
 | Feasibility engine, single and multi-traveller | `IMPLEMENTED` | `core/feasibility/engine.ts` | 13 |
 | Fixture builders for arbitrary group sizes | `IMPLEMENTED` | `src/fixtures/` | used throughout |
 
+---
+
+## Travel waves (Phase 2)
+
+| Capability | Status | Module | Tests |
+| --- | --- | --- | --- |
+| Travel units from transitive mustTravelWith | `IMPLEMENTED` | `core/waves/units.ts` | 22 |
+| Relationship + planning-set validation | `IMPLEMENTED` | `core/waves/units.ts` | (in the 22) |
+| Unit-offer assessment (reuses Phase 1 engine) | `IMPLEMENTED` | `core/waves/candidates.ts` | (in engine tests) |
+| Exact wave and plan cost, no FX | `IMPLEMENTED` | `core/waves/cost.ts` | 7 |
+| Bounded canonical plan search with pruning | `IMPLEMENTED` | `core/waves/search.ts` | (in engine tests) |
+| Lexicographic ranking with recorded criterion | `IMPLEMENTED` | `core/waves/ranking.ts` | 8 |
+| Temporal reunion anchor | `IMPLEMENTED` | `core/waves/reunion.ts` | (in engine tests) |
+| Wave planning orchestration + diagnostics | `IMPLEMENTED` | `core/waves/engine.ts` | 36 |
+| Cross-scenario invariants (2, 3, 7, 11 travellers) | `IMPLEMENTED` | `tests/waveInvariants.test.ts` | 40 |
+
+**Not built in Phase 2:** return-flight modelling, activity pods, per-person cost
+allocation, and any reunion detail beyond the temporal bound. Assistance
+requirements are always `UNRESOLVED` because no provider exists to confirm them.
+
+---
+
 ### Constraint kinds actually evaluated
 
 `IMPLEMENTED`: budget maximum (hard and preferred), earliest departure, latest
@@ -99,9 +125,17 @@ departure, arrival deadline, maximum stops (a direct-flight preference is a soft
 zero-stop maximum), required checked bags, allowed departure airports, allowed
 arrival airports, traveller availability dates.
 
-`DEFERRED` (modelled and owned, but reported as unresolved rather than guessed):
-`MUST_TRAVEL_WITH` and `PREFER_TRAVEL_WITH` need the wave engine (Phase 2);
-`ASSISTANCE_REQUIRED` needs a provider (Phase 7).
+`DEFERRED` by the single-offer feasibility engine, which cannot decide them from
+one offer in isolation:
+
+* `MUST_TRAVEL_WITH` and `PREFER_TRAVEL_WITH` are now **enforced by the wave
+  engine** instead. Must-travel-with is structural: travellers are grouped into
+  indivisible travel units, so a unit cannot be split. Prefer-travel-with becomes
+  a counted soft violation. The single-offer engine still reports them as
+  `DEFERRED_TO_LATER_PHASE`, because that is the honest answer when looking at
+  one flight with no group assignment in view.
+* `ASSISTANCE_REQUIRED` still needs a provider (Phase 7) and remains unresolved
+  everywhere.
 
 `NARRATIVE` (never machine-evaluated): `FREE_TEXT_REQUIREMENT`.
 
@@ -111,8 +145,6 @@ arrival airports, traveller availability dates.
 
 | Capability | Status | Phase |
 | --- | --- | --- |
-| **Travel wave engine** | **`PLANNED`** | 2 |
-| **Reunion anchor placement** | **`PLANNED`** | 2 |
 | Compromise engine | `PLANNED` | 3 |
 | Impact radius analysis | `PLANNED` | 3 |
 | Plan repair, decisions preserved | `PLANNED` | 3 |

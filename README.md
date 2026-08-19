@@ -37,17 +37,21 @@ fewest questions that still make the trip work.
 
 ## Current status
 
-**Phases 0 and 1 complete.**
+**Phases 0, 1 and 2 complete.**
 
-The deterministic core exists and is tested: given travellers, their constraints
-and a set of flight offers, the system decides which offers are feasible, which
-preferences are missed, and what it does not know. No model is involved and
-nothing touches the network.
+The deterministic core decides which flight offers are feasible for whom, what
+preferences they miss, and what it does not know. On top of that, the travel wave
+engine groups a party into the smallest sensible set of flights, never splits
+people who must travel together, and derives the earliest moment the whole group
+can be in one place.
 
-136 tests pass across 9 files. Lint and typecheck are clean.
+No model is involved anywhere in that, and nothing touches the network.
+
+249 tests pass across 13 files. Lint and typecheck are clean.
 
 **There is still no application.** No UI, no flight provider, no AI integration,
-no persistence and no deployed infrastructure. Travel waves are NOT built.
+no persistence and no deployed infrastructure. Compromise and plan repair are
+Phase 3 and are NOT built.
 
 `docs/IMPLEMENTATION_STATUS.md` is the authoritative status table and is kept
 brutally accurate. If a feature is not marked IMPLEMENTED there, it does not
@@ -80,6 +84,7 @@ src/core/       the deterministic engines
   trip/           derived group views, SearchWindowGenerator
   constraint/     when a constraint is allowed to bind
   feasibility/    the feasibility engine and its per-constraint rules
+  waves/          travel units, plan search, ranking, reunion anchor
 src/fixtures/   builders for arbitrary group sizes, fictional identities only
 tests/          vitest suites
 docs/           specification, design and status documents

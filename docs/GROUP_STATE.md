@@ -67,6 +67,17 @@ filled in on their behalf.
 `canTravelSeparately` is worth calling out: its absence means "not stated", not
 "yes". The engines treat a missing value as unknown, never as consent.
 
+## 4b. The planning set
+
+The travel wave engine does NOT decide who counts as travelling. It is given an
+explicit list of traveller ids, because membership policy (does a `TENTATIVE`
+traveller belong in the plan?) is an orchestration decision, and burying it in
+the engine would make its behaviour depend on a rule nobody can see.
+
+Passing a `WITHDRAWN` traveller is a validation ERROR, not a silent removal.
+Quietly planning around them would produce a plan that looks correct and covers
+the wrong people. Unknown ids and duplicates are errors for the same reason.
+
 ## 5. Trip events
 
 Every change is recorded as a `TripEventRecord` with a timestamp and a

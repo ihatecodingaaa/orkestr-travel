@@ -96,6 +96,13 @@ review, not merely intended.
 | `constraint/authority.ts` | Whether a constraint may bind yet |
 | `feasibility/rules.ts` | One comparison per constraint kind |
 | `feasibility/engine.ts` | Per-traveller and whole-group evaluation |
+| `waves/units.ts` | Indivisible travel units from mustTravelWith |
+| `waves/candidates.ts` | Unit-offer assessment, calling the Phase 1 engine |
+| `waves/cost.ts` | Exact wave and plan totals; refuses to invent FX |
+| `waves/search.ts` | Bounded canonical partition search with pruning |
+| `waves/ranking.ts` | The lexicographic hierarchy |
+| `waves/reunion.ts` | The temporal reunion boundary |
+| `waves/engine.ts` | Wave planning orchestration and diagnostics |
 
 Two design points carry most of the safety:
 
@@ -106,7 +113,18 @@ boundary.
 **UNKNOWN is a real answer.** Rules return SATISFIED, VIOLATED or UNKNOWN, and
 UNKNOWN never collapses into SATISFIED. Missing baggage data, a currency with no
 rate, an empty allow-list and an unconfirmed consequential constraint all surface
-as unresolved rather than as a quiet pass.
+as unresolved rather than as a quiet pass. The same three-way distinction carries
+into wave planning as FEASIBLE / INFEASIBLE / UNRESOLVED.
+
+**Rules live in exactly one place.** The wave engine calls the Phase 1
+feasibility engine rather than reimplementing budget, time, baggage or airport
+checks. A second copy could disagree with the first, which is how a system starts
+giving two answers to the same question.
+
+**Structure beats enforcement.** Travellers who must stay together are grouped
+into indivisible travel units, and the search assigns units rather than
+individuals. Splitting a must-travel-with group is therefore unrepresentable
+rather than merely rejected.
 
 ## 6. Persistence
 

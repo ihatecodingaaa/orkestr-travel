@@ -4,7 +4,7 @@
 
 ## 1. Current state, honestly
 
-**136 tests across 9 files, all passing.**
+**249 tests across 13 files, all passing.**
 
 | Suite | Tests | Covers |
 | --- | --- | --- |
@@ -17,9 +17,20 @@
 | `searchWindow.test.ts` | 21 | Generation, bounding, invalid input, determinism |
 | `feasibility.test.ts` | 41 | Every rule at three boundary points |
 | `multiTraveller.test.ts` | 13 | Whole-group evaluation, verdict precedence |
+| `waveUnits.test.ts` | 22 | Transitive units, relationship + planning-set validation |
+| `waveRanking.test.ts` | 15 | Each ranking criterion in isolation, exact cost |
+| `waveEngine.test.ts` | 36 | Wave planning end to end, UNKNOWN, reunion, determinism |
+| `waveInvariants.test.ts` | 40 | Ten invariants across four group sizes (2, 3, 7, 11) |
 
-There are no tests for travel waves, compromise, plan repair, providers or a UI,
-because none of those exist.
+There are no tests for compromise, plan repair, providers or a UI, because none
+of those exist.
+
+### Why ranking is tested twice
+
+The search prunes branches that provably cannot win, so a losing plan often never
+becomes a complete plan at all. Testing the ranking only through the engine would
+therefore leave criteria unexercised. `waveRanking.test.ts` compares constructed
+plans directly so every criterion is asserted in isolation.
 
 ## 2. Commands
 

@@ -48,11 +48,18 @@ which is the mechanism that stops anything being silently skipped.
 `CHECKED_BAGS_REQUIRED`, `ALLOWED_ORIGIN_AIRPORTS`,
 `ALLOWED_DESTINATION_AIRPORTS`, `AVAILABLE_DATES`.
 
-**`DeferredConstraintKind`** - real and owned, but not decidable from one offer
-yet: `MUST_TRAVEL_WITH` and `PREFER_TRAVEL_WITH` are properties of a group
-assignment, which the wave engine produces in Phase 2. `ASSISTANCE_REQUIRED` is a
-property of the provider, which is Phase 7. All three report
-`DEFERRED_TO_LATER_PHASE` rather than passing.
+**`DeferredConstraintKind`** - real and owned, but not decidable from ONE offer
+in isolation. All three report `DEFERRED_TO_LATER_PHASE` rather than passing.
+
+`MUST_TRAVEL_WITH` and `PREFER_TRAVEL_WITH` are properties of a group
+assignment, and the Phase 2 wave engine now enforces them: must-travel-with is
+structural (travellers are grouped into indivisible units, so a unit cannot be
+split), and prefer-travel-with becomes a counted soft violation. The single-offer
+engine still defers them, because "does this flight keep Gita with Elias?" is not
+a question one flight can answer without knowing the whole assignment.
+
+`ASSISTANCE_REQUIRED` is a property of the provider, which is Phase 7, and stays
+unresolved everywhere.
 
 **`NarrativeConstraintKind`** - `FREE_TEXT_REQUIREMENT` carries prose and no
 comparable value, so it reports `CONSTRAINT_NOT_MACHINE_EVALUABLE` and routes to a

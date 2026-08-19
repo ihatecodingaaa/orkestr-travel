@@ -1,8 +1,8 @@
 # Product Specification
 
-**Status:** specification. Principles 5 to 11 are now enforced by working code in
-the deterministic core; the rest remain design intent. See
-`IMPLEMENTATION_STATUS.md` for exactly what runs.
+**Status:** specification. Principles 5 to 12 are now enforced by working code in
+the deterministic core and the travel wave engine; the rest remain design intent.
+See `IMPLEMENTATION_STATUS.md` for exactly what runs.
 
 ## 1. What the product is
 
@@ -29,7 +29,7 @@ convention, the module is named.
 | 4 | **Orkestr absorbs complexity.** Users see decisions, not research | Design rule for the journey composer |
 | 5 | **Constraint ownership.** Every constraint belongs to one traveller | `Constraint.ownerTravellerId` is required |
 | 6 | **Consequential confirmation.** A proposed constraint is not authoritative until its owner confirms it | `origin` + `confirmation` + `consequential` |
-| 7 | **Hard vs soft.** Hard is never silently violated; soft relaxes only through explicit compromise; unknown is a real third state | `ConstraintStrength` |
+| 7 | **Hard vs soft.** Hard is never silently violated; soft relaxes only through explicit compromise; unknown is a real third state | `ConstraintStrength`; wave states `FEASIBLE`/`INFEASIBLE`/`UNRESOLVED` |
 | 8 | **Privacy.** Private constraints are not attributed publicly | `ConstraintVisibility` |
 | 9 | **Deterministic feasibility.** Models never decide whether a flight satisfies a hard constraint | `FeasibilityReport` is produced by pure code only |
 | 10 | **Model proposes, code decides.** | `EvaluableConstraintKind` vs `NarrativeConstraintKind` |

@@ -1,92 +1,265 @@
 # Travel Waves
 
-**Status:** `PLANNED` (Phase 2). **The wave engine does not exist.**
+**Status:** `IMPLEMENTED` (Phase 2).
 
-Types exist in `src/domain/travelWave.ts` and `src/domain/reunion.ts`, and Phase 1
-built the feasibility engine the wave engine will call. But no grouping code has
-been written, and nothing in the system currently splits a group.
+Code: `src/core/waves/` (units, candidates, cost, search, ranking, reunion,
+engine). Types: `src/domain/travelWave.ts`, `src/domain/reunion.ts`.
+Covered by 113 tests.
 
-Because of that, the two travel-together constraint kinds
-(`MUST_TRAVEL_WITH`, `PREFER_TRAVEL_WITH`) are reported by the feasibility engine
-as `DEFERRED_TO_LATER_PHASE` rather than being checked. That is deliberate: the
-gap stays visible instead of being silently treated as satisfied.
+---
 
-## 1. The idea
+## 1. The problem
 
-A large group does not necessarily need one flight.
+A group can share one trip without sharing one flight. Travellers differ in
+availability, departure windows, return requirements, budgets, baggage needs and
+relationships. When no single flight satisfies everybody's confirmed hard
+requirements, most systems report failure.
 
-When no single departure satisfies everyone's hard requirements, most systems
-report failure. Orkestr instead asks: what is the smallest number of coherent
-subgroups that makes this trip possible, and when does everyone meet?
+Orkestr instead asks: what is the smallest sensible set of flights that covers
+everybody, and when can they all first be together?
 
 ```
-Wave A    Tuesday 25 Aug    5 travellers
-Wave B    Wednesday 26 Aug  6 travellers
-                |
-                v
-Reunion anchor  Wednesday 26 Aug, 18:30, hotel check-in
+Wave A    Tue 25 Aug 07:00 -> 15:00 JST    Ama, Bo, Cai, Kai
+Wave B    Wed 26 Aug 07:00 -> 15:00 JST    Gita, Elias, Nadia
+                                |
+Reunion boundary   Wed 26 Aug 15:00 JST (not before)
 ```
 
-The destination journey remains one shared trip. Only the getting-there splits.
+## 2. Terminology
 
-## 2. Why this is not just "book two flights"
+| Term | Meaning |
+| --- | --- |
+| **Travel unit** | The smallest set of people who must stay together |
+| **Wave candidate** | One flight offer plus the units that would take it |
+| **Travel wave** | A wave in a selected plan |
+| **Travel wave plan** | An assignment of every planning traveller to exactly one wave |
+| **Planning set** | The traveller ids the caller asked to plan for |
+| **Reunion anchor** | The earliest instant at which everybody has landed |
 
-Three things make it a real engine rather than a convenience:
+## 3. Relationship semantics
 
-1. **Hard relationships must survive the split.** A traveller who requires a
-   caregiver may never be placed in a different wave from that caregiver.
-2. **The reunion is a planning constraint, not a note.** Before the anchor, the
-   whole group does not exist, so no group activity may be scheduled there.
-3. **Fragmentation has a cost.** Splitting into five waves to save a little money
-   is a worse answer than two waves, and the engine has to know that.
+### mustTravelWith - HARD
 
-## 3. Priority order
+If A must travel with B they are assigned to the same wave, always.
 
-The engine optimises in this strict order. A lower priority never overrides a
-higher one.
+**Transitively closed.** A must B and B must C makes one indivisible unit of
+three, even though A never mentioned C.
 
-1. Satisfy every hard constraint.
-2. Preserve every `mustTravelWith` relationship.
-3. Minimise the number of waves.
-4. Minimise the spread between the first and last arrival.
-5. Minimise cost.
-6. Minimise soft inconvenience.
+**Symmetric in meaning.** If A cannot travel without B, then B cannot travel
+without A. A one-sided declaration is an incomplete record, not a contradiction:
+the edge is honoured in both directions and an `ASYMMETRIC_MUST_TRAVEL_WITH`
+warning is reported so the data can be corrected.
 
-## 4. Approach
+If the combined unit has mutually incompatible hard requirements, no plan exists
+and the engine says which unit could not be covered and why.
 
-Deliberately simple. For hackathon-sized groups (roughly 4 to 15 travellers) an
-explicit deterministic search over candidate groupings, pruned by hard
-constraints, is fast enough and readable. **No optimisation library will be
-introduced unless a real measured need appears.** An unreadable solver that
-nobody can explain to a judge is worse than a slightly slower loop.
+### preferTravelWith - SOFT
 
-The algorithm will be documented here in full when it is written, including its
-complexity and its pruning rules.
+Separating preferred companions never makes a plan infeasible. It records one
+soft violation per separated pair. A preference between two people already in the
+same travel unit is ignored, because they can never be separated and so can never
+contribute a penalty.
 
-## 5. Ranking
+### canTravelSeparately
 
-Each candidate split is returned as a `WavePlan` carrying `waveCount`,
-`arrivalSpreadMinutes`, `softInconvenienceScore` and a written `rationale`. The
-scores are stored on the object so that "why this split?" is answered from data,
-not from a model's recollection.
+**This is about wave SIZE, not about the group.**
 
-## 6. Reunion anchors
+`false` means: this traveller may not be placed in a **one-person wave**.
 
-A `ReunionAnchor` records the time, place, participants, purpose and status of
-the moment the group becomes whole. It must sit at or after the last
-participating wave's arrival, plus realistic buffers. If a wave changes so that
-the anchor no longer follows every arrival, the anchor becomes `INVALIDATED`
-rather than being silently moved.
+It does **not** mean they must travel with the whole group, and it is not a way
+to say "keep me with my mother" - that requires `mustTravelWith`. Only a
+single-traveller unit can ever be affected; a unit of two or more is never a
+one-person wave.
 
-## 7. Single-wave trips
+Absence of the flag is "not stated", treated as withheld rather than as consent.
 
-A trip where everyone travels together is simply a `WavePlan` with one wave.
-There is no separate code path, so the common case and the split case cannot
-drift apart.
+### Validation
 
-## 8. Test obligations
+| Situation | Result |
+| --- | --- |
+| Relationship names somebody not on the trip | ERROR |
+| Traveller lists themselves in mustTravelWith | ERROR |
+| Planning set names an unknown traveller | ERROR |
+| Planning set names a WITHDRAWN traveller | ERROR |
+| Planning set contains a duplicate | ERROR |
+| One-sided mustTravelWith | WARNING, treated as mutual |
+| Duplicate relationship entry | WARNING, ignored |
+| Unresolvable or self preferTravelWith | WARNING, ignored |
 
-Groups that fit in one wave; groups that cannot; a `mustTravelWith` pair that
-would otherwise be split; a `preferTravelWith` pair that legitimately is split;
-absurd fragmentation being rejected; arrival spread computed across time zones;
-and an anchor invalidated by a wave change.
+A withdrawn traveller is an error rather than a silent removal. Quietly planning
+around them would produce a plan that looks correct and covers the wrong people.
+
+## 4. Travel unit creation
+
+Union-find (disjoint sets) with path compression over the `mustTravelWith` edges,
+restricted to the planning set.
+
+Determinism comes from three choices: union attaches the lexicographically larger
+root under the smaller, each unit's members are sorted, and the unit list is
+sorted by a canonical id built from that sorted membership (`U:T-004+T-005`).
+Declaring the same relationships in a different order produces identical units,
+which is asserted by test.
+
+A relationship pointing at somebody who exists but is **not** in the planning set
+is not followed. Pulling them in would change who is travelling.
+
+## 5. Search algorithm
+
+The problem is a set partition with a flight attached to each block. Set
+partitions grow at the Bell numbers - 877 for seven units, 115975 for ten - so
+the search is structured to avoid the explosion rather than clean up after it.
+
+**Units are visited in a fixed canonical order.** Each unit either joins a wave
+that already exists or opens a new one. This is the restricted-growth encoding of
+a set partition and generates every partition **exactly once**. Reordered
+arrangements of the same waves are never produced, so there is nothing to
+canonicalise or de-duplicate afterwards.
+
+**Two waves may not share a flight**, because two waves on the same offer are the
+same wave. This also caps the number of waves at the number of offers.
+
+**Infeasible pairings are never explored.** The unit-offer assessment table is
+built once, up front, so a unit is only ever offered flights it could take.
+
+The feasibility rules themselves are NOT reimplemented. The Phase 1 engine is
+called unchanged; a second copy of the budget or baggage logic could disagree
+with the first.
+
+## 6. Pruning
+
+| Prune | Justification |
+| --- | --- |
+| Wave count exceeds `maxWaves` | Configured bound |
+| Wave count exceeds the best FEASIBLE plan | More waves loses on criterion 3, and an unresolved plan loses at the state gate anyway |
+| Branch already unresolved AND exceeds the best UNRESOLVED plan | It can never become feasible from here |
+| Duplicate plan key | Insurance; canonical generation should make it unreachable |
+| Wave of one person who withheld permission | Structural rule |
+
+One subtlety is easy to get backwards. When **no** feasible plan has been found
+yet, wave count alone is not enough to discard a branch, because that branch may
+still become the first feasible plan and beat everything found so far. Pruning
+against the unresolved best is only safe once the branch already contains an
+unresolved wave.
+
+`maxPlansExplored` bounds the work. Reaching it sets `searchLimitReached`, and
+the result is then explicitly **not** proven optimal. A partial search is never
+presented as complete.
+
+## 7. Ranking
+
+A **plan state gate** runs first: if any fully FEASIBLE plan exists, only
+feasible plans are ranked. UNRESOLVED plans are considered only when nothing
+better exists.
+
+> This gate is an interpretation, stated openly. An unresolved requirement can
+> still turn out to be a hard violation once somebody checks it, so certainty is
+> preferred over a plan that merely might work - even at the cost of an extra
+> wave.
+
+Then a strict lexicographic hierarchy. Each criterion is considered only when
+everything above it has tied, and the criterion that decided the comparison is
+recorded on the losing plan.
+
+| # | Criterion | Rule |
+| --- | --- | --- |
+| 1 | `HARD_VIOLATIONS` | Must be zero. Zero by construction, asserted not assumed |
+| 2 | `MUST_TRAVEL_WITH` | Zero by construction; units are indivisible |
+| 3 | `FEWER_WAVES` | Keeping the group together outranks money |
+| 4 | `ARRIVAL_SPREAD` | Minutes between earliest and latest arrival. Smaller wins |
+| 5 | `TOTAL_COST` | **Skipped entirely** when either plan is not cost-comparable |
+| 6 | `SOFT_INCONVENIENCE` | Transparent count, see below |
+| 7 | `STABLE_TIE_BREAK` | Canonical plan key, so the winner never wobbles |
+
+**Not a weighted score.** A weighted score can trade a hard requirement against a
+small saving if the weights line up, and nothing in the output would reveal it.
+
+### Soft inconvenience
+
+Two components, exposed separately and summed with **equal weight**:
+
+- `preferSeparationCount` - preferred pairs split across waves
+- `softConstraintViolationCount` - Phase 1 soft violations across all waves
+
+The equal weighting is a **product assumption, not a measured or optimal
+weighting**, and it is labelled as such in the code. The Compromise Engine
+(Phase 3) can replace it with something the affected travellers actually agree to.
+
+## 8. UNKNOWN behaviour
+
+Phase 1's three-state discipline survives intact. A wave is:
+
+| State | Meaning |
+| --- | --- |
+| `FEASIBLE` | Every relevant requirement was checked and passed |
+| `INFEASIBLE` | A confirmed hard requirement is violated. Never selected |
+| `UNRESOLVED` | Nothing is violated, but something could not be established |
+
+**An offer with an unknown against a confirmed hard requirement is not feasible.**
+Missing baggage data is the clearest case: the provider has not said there are
+zero bags, so treating silence as compliance would send somebody to an airport
+with a bag they cannot check.
+
+A plan's state is the worst of its waves. `unresolved` lists exactly which
+requirements remain unestablished.
+
+## 9. Cost comparison
+
+Exact integer minor units throughout. A wave total is a fare multiplied by a
+headcount; the plan total is the sum.
+
+The engine **refuses to answer** rather than lose precision or invent data:
+
+| Situation | Result |
+| --- | --- |
+| Plan mixes currencies | `comparable: false`, no total, reason given |
+| Same currency at two decimal scales | `comparable: false` - a data defect |
+| Multiplication or sum exceeds exact integer range | `comparable: false` |
+
+When a plan is not cost-comparable the ranking **skips criterion 5 entirely**, so
+the plan neither gains nor loses from arithmetic that could not be done. There is
+no FX provider and none is faked.
+
+## 10. Reunion anchor
+
+Phase 2 establishes exactly one fact: `notBefore`, the earliest instant at which
+every traveller has landed, equal to the latest arrival across waves.
+
+It is named as a **lower bound**, not a scheduled time.
+
+It deliberately does **not** invent an immigration buffer, a baggage-reclaim
+allowance, a transfer time, a hotel, a restaurant or a meeting point. Those vary
+by airport, nationality and day, and a plausible invented number would end up in
+a plan people arrange their lives around. `locationState` stays `UNKNOWN` and
+`status` stays `NEEDS_PLANNING` until the Journey Composer has real data.
+
+An anchor is created for a **single-wave** plan too, marked `isTrivial: true`.
+One code path means the together case and the split case cannot drift apart, and
+nothing downstream has to ask whether an anchor exists.
+
+## 11. Diagnostics
+
+| Counter | Meaning |
+| --- | --- |
+| `travelUnitsConsidered` | Units after transitive closure |
+| `waveCandidatesConsidered` | Unit-offer assessments computed |
+| `plansConsidered` | Complete plans built |
+| `branchesPruned` | Branches discarded before completion |
+| `searchLimitReached` | True when a bound stopped the search early |
+
+`runnersUp` records each losing plan and the criterion it lost at. It is
+**alternatives that survived pruning, not an exhaustive list**: once a two-wave
+plan exists, three-wave branches are cut before they become complete plans.
+
+All diagnostics are produced by domain code. No language model is involved.
+
+## 12. Limitations
+
+- Waves are limited to the offers supplied. There is no provider, so the
+  available flights are whatever the caller passes in, and every fixture is
+  `LOCAL_FIXTURE`.
+- Assistance requirements are always `UNRESOLVED`. No provider can confirm them
+  yet, and community evidence never will. See `ACCESSIBILITY.md`.
+- Return flights are not modelled. A wave carries one outbound offer.
+- Cost ranks totals only. It does not model who pays what.
+- The reunion anchor is temporal only.
+- Activity pods, compromise and plan repair are later phases.

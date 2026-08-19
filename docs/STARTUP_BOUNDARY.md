@@ -95,7 +95,7 @@ candidates to be reviewed and ported back to the startup later:
 | Impact Radius | No (Phase 3) | Expected to be generic |
 | Plan Repair | No (Phase 3) | Expected to be generic |
 | Evidence and provenance patterns | Types only | Generic |
-| Travel-Wave-style grouping | No (Phase 2) | **Unclear. May be travel-only** |
+| Travel-Wave-style grouping | Yes (Phase 2) | **Unclear. See the note below** |
 
 ### Porting back must be intentional
 
@@ -112,9 +112,21 @@ that asks, at minimum:
 Copying code across because it exists and works is not a review. Absent that
 review, nothing here is a startup commitment.
 
-**Travel-Wave grouping is called out deliberately.** It may turn out to be a
-travel-only idea. Splitting a group across departure days has no obvious
-equivalent in dining. It is listed as a candidate, not as a foregone conclusion.
+**Travel-Wave grouping is called out deliberately.** Now that it is built, the
+question is sharper rather than settled.
+
+Splitting a group across departure days has no obvious equivalent in dining, so
+the *feature* is probably travel-only. But three pieces underneath it are not:
+
+- **Indivisible units** from a hard "must stay together" relationship. Any group
+  coordination problem has people who cannot be separated.
+- **Lexicographic ranking with a recorded deciding criterion.** Domain-neutral,
+  and the reason the engine can explain itself without a language model.
+- **Refusing to compare what cannot be compared** (mixed currencies skip the cost
+  criterion entirely rather than being assigned a fabricated rate).
+
+Those three are strong port-back candidates. The wave feature itself is not.
+Either way, nothing moves without the review in this section.
 
 ---
 

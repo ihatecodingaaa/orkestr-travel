@@ -1,7 +1,7 @@
 # Hackathon Master Plan
 
 **Event:** Alibaba Cloud x Atlas Agentic AI Hackathon 2026
-**Status:** Phases 0 and 1 complete. Phase 2 not started.
+**Status:** Phases 0, 1 and 2 complete. Phase 3 not started.
 
 ## 1. The thesis
 
@@ -24,7 +24,7 @@ questions that make the trip possible.
 | --- | --- |
 | It is not a wrapper around a model | Every feasibility decision is pure deterministic code with unit tests |
 | Its honesty is structural | Evidence state, item status and capability state are types, not copy |
-| Travel waves are a real algorithm | Deterministic, ranked, documented, tested |
+| Travel waves are a real algorithm | Deterministic, ranked, documented, 112 tests. Lexicographic, not a weighted score |
 | "Decisions preserved" is a real number | The decision inventory is defined in `PLAN_REPAIR.md` and countable |
 | Alibaba does genuine work | Extraction, research and orchestration, not a token endpoint |
 
@@ -37,7 +37,7 @@ automatically. Each begins on founder instruction.**
 | --- | --- | --- |
 | 0 | Repository foundation, docs, tooling, domain types | **COMPLETE** |
 | 1 | Group model, search window generator, feasibility engine | **COMPLETE** |
-| 2 | Travel waves, reunion anchors | Not started |
+| 2 | Travel waves, reunion anchors | **COMPLETE** |
 | 3 | Compromise, impact radius, plan repair, late join and leave | Not started |
 | 4 | Mock provider, journey package, meals, local fixture demo | Not started |
 | 5 | Local UI, mobile first, wave visualisation | Not started |

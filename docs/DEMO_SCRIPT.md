@@ -1,7 +1,11 @@
 # Demo Script
 
-**Status:** `PLANNED`. The scenario is specified; nothing is built, so no demo
-can be run yet.
+**Status:** `PARTIAL`. Act 1 is now backed by working code; Acts 2 and 3 are not.
+
+There is still no UI, so nothing can be *shown* yet. What changed in Phase 2 is
+that the wave split in Act 1 is computed by a real deterministic engine rather
+than being an aspiration. The fixture that produces it lives in
+`src/fixtures/waveScenarios.ts` and is exercised by the test suite.
 
 ## 1. The scenario
 
@@ -18,20 +22,44 @@ the strongest differentiators in the product.
 
 Availability constraints make a single shared flight impossible.
 
-## 2. Act 1: the split
+## 2. Act 1: the split - BUILT
 
-The travel wave engine produces:
+The travel wave engine produces, from the seven-person fixture:
 
 ```
-Wave A   Tuesday     part of the group
-Wave B   Wednesday   the rest
-Reunion  Wednesday   the whole group together
+Wave A   Tue 25 Aug 14:00 SGT -> 22:00 JST   Ama, Bo, Cai, Kai      FEASIBLE
+Wave B   Wed 26 Aug 07:00 SGT -> 15:00 JST   Gita, Elias, Nadia     UNRESOLVED
+
+plan state        UNRESOLVED
+waves             2
+arrival spread    1020 minutes (17 hours)
+cost              2780.00 SGD, comparable
+soft violations   0
+reunion boundary  not before Wed 26 Aug 15:00 JST, location UNKNOWN
 ```
 
-The point to land: the trip was not declared impossible, and nobody was asked to
-fill in a form to get here.
+Note that Wave A takes the LATER Tuesday flight, not the early one. That is
+criterion 4 doing its job: leaving later cuts the gap between the two arrivals
+from 24 hours to 17, so the group is whole sooner. It is not a cost decision, and
+the engine can say which criterion decided it.
 
-## 3. Act 2: the late join
+Five things in that output are worth narrating, and all five are real:
+
+1. **The trip was not declared impossible.** Availability split across two days
+   and the engine found the two-wave answer rather than failing.
+2. **Gita and Elias are together** because Gita stated a must-travel-with
+   companion. They are one indivisible unit; the engine cannot separate them.
+3. **Kai is not alone.** Kai withheld permission to travel in a one-person wave,
+   so the engine grouped them with the other Tuesday travellers.
+4. **The plan says UNRESOLVED, not confirmed.** Gita's step-free requirement
+   cannot be checked without a provider, so the engine reports it as unresolved
+   instead of quietly claiming the flight is accessible. This is the honesty
+   point of the whole demo.
+
+The reunion is a temporal boundary only: "not before Wed 15:00". No meeting point
+or transfer time is invented.
+
+## 3. Act 2: the late join - NOT BUILT (Phase 3)
 
 Ryan joins after planning has already happened.
 
@@ -52,7 +80,7 @@ The number shown must be derived from actual state. If it says 93 percent, then
 93 percent of the counted decisions genuinely survived. `PLAN_REPAIR.md` defines
 exactly what counts as a decision, so the figure can be checked.
 
-## 4. Act 3: the package
+## 4. Act 3: the package - NOT BUILT (Phase 4)
 
 Travel waves, flight offers, the reunion, the pre-flight plan, the arrival plan,
 one accessibility or assistance item, the day-by-day itinerary, meal ideas,

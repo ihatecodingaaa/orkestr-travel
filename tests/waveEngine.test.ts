@@ -524,3 +524,49 @@ describe("determinism and diagnostics", () => {
     expect(result.diagnostics.plansConsidered).toBeLessThan(500);
   });
 });
+
+describe("demo scenario, pinned", () => {
+  /**
+   * Pins the exact output documented in docs/DEMO_SCRIPT.md.
+   *
+   * WHY pin it: the demo document quotes concrete wave membership, times, cost
+   * and reunion boundary. If the engine's behaviour changes, that document
+   * becomes a false claim about what the product does. This test makes the two
+   * fail together instead of letting the doc quietly go stale.
+   */
+  it("produces exactly the plan the demo script describes", () => {
+    const travellers = familySeven();
+    const result = expectOk(plan(travellers, familyOffers()));
+    const nameOf = new Map(travellers.map((t) => [t.id, t.displayName] as const));
+    const namesIn = (index: number) =>
+      result.selected.waves[index]!.travellerIds.map((id) => nameOf.get(id));
+
+    expect(result.selected.waveCount).toBe(2);
+    expect(namesIn(0)).toEqual(["Ama", "Bo", "Cai", "Kai"]);
+    expect(namesIn(1)).toEqual(["Gita", "Elias", "Nadia"]);
+
+    // Wave A takes the LATER Tuesday flight: it shortens the arrival spread from
+    // 24 hours to 17, and spread outranks cost.
+    expect(result.selected.waves[0]?.departureAt).toBe("2026-08-25T14:00:00+08:00");
+    expect(result.selected.waves[1]?.departureAt).toBe("2026-08-26T07:00:00+08:00");
+    expect(result.selected.arrivalSpreadMinutes).toBe(1020);
+
+    // Kai never travels alone; Gita and Elias are never separated.
+    expect(namesIn(0)).toContain("Kai");
+    expect(namesIn(1)).toContain("Gita");
+    expect(namesIn(1)).toContain("Elias");
+
+    // The plan is honest about what it cannot confirm.
+    expect(result.selected.waves[0]?.state).toBe("FEASIBLE");
+    expect(result.selected.waves[1]?.state).toBe("UNRESOLVED");
+    expect(result.selected.state).toBe("UNRESOLVED");
+
+    expect(result.selected.cost.comparable).toBe(true);
+    expect(result.selected.cost.total?.amountMinor).toBe(278000);
+    expect(result.selected.softInconvenience.total).toBe(0);
+
+    expect(result.reunionAnchor?.notBefore).toBe("2026-08-26T15:00:00+09:00");
+    expect(result.reunionAnchor?.locationState).toBe("UNKNOWN");
+    expect(result.reunionAnchor?.status).toBe("NEEDS_PLANNING");
+  });
+});
