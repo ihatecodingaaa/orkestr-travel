@@ -1,15 +1,138 @@
 # Startup Boundary
 
-**Status:** decision record.
+**Status:** decision record. Binding on both repositories.
 
-> **Interpretation note.** The brief names this document but does not define its
-> scope. It is written here as the boundary between what Orkestr builds itself
-> and what it delegates to existing rails. If a different meaning was intended,
-> this document should be corrected rather than worked around.
+This document defines the separation between the **Orkestr startup** and the
+**Orkestr Travel** hackathon build. It exists to stop two specific failures:
+the hackathon quietly becoming the startup's roadmap, and hackathon-specific
+vendor dependencies quietly becoming permanent startup dependencies.
 
-## 1. The boundary
+---
 
-| Orkestr builds | Orkestr delegates |
+## 1. Two repositories, two purposes
+
+| | Orkestr startup | Orkestr Travel |
+| --- | --- | --- |
+| Repository | `orkestr_luc` | `orkestr-travel` |
+| Purpose | The long-term Orkestr startup and product | Alibaba Cloud x Atlas Agentic AI Hackathon 2026 experimental travel vertical |
+| Horizon | Indefinite | The hackathon, plus whatever is deliberately harvested afterwards |
+| Status of its validation thesis | Authoritative | Does not replace or supersede it |
+
+These are **separate efforts with separate lifetimes**. One is a company. The
+other is an experiment run inside a competition, in one vertical, under a
+deadline.
+
+---
+
+## 2. The Orkestr startup
+
+Repository: `orkestr_luc`
+
+The startup's core thesis is unchanged by anything in the hackathon:
+
+```
+complex multi-person intent
+    -> minimum necessary questions
+    -> constraint reconciliation
+    -> private compromise
+    -> group commitment
+    -> existing execution infrastructure
+```
+
+That chain is domain-neutral on purpose. Dining was the first vertical it was
+tested in. Travel is a second. Neither vertical is the thesis.
+
+**The startup must not silently inherit hackathon-specific dependencies.**
+Nothing becomes a startup dependency by having been convenient during a
+hackathon weekend.
+
+---
+
+## 3. Orkestr Travel
+
+Repository: `orkestr-travel`
+
+An experimental travel vertical built for the Alibaba Cloud x Atlas Agentic AI
+Hackathon 2026. It is a genuine build and a genuine test of the thesis in a new
+domain. It is not the startup, and it is not a rewrite of the startup.
+
+### Hackathon-specific technologies
+
+The following are chosen because the hackathon calls for them, or because they
+are the fastest credible route to a working demo:
+
+- Atlas
+- ATRIP
+- Alibaba Cloud
+- AgentRun
+- Function Compute
+- Model Studio / Qwen
+- Qoder
+
+**None of these is automatically a permanent Orkestr startup dependency.**
+
+Each one is a hackathon-scoped choice. If any is later adopted by the startup,
+that adoption is a separate, deliberate decision made on the startup's own
+merits, recorded in the startup repository, and not inherited by default from
+this build.
+
+---
+
+## 4. Porting back to the startup
+
+Some capabilities being built here are generic. They solve the coordination
+problem itself, not a travel-specific instance of it, and are therefore
+candidates to be reviewed and ported back to the startup later:
+
+- Constraint ownership
+- Deterministic feasibility
+- Compromise engine
+- Travel-Wave-style grouping logic, **if it generalises**
+- Impact Radius
+- Plan Repair
+- Evidence and provenance patterns
+- Dynamic membership
+
+### Porting back must be intentional
+
+A capability moves from Travel to the startup only through a deliberate review
+that asks, at minimum:
+
+1. Does this solve a general coordination problem, or a travel-shaped one?
+2. Does it carry any hackathon vendor dependency with it? If so, can that
+   dependency be removed cleanly?
+3. Does it fit the startup's thesis chain in section 2, or does it bend that
+   chain to fit the code?
+4. Is it worth the maintenance cost in a codebase with a longer horizon?
+
+Copying code across because it exists and works is not a review. Absent that
+review, nothing here is a startup commitment.
+
+**Travel-Wave grouping is called out deliberately.** It may turn out to be a
+travel-only idea. Splitting a group across departure days has no obvious
+equivalent in dining. It is listed as a candidate, not as a foregone conclusion.
+
+---
+
+## 5. What the hackathon does not do
+
+- It does **not** replace the startup's validation thesis.
+- It does **not** make travel the startup's vertical.
+- It does **not** commit the startup to any vendor listed in section 3.
+- It does **not** retire, deprecate or supersede the `orkestr_luc` codebase.
+
+Orkestr 1.0 in `orkestr_luc` remains preserved at the tag
+`orkestr-v1-x402-final` and remains deployed and untouched. It is the startup's
+history and its current running artefact, not dead weight.
+
+---
+
+## 6. Product boundary within Orkestr Travel
+
+Separate from the startup/hackathon split above, this build also has an internal
+boundary: what Orkestr writes itself, and what it delegates to existing rails.
+
+| Orkestr Travel builds | Orkestr Travel delegates |
 | --- | --- |
 | Coordination between travellers | Flight inventory and booking (Atlas) |
 | Constraint ownership and confirmation | Payment execution (existing rails) |
@@ -20,37 +143,31 @@
 | Evidence provenance and honesty rules | |
 | The journey package that ties it together | |
 
-## 2. Why the boundary sits here
-
 Principle 12: existing execution rails win. Building an airline booking system is
 a solved problem owned by companies with far more resources, and doing it badly
-would consume the entire project without producing anything distinctive.
+would consume the whole project without producing anything distinctive.
 
 What is **not** solved is the coordination problem: a group with conflicting
-requirements, changing membership, private constraints and no willingness to fill
-in forms. That is the whole of Orkestr's value, and it is where every unit of
-effort should go.
+requirements, changing membership, private constraints, and no willingness to
+fill in forms. That is where every unit of effort should go.
 
-## 3. Explicitly out of scope
+### Explicitly out of scope for Orkestr Travel
 
-- Expense splitting. Groups already have tools for this.
-- Payment processing. Existing rails execute payments.
+- Expense splitting.
+- Payment processing.
 - Being a chat application.
 - Being a travel content or recommendation site.
 
-Orkestr coordinates what the group needs. Other systems execute.
+---
 
-## 4. Relationship to the earlier Orkestr
+## 7. Why Travel is a separate repository
 
-Orkestr 1.0 was a group **dining** product built around venue selection, bill
-splitting and an x402 payment proof. It lives in a separate repository, is tagged
-`orkestr-v1-x402-final`, and remains deployed and untouched.
+Orkestr 1.0 is built around venue selection, bill splitting and an x402 payment
+proof. Splitting and payments are out of scope here, and 1.0's constraint model
+has no ownership, no hard/soft split and no confirmation state. That makes Travel
+a redesign rather than an adaptation, so it was started clean.
 
-Orkestr Travel deliberately does not inherit its code. The splitting and payment
-subsystems are outside this product's boundary by design, and the earlier
-constraint model has no ownership, no hard/soft split and no confirmation state,
-so it is a redesign rather than an adaptation.
-
-Reusable **patterns**, not code, worth revisiting later: capability-URL guest
-access with no accounts, asymmetric constraint visibility, and provenance
-discipline on researched facts.
+Patterns from 1.0 worth revisiting later, as **patterns rather than code**:
+capability-URL guest access with no accounts, asymmetric constraint visibility,
+and provenance discipline on researched facts. Each is subject to the same
+intentional review as section 4.

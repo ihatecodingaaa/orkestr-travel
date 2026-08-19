@@ -52,9 +52,13 @@ type change that a reviewer would see.
 No test may call a paid or live API. Development uses the Atlas sandbox
 exclusively. Production bookings are prohibited during development.
 
-## 7. Prior-repository note
+## 7. Separation from the startup repository
 
-Orkestr Travel is a separate repository from Orkestr 1.0. The earlier project
-holds live secrets in its own deployment environment, including a testnet wallet
-key. **Nothing from that environment is copied here**, and no credential is
-shared between the two projects.
+Orkestr Travel is a separate repository from the Orkestr startup (`orkestr_luc`),
+which remains active rather than superseded. See `STARTUP_BOUNDARY.md`.
+
+The startup repository holds live secrets in its own deployment environment,
+including a testnet wallet key. **Nothing from that environment is copied here**,
+and no credential is shared between the two projects. Credentials created for
+hackathon services stay scoped to this repository and must not be introduced into
+the startup's environment without a deliberate decision.

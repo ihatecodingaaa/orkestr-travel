@@ -13,6 +13,13 @@ The question it exists to answer is:
 
 Built for the **Alibaba Cloud x Atlas Agentic AI Hackathon 2026**.
 
+**This is an experimental travel vertical, not the Orkestr startup itself.** The
+long-term startup lives in the `orkestr_luc` repository and keeps its own
+validation thesis; this build does not replace it, and the hackathon
+technologies used here (Atlas, ATRIP, Alibaba Cloud, AgentRun, Function Compute,
+Model Studio / Qwen, Qoder) are not automatically permanent startup
+dependencies. See `docs/STARTUP_BOUNDARY.md`.
+
 ---
 
 ## What this is not
@@ -131,4 +138,4 @@ Start with `docs/PRODUCT_SPEC.md` for what the product does, and
 | `FAILURE_MODES.md` | What can go wrong and the intended behaviour |
 | `SECURITY.md` | Secrets, privacy and sandbox safety |
 | `TESTING.md` | Test strategy and required coverage |
-| `STARTUP_BOUNDARY.md` | What Orkestr builds versus what it delegates |
+| `STARTUP_BOUNDARY.md` | Startup versus hackathon separation, and what gets ported back |

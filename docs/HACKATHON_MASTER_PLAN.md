@@ -5,6 +5,10 @@
 
 ## 1. The thesis
 
+> **Scope.** What follows is the thesis *for this hackathon build*. The Orkestr
+> startup's own validation thesis is separate and is not replaced by it. See
+> `STARTUP_BOUNDARY.md`.
+
 Most agentic travel demos search for flights and write an itinerary. Both are
 solved problems, and both are easy to fake convincingly.
 
