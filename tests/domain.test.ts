@@ -2,6 +2,8 @@ import { describe, it, expect } from "vitest";
 import {
   asConstraintId,
   asCurrencyCode,
+  asFlightOfferId,
+  asTravelUnitId,
   asIsoDate,
   asIsoDateTime,
   asMinutesOfDay,
@@ -120,14 +122,27 @@ describe("domain model shape", () => {
       tripId: asTripId("TRIP-001"),
       label: "Wave A",
       travellerIds: [asTravellerId("T-001"), asTravellerId("T-002")],
+      unitIds: [asTravelUnitId("U:T-001+T-002")],
+      offerId: asFlightOfferId("OFFER-001"),
       departureDate: asIsoDate("2026-08-25"),
-      selectedOfferIds: [],
+      departureAt: asIsoDateTime("2026-08-25T09:00:00+08:00"),
+      arrivalAt: asIsoDateTime("2026-08-25T17:00:00+09:00"),
+      state: "FEASIBLE",
+      softViolations: [],
+      unknowns: [],
+      pricePerTraveller: {
+        amountMinor: 40000,
+        currency: asCurrencyCode("SGD"),
+        minorUnitScale: 2,
+      },
     };
     const waveB: TravelWave = {
       ...waveA,
       id: asTravelWaveId("W-B"),
       label: "Wave B",
       travellerIds: [asTravellerId("T-003")],
+      unitIds: [asTravelUnitId("U:T-003")],
+      offerId: asFlightOfferId("OFFER-002"),
       departureDate: asIsoDate("2026-08-26"),
     };
     const all = [...waveA.travellerIds, ...waveB.travellerIds];

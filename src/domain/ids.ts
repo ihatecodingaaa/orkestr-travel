@@ -14,6 +14,7 @@ export type TravellerId = Brand<string, "TravellerId">;
 export type ConstraintId = Brand<string, "ConstraintId">;
 export type AssistanceNeedId = Brand<string, "AssistanceNeedId">;
 export type TravelWaveId = Brand<string, "TravelWaveId">;
+export type TravelUnitId = Brand<string, "TravelUnitId">;
 export type ReunionAnchorId = Brand<string, "ReunionAnchorId">;
 export type FlightOfferId = Brand<string, "FlightOfferId">;
 export type CompromiseId = Brand<string, "CompromiseId">;
@@ -31,6 +32,7 @@ export const asConstraintId = (value: string): ConstraintId => value as Constrai
 export const asAssistanceNeedId = (value: string): AssistanceNeedId =>
   value as AssistanceNeedId;
 export const asTravelWaveId = (value: string): TravelWaveId => value as TravelWaveId;
+export const asTravelUnitId = (value: string): TravelUnitId => value as TravelUnitId;
 export const asReunionAnchorId = (value: string): ReunionAnchorId =>
   value as ReunionAnchorId;
 export const asFlightOfferId = (value: string): FlightOfferId => value as FlightOfferId;

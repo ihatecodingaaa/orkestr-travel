@@ -46,8 +46,25 @@ export type {
 
 export type { SearchWindowCandidate, TripWindow } from "./tripWindow.js";
 export type { DestinationOption, Trip, TripPace, TripStatus } from "./trip.js";
-export type { ReunionAnchor, ReunionPurpose, ReunionStatus } from "./reunion.js";
-export type { TravelWave, WavePlan } from "./travelWave.js";
+export type {
+  ReunionAnchor,
+  ReunionLocationState,
+  ReunionPurpose,
+  ReunionStatus,
+} from "./reunion.js";
+export type {
+  PlanCost,
+  RankedPlan,
+  RankingCriterion,
+  SoftInconvenience,
+  TravelUnit,
+  TravelWave,
+  TravelWavePlan,
+  UnitOfferAssessment,
+  WaveCandidate,
+  WaveEvidenceState,
+  WaveSearchDiagnostics,
+} from "./travelWave.js";
 
 export type {
   BaggageAllowance,
