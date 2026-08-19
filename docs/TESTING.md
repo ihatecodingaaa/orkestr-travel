@@ -1,15 +1,25 @@
 # Testing
 
-**Status:** tooling `IMPLEMENTED`; coverage minimal because there is almost no
-behaviour to cover yet.
+**Status:** `IMPLEMENTED` for everything built so far.
 
 ## 1. Current state, honestly
 
-7 tests in `tests/domain.test.ts`. They verify that the toolchain works and that
-the domain types can express the shapes the specification requires. **They test
-almost no behaviour, because Phase 0 contains almost no behaviour.**
+**136 tests across 9 files, all passing.**
 
-The real engine tests arrive with the engines.
+| Suite | Tests | Covers |
+| --- | --- | --- |
+| `domain.test.ts` | 7 | Type shapes the specification requires |
+| `civilDate.test.ts` | 9 | Calendar arithmetic, leap years, century boundaries |
+| `instant.test.ts` | 10 | Offset-mandatory parsing, cross-zone comparison |
+| `money.test.ts` | 9 | Exact comparison, JPY zero-decimal, refusal to convert |
+| `membership.test.ts` | 10 | Every edge of the transition graph |
+| `trip.test.ts` | 16 | Derived counts, duration, structural validation |
+| `searchWindow.test.ts` | 21 | Generation, bounding, invalid input, determinism |
+| `feasibility.test.ts` | 41 | Every rule at three boundary points |
+| `multiTraveller.test.ts` | 13 | Whole-group evaluation, verdict precedence |
+
+There are no tests for travel waves, compromise, plan repair, providers or a UI,
+because none of those exist.
 
 ## 2. Commands
 

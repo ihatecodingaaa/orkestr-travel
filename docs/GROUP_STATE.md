@@ -1,23 +1,45 @@
 # Group State
 
-**Status:** types `IMPLEMENTED`; lifecycle behaviour `PLANNED` (Phase 1).
+**Status:** `IMPLEMENTED` (Phase 1).
+
+Code: `src/core/membership/membership.ts` (state machine),
+`src/core/trip/trip.ts` (derived views and validation). Covered by 26 tests.
 
 ## 1. Group size is never hard-coded
 
 The group is whatever the traveller list currently contains. `Trip` carries an
 optional `expectedTravellerCount`, which is the organiser's expectation and is
-explicitly **not** a limit and **not** the current size. Nothing in the system
-may branch on a fixed number of travellers.
+explicitly **not** a limit and **not** the current size.
+
+The joined count is **derived, never stored**: `joinedTravellerCount` counts
+travellers in an active membership state. There is no second copy of the
+headcount that can drift. The tests exercise groups of 0, 1, 2, 5, 7, 23 and 40
+travellers through the same code path.
+
+Active states are `JOINED`, `CONFIRMED` and `TENTATIVE`. `TENTATIVE` counts:
+those travellers are in the group and their constraints still bind, even though
+their final commitment is not certain. `INVITED` does not count (they have not
+replied) and neither does `WITHDRAWN`.
 
 ## 2. Membership states
 
+The implemented transition graph:
+
 ```
-INVITED -> JOINED -> CONFIRMED
-              |
-              +----> TENTATIVE
-              |
-              +----> WITHDRAWN
+  INVITED   -> JOINED, WITHDRAWN
+  JOINED    -> CONFIRMED, TENTATIVE, WITHDRAWN
+  TENTATIVE -> JOINED, CONFIRMED, WITHDRAWN
+  CONFIRMED -> TENTATIVE, WITHDRAWN
+  WITHDRAWN -> JOINED
 ```
+
+Deliberately refused: `INVITED -> CONFIRMED` and `INVITED -> TENTATIVE` (nobody
+commits without joining), `WITHDRAWN -> CONFIRMED` and `WITHDRAWN -> TENTATIVE`
+(rejoin first), and any transition back to `INVITED` (an invitation cannot be
+un-sent).
+
+Repeating a transition that is already the current state is a **no-op, not an
+error**. Somebody tapping "join" twice should not see a failure.
 
 | State | Meaning |
 | --- | --- |

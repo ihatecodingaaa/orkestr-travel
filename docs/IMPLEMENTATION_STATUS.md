@@ -8,26 +8,34 @@ what any other document, comment or UI label suggests. Any disagreement between
 this table and another document is a bug in the other document.
 
 - **Last updated:** 19 August 2026
-- **Phase completed:** Phase 0 (repository foundation)
-- **Phase in progress:** none. Awaiting founder approval to begin Phase 1.
+- **Phases completed:** Phase 0 (foundation), Phase 1 (group state + deterministic core)
+- **Phase in progress:** none. Awaiting founder approval to begin Phase 2.
 
 ## Legend
 
 | Status | Meaning |
 | --- | --- |
-| `IMPLEMENTED` | Built, tested, and verified working by running it |
+| `IMPLEMENTED` | Built, tested, and verified by running it |
 | `PARTIAL` | Some of it works; the gaps are named explicitly |
 | `PLANNED` | Designed and specified, no code written |
 | `BLOCKED` | Cannot start until a named dependency is resolved |
 | `NOT IMPLEMENTED` | No design, no code |
+| `TYPES ONLY` | The shape is defined; **none of the behaviour exists** |
 
 ---
 
 ## Summary
 
-At the end of Phase 0 the repository contains a domain model, quality tooling and
-documentation. **There is no running application.** Nothing accepts input,
-nothing produces a plan, and no external service is contacted.
+The deterministic core exists and is tested. Given a set of travellers, their
+constraints and a set of flight offers, the system decides which offers are
+feasible, which preferences are missed, and what it does not know, with no model
+involvement and no network access.
+
+**There is still no application.** Nothing accepts user input, no UI exists, no
+flight provider is integrated, and no infrastructure has been provisioned.
+
+Verified at the last run: **136 tests across 9 files, all passing.** Lint and
+typecheck clean.
 
 ---
 
@@ -35,70 +43,83 @@ nothing produces a plan, and no external service is contacted.
 
 | Capability | Status | Evidence |
 | --- | --- | --- |
-| Fresh repository, git initialised | `IMPLEMENTED` | `git init` on `main`, no remote configured |
+| Fresh repository, git initialised | `IMPLEMENTED` | `main`, local commits |
+| Remote git backup | `BLOCKED` | GitHub CLI not installed; awaiting founder-created remote |
 | TypeScript strict configuration | `IMPLEMENTED` | `tsconfig.json`; `npm run typecheck` passes |
-| Lint with type-aware rules | `IMPLEMENTED` | `eslint.config.mjs`; verified by a deliberate failing probe |
-| Test runner | `IMPLEMENTED` | vitest; `npm test` runs 7 passing tests |
+| Lint with type-aware rules | `IMPLEMENTED` | `eslint.config.mjs`; verified with a deliberate failing probe |
+| Test runner | `IMPLEMENTED` | vitest; 136 tests |
 | Combined quality gate | `IMPLEMENTED` | `npm run check` |
 | Documentation structure | `IMPLEMENTED` | 21 documents in `docs/`, plus `README.md` |
-| Domain type model | `IMPLEMENTED` | `src/domain/`, 22 modules + barrel, types only |
-| Git remote / hosted repository | `NOT IMPLEMENTED` | Deliberate. Requires founder authorisation |
-| CI pipeline | `NOT IMPLEMENTED` | Not required until there is code worth gating |
+| CI pipeline | `NOT IMPLEMENTED` | Not yet configured |
+| Production build script | `NOT IMPLEMENTED` | Nothing to build yet; there is no application or bundle |
 
 ---
 
-## Domain model (Phase 0 deliverable)
+## Domain model
 
-Types only. Defining a type is **not** the same as implementing the behaviour it
-describes; every engine below is separately listed as `PLANNED`.
+Types and interfaces. 23 modules in `src/domain/`. Defining a type is **not** the
+same as implementing the behaviour it describes.
 
-| Type group | Status | Module |
-| --- | --- | --- |
-| Branded identifiers | `IMPLEMENTED` | `src/domain/ids.ts` |
-| Time primitives | `IMPLEMENTED` | `src/domain/time.ts` |
-| Money, exact minor units | `IMPLEMENTED` | `src/domain/money.ts` |
-| Traveller and membership | `IMPLEMENTED` | `src/domain/traveller.ts` |
-| Assistance needs | `IMPLEMENTED` | `src/domain/assistance.ts` |
-| Relationships | `IMPLEMENTED` | `src/domain/relationships.ts` |
-| Constraints, hard/soft/unknown | `IMPLEMENTED` | `src/domain/constraint.ts` |
-| Trip and trip windows | `IMPLEMENTED` | `src/domain/trip.ts`, `tripWindow.ts` |
-| Travel waves and reunion anchors | `IMPLEMENTED` | `src/domain/travelWave.ts`, `reunion.ts` |
-| Flight offers and provider interface | `IMPLEMENTED` | `src/domain/flight.ts` |
-| Feasibility result shapes | `IMPLEMENTED` | `src/domain/feasibility.ts` |
-| Compromise shapes | `IMPLEMENTED` | `src/domain/compromise.ts` |
-| Group commitment | `IMPLEMENTED` | `src/domain/commitment.ts` |
-| Trip events | `IMPLEMENTED` | `src/domain/tripEvent.ts` |
-| Impact analysis and decisions | `IMPLEMENTED` | `src/domain/impact.ts` |
-| Plan repair shapes | `IMPLEMENTED` | `src/domain/planRepair.ts` |
-| Evidence model | `IMPLEMENTED` | `src/domain/evidence.ts` |
-| Research provider interface | `IMPLEMENTED` | `src/domain/research.ts` |
-| Journey package and items | `IMPLEMENTED` | `src/domain/journey.ts` |
+| Type group | Status |
+| --- | --- |
+| Branded identifiers, time, money primitives | `IMPLEMENTED` |
+| Traveller, membership, relationships | `IMPLEMENTED` |
+| Constraints: strength, origin, confirmation, visibility, consequence | `IMPLEMENTED` |
+| Trip, trip status, trip windows | `IMPLEMENTED` |
+| Assistance needs with separate operational status | `IMPLEMENTED` |
+| Flight offers, provider interface, capability tri-state | `IMPLEMENTED` |
+| Feasibility result shapes | `IMPLEMENTED` |
+| Travel waves, reunion anchors | `TYPES ONLY` - **no engine, see Phase 2** |
+| Compromise, commitment, trip events, impact, plan repair | `TYPES ONLY` - no engine |
+| Evidence model, research provider interface | `TYPES ONLY` - no provider |
+| Journey package and items | `TYPES ONLY` - no composer |
 
 ---
 
-## Engines and behaviour
+## Deterministic core (Phase 1)
 
-**Every row below is unbuilt.** No engine exists.
-
-| Capability | Status | Phase | Notes |
+| Capability | Status | Module | Tests |
 | --- | --- | --- | --- |
-| Search window generator | `PLANNED` | 1 | Bounded candidate date pairs from a `TripWindow` |
-| Feasibility engine | `PLANNED` | 1 | Pure, deterministic, no model involvement |
-| Membership lifecycle | `PLANNED` | 1 | Join, leave, state transitions |
-| Constraint confirmation flow | `PLANNED` | 1 | Proposed to confirmed, owner only |
-| Travel wave engine | `PLANNED` | 2 | Deterministic grouping and ranking |
-| Reunion anchor placement | `PLANNED` | 2 | Derived from wave arrivals |
-| Compromise engine | `PLANNED` | 3 | Minimum soft relaxation search |
-| Impact radius analysis | `PLANNED` | 3 | Deterministic business rules |
-| Plan repair | `PLANNED` | 3 | Local repair, never a rebuild |
-| Decisions preserved metric | `PLANNED` | 3 | Real derived figure, not marketing |
-| Late join and leave handling | `PLANNED` | 3 | Incremental integration |
-| Mock flight provider | `PLANNED` | 4 | Local fixtures, clearly labelled |
-| Journey package composition | `PLANNED` | 4 | Pre-flight, arrival, day-by-day |
-| Meal planning | `PLANNED` | 4 | Pre-flight, arrival, trip meals |
-| User interface | `NOT IMPLEMENTED` | 5 | No Next.js app in the repository yet |
-| Travel wave visualisation | `NOT IMPLEMENTED` | 5 | |
-| Compromise graph | `NOT IMPLEMENTED` | 5 | |
+| Civil (calendar) date arithmetic, time-zone free | `IMPLEMENTED` | `core/time/civilDate.ts` | 9 |
+| Strict instant parsing, offset mandatory | `IMPLEMENTED` | `core/time/instant.ts` | 10 |
+| Exact money comparison, no FX | `IMPLEMENTED` | `core/money/money.ts` | 9 |
+| Membership state machine | `IMPLEMENTED` | `core/membership/membership.ts` | 10 |
+| Derived group size and duration | `IMPLEMENTED` | `core/trip/trip.ts` | 16 |
+| Structural validation of travellers and trips | `IMPLEMENTED` | `core/trip/trip.ts` | (in the 16) |
+| SearchWindowGenerator | `IMPLEMENTED` | `core/trip/searchWindow.ts` | 21 |
+| Constraint authority rules | `IMPLEMENTED` | `core/constraint/authority.ts` | (in feasibility) |
+| Per-constraint feasibility rules | `IMPLEMENTED` | `core/feasibility/rules.ts` | 41 |
+| Feasibility engine, single and multi-traveller | `IMPLEMENTED` | `core/feasibility/engine.ts` | 13 |
+| Fixture builders for arbitrary group sizes | `IMPLEMENTED` | `src/fixtures/` | used throughout |
+
+### Constraint kinds actually evaluated
+
+`IMPLEMENTED`: budget maximum (hard and preferred), earliest departure, latest
+departure, arrival deadline, maximum stops (a direct-flight preference is a soft
+zero-stop maximum), required checked bags, allowed departure airports, allowed
+arrival airports, traveller availability dates.
+
+`DEFERRED` (modelled and owned, but reported as unresolved rather than guessed):
+`MUST_TRAVEL_WITH` and `PREFER_TRAVEL_WITH` need the wave engine (Phase 2);
+`ASSISTANCE_REQUIRED` needs a provider (Phase 7).
+
+`NARRATIVE` (never machine-evaluated): `FREE_TEXT_REQUIREMENT`.
+
+---
+
+## Not built
+
+| Capability | Status | Phase |
+| --- | --- | --- |
+| **Travel wave engine** | **`PLANNED`** | 2 |
+| **Reunion anchor placement** | **`PLANNED`** | 2 |
+| Compromise engine | `PLANNED` | 3 |
+| Impact radius analysis | `PLANNED` | 3 |
+| Plan repair, decisions preserved | `PLANNED` | 3 |
+| Late join and leave handling | `PLANNED` | 3 |
+| Mock flight provider | `PLANNED` | 4 |
+| Journey package composition, meals | `PLANNED` | 4 |
+| User interface of any kind | `NOT IMPLEMENTED` | 5 |
 
 ---
 
@@ -106,16 +127,19 @@ describes; every engine below is separately listed as `PLANNED`.
 
 | Capability | Status | Blocker |
 | --- | --- | --- |
-| Qwen structured extraction | `BLOCKED` | Phase 6. Needs founder approval and Model Studio credentials |
+| Qwen structured extraction | `BLOCKED` | Phase 6. Needs approval and Model Studio credentials |
 | Qwen web research | `BLOCKED` | Phase 6. Same |
-| User-shared link provider | `PLANNED` | Phase 6 |
-| Atlas flight search | `BLOCKED` | Phase 7. Needs real API documentation and sandbox credentials |
+| Atlas flight search | `BLOCKED` | Phase 7. Needs real documentation and sandbox credentials |
 | Atlas offer verification | `BLOCKED` | Phase 7. Same |
 | Atlas sandbox order | `BLOCKED` | Phase 10. Explicit approval required |
-| Atlas meal / special-assistance requests | `BLOCKED` | Phase 7. Support is **unknown** and must not be claimed |
+| Atlas meal / special-assistance | `BLOCKED` | Phase 7. Support is **unknown** and must not be claimed |
 | Persistence layer | `NOT IMPLEMENTED` | Phase 8. Technology not chosen |
 | Alibaba Cloud agent runtime | `BLOCKED` | Phase 9. Requires explicit infrastructure approval |
-| Deployment of any kind | `NOT IMPLEMENTED` | No infrastructure has been provisioned |
+| Deployment of any kind | `NOT IMPLEMENTED` | No infrastructure exists |
+
+**Every flight offer in this repository is a `LOCAL_FIXTURE`.** The fixture
+builder hard-codes that value with no override, so a test object cannot claim to
+have come from Atlas.
 
 ---
 
@@ -123,15 +147,12 @@ describes; every engine below is separately listed as `PLANNED`.
 
 | Capability | Status | Notes |
 | --- | --- | --- |
-| Domain model smoke tests | `IMPLEMENTED` | 7 tests in `tests/domain.test.ts` |
-| Engine unit tests | `NOT IMPLEMENTED` | Arrive with the engines they test |
-| Qoder architecture review | `PLANNED` | Phase 11. Template only in `QODER_USAGE.md` |
-| Qoder adversarial test generation | `PLANNED` | Phase 11 |
-| Qoder browser QA | `PLANNED` | Phase 11 |
-| Qoder repository review | `PLANNED` | Phase 11 |
+| Domain shape tests | `IMPLEMENTED` | 7 tests |
+| Deterministic core tests | `IMPLEMENTED` | 129 tests |
+| Boundary-value coverage | `IMPLEMENTED` | Budget, time, stops, bags, dates asserted below, at and above every limit |
+| Qoder review stages | `PLANNED` | Phase 11. Templates only |
 
-**No Qoder activity has occurred.** `docs/QODER_USAGE.md` contains empty
-templates and records nothing, by design.
+**No Qoder activity has occurred.** `QODER_USAGE.md` records nothing, by design.
 
 ---
 
@@ -139,6 +160,10 @@ templates and records nothing, by design.
 
 **NONE.**
 
-No cloud resource has been created, configured or paid for. No API key exists in
-this repository. No remote git host has been contacted. This line must be updated
-only when the founder has explicitly authorised a specific provisioning action.
+No Vercel change, no Railway change, no Neon, no Koyeb, no Alibaba Cloud
+resource, no AgentRun, no Function Compute, no Model Studio credential, no Atlas
+credential, no ATRIP credential, no DNS, no production environment variable, no
+database provisioning.
+
+The only outward-facing actions taken have been git pushes to the existing
+`orkestr_luc` GitHub repository, which the founder explicitly authorised.

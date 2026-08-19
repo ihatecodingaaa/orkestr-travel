@@ -84,14 +84,18 @@ Some capabilities being built here are generic. They solve the coordination
 problem itself, not a travel-specific instance of it, and are therefore
 candidates to be reviewed and ported back to the startup later:
 
-- Constraint ownership
-- Deterministic feasibility
-- Compromise engine
-- Travel-Wave-style grouping logic, **if it generalises**
-- Impact Radius
-- Plan Repair
-- Evidence and provenance patterns
-- Dynamic membership
+| Capability | Built here yet? | Generic, or travel-shaped? |
+| --- | --- | --- |
+| Constraint ownership | Yes (Phase 1) | Generic. Any group decision has owners |
+| Deterministic feasibility | Yes (Phase 1) | Generic. The rules differ; the shape does not |
+| Dynamic membership | Yes (Phase 1) | Generic |
+| Exact money comparison, no FX | Yes (Phase 1) | Generic, and useful anywhere budgets are compared |
+| Time handling with mandatory offsets | Yes (Phase 1) | Generic |
+| Compromise engine | No (Phase 3) | Expected to be generic |
+| Impact Radius | No (Phase 3) | Expected to be generic |
+| Plan Repair | No (Phase 3) | Expected to be generic |
+| Evidence and provenance patterns | Types only | Generic |
+| Travel-Wave-style grouping | No (Phase 2) | **Unclear. May be travel-only** |
 
 ### Porting back must be intentional
 

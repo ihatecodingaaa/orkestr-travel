@@ -1,7 +1,7 @@
 # Hackathon Master Plan
 
 **Event:** Alibaba Cloud x Atlas Agentic AI Hackathon 2026
-**Status:** Phase 0 complete. Phase 1 not started.
+**Status:** Phases 0 and 1 complete. Phase 2 not started.
 
 ## 1. The thesis
 
@@ -36,7 +36,7 @@ automatically. Each begins on founder instruction.**
 | Phase | Content | Status |
 | --- | --- | --- |
 | 0 | Repository foundation, docs, tooling, domain types | **COMPLETE** |
-| 1 | Group model, search window generator, feasibility engine | Not started |
+| 1 | Group model, search window generator, feasibility engine | **COMPLETE** |
 | 2 | Travel waves, reunion anchors | Not started |
 | 3 | Compromise, impact radius, plan repair, late join and leave | Not started |
 | 4 | Mock provider, journey package, meals, local fixture demo | Not started |

@@ -1,6 +1,7 @@
 # Architecture
 
-**Status:** only the domain layer exists. Everything else is a plan.
+**Status:** the domain layer and the deterministic core exist. The AI layer, the
+provider adapters and the UI are still plans.
 
 ## 1. The shape
 
@@ -65,7 +66,7 @@ clock. That is what makes the engines testable at boundary values, which
 
 ## 5. Domain layer (built)
 
-`src/domain/` holds 22 type modules plus a barrel export, with no runtime logic
+`src/domain/` holds 23 modules including the barrel export, with no runtime logic
 beyond identifier casts. Notable deliberate choices:
 
 - **Branded identifiers.** A `TravellerId` cannot be passed where a `TripId` is
@@ -77,6 +78,35 @@ beyond identifier casts. Notable deliberate choices:
 - **Discriminated unions for trip windows, constraint values and trip events.**
   Exhaustive switch statements mean a new case cannot be silently unhandled; the
   build fails instead.
+
+## 5b. Deterministic core (built)
+
+`src/core/` holds the engines. Every function is pure: no I/O, no clock read, no
+randomness, no model call. This was verified by grep as part of the Phase 1
+review, not merely intended.
+
+| Module | Responsibility |
+| --- | --- |
+| `time/civilDate.ts` | Calendar arithmetic with no time zone anywhere near it |
+| `time/instant.ts` | Instants with a mandatory offset; wall-clock read lexically |
+| `money/money.ts` | Exact integer comparison; refuses to convert currencies |
+| `membership/membership.ts` | The membership transition graph |
+| `trip/trip.ts` | Derived group size and duration; structural validation |
+| `trip/searchWindow.ts` | Bounded, ordered candidate date pairs |
+| `constraint/authority.ts` | Whether a constraint may bind yet |
+| `feasibility/rules.ts` | One comparison per constraint kind |
+| `feasibility/engine.ts` | Per-traveller and whole-group evaluation |
+
+Two design points carry most of the safety:
+
+**Timestamps are passed in, never read.** `evaluateOffers` takes `evaluatedAt`
+from its caller. A result that changed with the clock could not be tested at a
+boundary.
+
+**UNKNOWN is a real answer.** Rules return SATISFIED, VIOLATED or UNKNOWN, and
+UNKNOWN never collapses into SATISFIED. Missing baggage data, a currency with no
+rate, an empty allow-list and an unconfirmed consequential constraint all surface
+as unresolved rather than as a quiet pass.
 
 ## 6. Persistence
 

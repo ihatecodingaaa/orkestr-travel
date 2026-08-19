@@ -1,7 +1,15 @@
 # Travel Waves
 
-**Status:** `PLANNED` (Phase 2). Types exist in `src/domain/travelWave.ts` and
-`src/domain/reunion.ts`. No engine code is written.
+**Status:** `PLANNED` (Phase 2). **The wave engine does not exist.**
+
+Types exist in `src/domain/travelWave.ts` and `src/domain/reunion.ts`, and Phase 1
+built the feasibility engine the wave engine will call. But no grouping code has
+been written, and nothing in the system currently splits a group.
+
+Because of that, the two travel-together constraint kinds
+(`MUST_TRAVEL_WITH`, `PREFER_TRAVEL_WITH`) are reported by the feasibility engine
+as `DEFERRED_TO_LATER_PHASE` rather than being checked. That is deliberate: the
+gap stays visible instead of being silently treated as satisfied.
 
 ## 1. The idea
 

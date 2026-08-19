@@ -1,6 +1,13 @@
 # Accessibility and Assistance
 
-**Status:** types `IMPLEMENTED` (`src/domain/assistance.ts`); no behaviour built.
+**Status:** types `IMPLEMENTED` (`src/domain/assistance.ts`). No provider
+integration exists, and the feasibility engine deliberately reports every
+assistance constraint as `DEFERRED_TO_LATER_PHASE` rather than assessing it.
+
+A naming note that matters: the operational status uses `PROVIDER_CONFIRMED`, not
+`CONFIRMED`, so it can never be confused with `AssistanceNeed.confirmedByOwner`.
+Those are confirmed by different parties. The traveller confirms the need is
+real; only the operator can confirm it can be met.
 
 ## 1. Two rules, stated first
 

@@ -37,11 +37,17 @@ fewest questions that still make the trip work.
 
 ## Current status
 
-**Phase 0 complete. Nothing else is built yet.**
+**Phases 0 and 1 complete.**
 
-At the time of writing this repository contains the domain model, the quality
-tooling and the documentation structure. There is no application, no UI, no
-flight provider, no AI integration and no deployed infrastructure.
+The deterministic core exists and is tested: given travellers, their constraints
+and a set of flight offers, the system decides which offers are feasible, which
+preferences are missed, and what it does not know. No model is involved and
+nothing touches the network.
+
+136 tests pass across 9 files. Lint and typecheck are clean.
+
+**There is still no application.** No UI, no flight provider, no AI integration,
+no persistence and no deployed infrastructure. Travel waves are NOT built.
 
 `docs/IMPLEMENTATION_STATUS.md` is the authoritative status table and is kept
 brutally accurate. If a feature is not marked IMPLEMENTED there, it does not
@@ -66,7 +72,15 @@ repeatable and explainable. See `docs/CONSTRAINT_ENGINE.md`.
 ## Repository layout
 
 ```
-src/domain/     the domain model: types and interfaces only, no logic yet
+src/domain/     types and interfaces, no logic
+src/core/       the deterministic engines
+  time/           calendar and instant arithmetic
+  money/          exact comparison, no floating point, no FX
+  membership/     the membership state machine
+  trip/           derived group views, SearchWindowGenerator
+  constraint/     when a constraint is allowed to bind
+  feasibility/    the feasibility engine and its per-constraint rules
+src/fixtures/   builders for arbitrary group sizes, fictional identities only
 tests/          vitest suites
 docs/           specification, design and status documents
 ```
@@ -90,8 +104,8 @@ npm run typecheck
 npm test
 ```
 
-There is nothing to run yet beyond the checks. No environment variables are
-required; `.env.example` documents names for integrations that do not exist yet.
+There is no application to run yet, only the checks. No environment variables
+are required; `.env.example` documents names for integrations that do not exist.
 
 ---
 

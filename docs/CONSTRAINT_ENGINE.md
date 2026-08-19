@@ -1,7 +1,10 @@
 # Constraint Engine
 
-**Status:** `PLANNED` (Phase 1). Types exist in `src/domain/constraint.ts` and
-`src/domain/feasibility.ts`. No engine code is written.
+**Status:** `IMPLEMENTED` (Phase 1).
+
+Code: `src/core/feasibility/engine.ts`, `src/core/feasibility/rules.ts`,
+`src/core/constraint/authority.ts`. Types: `src/domain/constraint.ts`,
+`src/domain/feasibility.ts`. Covered by 54 tests.
 
 ## 1. Purpose
 
@@ -36,16 +39,33 @@ keeps the questioning minimal rather than turning every extraction into a form.
 
 ## 4. What code decides, and what it refuses to decide
 
-`EvaluableConstraintKind` lists the kinds the engine can compare on its own:
-budget, departure and arrival bounds, stops, total duration, available and
-unavailable dates, checked bags, overnight departures, travel-together
-relationships and assistance requirements.
+The kind union is split three ways, and the engine switches exhaustively over it.
+A new kind cannot be added without the build failing until a rule handles it,
+which is the mechanism that stops anything being silently skipped.
 
-`NarrativeConstraintKind` currently holds one kind, `FREE_TEXT_REQUIREMENT`. It
-carries prose and no comparable value. The engine cannot pass or fail it, so it
-reports `CONSTRAINT_NOT_MACHINE_EVALUABLE` and routes it to a human. Splitting the
-union this way means a narrative constraint can never be silently treated as
-satisfied.
+**`EvaluableConstraintKind`** - compared directly against an offer:
+`BUDGET_MAX`, `DEPART_NOT_BEFORE`, `DEPART_NOT_AFTER`, `ARRIVE_BY`, `MAX_STOPS`,
+`CHECKED_BAGS_REQUIRED`, `ALLOWED_ORIGIN_AIRPORTS`,
+`ALLOWED_DESTINATION_AIRPORTS`, `AVAILABLE_DATES`.
+
+**`DeferredConstraintKind`** - real and owned, but not decidable from one offer
+yet: `MUST_TRAVEL_WITH` and `PREFER_TRAVEL_WITH` are properties of a group
+assignment, which the wave engine produces in Phase 2. `ASSISTANCE_REQUIRED` is a
+property of the provider, which is Phase 7. All three report
+`DEFERRED_TO_LATER_PHASE` rather than passing.
+
+**`NarrativeConstraintKind`** - `FREE_TEXT_REQUIREMENT` carries prose and no
+comparable value, so it reports `CONSTRAINT_NOT_MACHINE_EVALUABLE` and routes to a
+human.
+
+### Two representation choices worth knowing
+
+A **preferred budget** is not a separate kind. It is `BUDGET_MAX` with
+`strength: SOFT`. Modelling it separately would make a contradictory state
+representable, such as a "preferred" budget marked HARD.
+
+A **direct-flight preference** is `MAX_STOPS` of 0 with `strength: SOFT`, for the
+same reason.
 
 ## 5. Output
 

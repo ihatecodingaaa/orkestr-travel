@@ -1,7 +1,8 @@
 # Product Specification
 
-**Status:** specification. Nothing described here is implemented yet except the
-domain types. See `IMPLEMENTATION_STATUS.md`.
+**Status:** specification. Principles 5 to 11 are now enforced by working code in
+the deterministic core; the rest remain design intent. See
+`IMPLEMENTATION_STATUS.md` for exactly what runs.
 
 ## 1. What the product is
 
