@@ -1,6 +1,6 @@
 import type { IsoDate, IsoDateTime, MinutesOfDay } from "../../domain/time.js";
-import { asIsoDate, asMinutesOfDay } from "../../domain/time.js";
-import { toDayNumber, parseIsoDate } from "./civilDate.js";
+import { asIsoDate, asIsoDateTime, asMinutesOfDay } from "../../domain/time.js";
+import { toDayNumber, fromDayNumber, parseIsoDate } from "./civilDate.js";
 
 /**
  * Strict ISO-8601 instant handling.
@@ -124,4 +124,72 @@ export function formatMinutesOfDay(minutes: MinutesOfDay): string {
   const h = Math.floor(minutes / 60);
   const m = minutes % 60;
   return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+}
+
+function pad(value: number, width: number): string {
+  return String(value).padStart(width, "0");
+}
+
+/** Render an offset in minutes as "+09:00" or "Z". */
+function formatOffset(offsetMinutes: number): string {
+  if (offsetMinutes === 0) return "Z";
+  const sign = offsetMinutes < 0 ? "-" : "+";
+  const abs = Math.abs(offsetMinutes);
+  return `${sign}${pad(Math.floor(abs / 60), 2)}:${pad(abs % 60, 2)}`;
+}
+
+/**
+ * Build an instant from a civil date, a local time of day and an offset.
+ *
+ * The offset must be supplied by the caller, because a wall-clock time without
+ * one names no actual moment. There is no default and no guess.
+ */
+export function instantAt(
+  date: IsoDate,
+  minutesOfDay: number,
+  offsetMinutes: number,
+): IsoDateTime | undefined {
+  if (!Number.isSafeInteger(minutesOfDay) || minutesOfDay < 0 || minutesOfDay > 1439) {
+    return undefined;
+  }
+  const civil = parseIsoDate(date);
+  if (civil === undefined) return undefined;
+
+  const hours = Math.floor(minutesOfDay / 60);
+  const minutes = minutesOfDay % 60;
+  return asIsoDateTime(
+    `${date}T${pad(hours, 2)}:${pad(minutes, 2)}:00${formatOffset(offsetMinutes)}`,
+  );
+}
+
+/**
+ * Shift an instant by whole minutes, KEEPING ITS ORIGINAL OFFSET.
+ *
+ * Keeping the offset matters: a departure timestamp is written in the departure
+ * airport's offset, and a pre-flight meal two hours earlier is still in that
+ * airport's local time. Re-rendering it in UTC would be technically the same
+ * moment and useless to the person standing in the terminal.
+ */
+export function addMinutesToInstant(
+  value: IsoDateTime,
+  minutes: number,
+): IsoDateTime | undefined {
+  const parsed = parseInstant(value);
+  if (parsed === undefined || !Number.isSafeInteger(minutes)) return undefined;
+
+  const shiftedLocalMillis =
+    parsed.epochMillis + parsed.offsetMinutes * MILLIS_PER_MINUTE + minutes * MILLIS_PER_MINUTE;
+
+  const dayNumber = Math.floor(shiftedLocalMillis / MILLIS_PER_DAY);
+  const millisIntoDay = shiftedLocalMillis - dayNumber * MILLIS_PER_DAY;
+  const minutesIntoDay = Math.floor(millisIntoDay / MILLIS_PER_MINUTE);
+
+  const civil = fromDayNumber(dayNumber);
+  const date = `${pad(civil.year, 4)}-${pad(civil.month, 2)}-${pad(civil.day, 2)}`;
+  const hours = Math.floor(minutesIntoDay / 60);
+  const mins = minutesIntoDay % 60;
+
+  return asIsoDateTime(
+    `${date}T${pad(hours, 2)}:${pad(mins, 2)}:00${formatOffset(parsed.offsetMinutes)}`,
+  );
 }
