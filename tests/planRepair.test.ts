@@ -1,10 +1,10 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { asIsoDate, asTravellerId, asTripId } from "@/domain/index.js";
-import type { Traveller, TravelWavePlan, TripWindow } from "@/domain/index.js";
-import type { FlightOffer } from "@/domain/index.js";
-import { planTravelWaves } from "@/core/waves/engine.js";
-import { repairPlan } from "@/core/repair/repair.js";
-import { resetFixtureCounters } from "@/fixtures/builders.js";
+import { asIsoDate, asTravellerId, asTripId } from "@/domain/index";
+import type { Traveller, TravelWavePlan, TripWindow } from "@/domain/index";
+import type { FlightOffer } from "@/domain/index";
+import { planTravelWaves } from "@/core/waves/engine";
+import { repairPlan } from "@/core/repair/repair";
+import { resetFixtureCounters } from "@/fixtures/builders";
 import {
   budgetConstrainedJoiner,
   heroGroupSix,
@@ -14,7 +14,7 @@ import {
   lonelyThursdayJoiner,
   thursdayJoiner,
   thursdayOffer,
-} from "@/fixtures/repairScenarios.js";
+} from "@/fixtures/repairScenarios";
 
 const TRIP = asTripId("TRIP-001");
 const WINDOW: TripWindow = {

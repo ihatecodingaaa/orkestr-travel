@@ -1,6 +1,6 @@
-import type { Traveller } from "../domain/traveller.js";
-import { buildConstraint, buildTraveller, sgd } from "./builders.js";
-import { asMinutesOfDay, asIsoDate } from "../domain/index.js";
+import type { Traveller } from "../domain/traveller";
+import { buildConstraint, buildTraveller, sgd } from "./builders";
+import { asMinutesOfDay, asIsoDate } from "../domain/index";
 
 /**
  * Group fixtures at three sizes.

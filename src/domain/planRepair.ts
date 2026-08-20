@@ -1,13 +1,13 @@
-import type { TravellerId, TripId } from "./ids.js";
-import type { ImpactAnalysis, ReverificationRequirement } from "./impact.js";
+import type { TravellerId, TripId } from "./ids";
+import type { ImpactAnalysis, ReverificationRequirement } from "./impact";
 import type {
   CompromiseApprovalProblem,
   CompromiseProposal,
   NoCompromiseReason,
-} from "./compromise.js";
-import type { DecisionDiff, DecisionsPreserved } from "./decision.js";
-import type { TravelWavePlan, WaveSearchDiagnostics } from "./travelWave.js";
-import type { UnknownOutcome } from "./feasibility.js";
+} from "./compromise";
+import type { DecisionDiff, DecisionsPreserved } from "./decision";
+import type { TravelWavePlan, WaveSearchDiagnostics } from "./travelWave";
+import type { UnknownOutcome } from "./feasibility";
 
 /**
  * Plan repair.

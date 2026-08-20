@@ -4,11 +4,11 @@ import type {
   FlightSearchRequest,
   ProviderCapabilities,
   VerifyOfferResult,
-} from "../../domain/flight.js";
-import type { FlightOfferId } from "../../domain/ids.js";
-import type { Money } from "../../domain/money.js";
-import type { IsoDateTime } from "../../domain/time.js";
-import { localDateOf } from "../time/instant.js";
+} from "../../domain/flight";
+import type { FlightOfferId } from "../../domain/ids";
+import type { Money } from "../../domain/money";
+import type { IsoDateTime } from "../../domain/time";
+import { localDateOf } from "../time/instant";
 
 /**
  * A local, deterministic flight provider for development and testing.

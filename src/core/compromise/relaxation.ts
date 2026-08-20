@@ -1,11 +1,11 @@
-import type { Constraint, ConstraintValue } from "../../domain/constraint.js";
-import type { SoftConstraintOutcome } from "../../domain/feasibility.js";
-import type { ConstraintRelaxation, RelaxationKind } from "../../domain/compromise.js";
-import type { ConstraintId, TravellerId } from "../../domain/ids.js";
-import { asConstraintId } from "../../domain/ids.js";
-import { formatMoney } from "../money/money.js";
-import { formatMinutesOfDay } from "../time/instant.js";
-import { asMinutesOfDay } from "../../domain/time.js";
+import type { Constraint, ConstraintValue } from "../../domain/constraint";
+import type { SoftConstraintOutcome } from "../../domain/feasibility";
+import type { ConstraintRelaxation, RelaxationKind } from "../../domain/compromise";
+import type { ConstraintId, TravellerId } from "../../domain/ids";
+import { asConstraintId } from "../../domain/ids";
+import { formatMoney } from "../money/money";
+import { formatMinutesOfDay } from "../time/instant";
+import { asMinutesOfDay } from "../../domain/time";
 
 /**
  * Turning a soft violation into a typed, computable relaxation.

@@ -1,19 +1,19 @@
-import type { TravelWavePlan } from "../../domain/travelWave.js";
-import type { TripEvent } from "../../domain/tripEvent.js";
+import type { TravelWavePlan } from "../../domain/travelWave";
+import type { TripEvent } from "../../domain/tripEvent";
 import type {
   ImpactAnalysis,
   ImpactRadius,
   ImpactReasonCode,
   ReverificationRequirement,
-} from "../../domain/impact.js";
-import type { DecisionDiff } from "../../domain/decision.js";
+} from "../../domain/impact";
+import type { DecisionDiff } from "../../domain/decision";
 import type {
   ConstraintId,
   FlightOfferId,
   TravelWaveId,
   TravellerId,
-} from "../../domain/ids.js";
-import { parseInstant } from "../time/instant.js";
+} from "../../domain/ids";
+import { parseInstant } from "../time/instant";
 
 /**
  * Deterministic impact analysis.

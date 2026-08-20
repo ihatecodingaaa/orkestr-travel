@@ -1,14 +1,14 @@
-import type { Constraint, ConstraintValue, ConstraintStrength, ConstraintVisibility } from "../domain/constraint.js";
-import type { Traveller, MembershipState } from "../domain/traveller.js";
-import type { FlightOffer, BaggageAllowance } from "../domain/flight.js";
-import type { Money } from "../domain/money.js";
-import type { IsoDateTime } from "../domain/time.js";
+import type { Constraint, ConstraintValue, ConstraintStrength, ConstraintVisibility } from "../domain/constraint";
+import type { Traveller, MembershipState } from "../domain/traveller";
+import type { FlightOffer, BaggageAllowance } from "../domain/flight";
+import type { Money } from "../domain/money";
+import type { IsoDateTime } from "../domain/time";
 import {
   asConstraintId,
   asFlightOfferId,
   asTravellerId,
-} from "../domain/ids.js";
-import { asCurrencyCode, asDurationMinutes, asIsoDateTime } from "../domain/index.js";
+} from "../domain/ids";
+import { asCurrencyCode, asDurationMinutes, asIsoDateTime } from "../domain/index";
 
 /**
  * Fixture builders.

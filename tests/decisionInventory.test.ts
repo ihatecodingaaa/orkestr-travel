@@ -1,14 +1,14 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { asIsoDate, asTravellerId, asTripId } from "@/domain/index.js";
-import type { DecisionRecord, TripWindow } from "@/domain/index.js";
-import { planTravelWaves } from "@/core/waves/engine.js";
+import { asIsoDate, asTravellerId, asTripId } from "@/domain/index";
+import type { DecisionRecord, TripWindow } from "@/domain/index";
+import { planTravelWaves } from "@/core/waves/engine";
 import {
   buildDecisionInventory,
   decisionsPreserved,
   diffDecisions,
-} from "@/core/decisions/inventory.js";
-import { resetFixtureCounters } from "@/fixtures/builders.js";
-import { heroGroupSix, heroGroupSeven, heroOffers } from "@/fixtures/repairScenarios.js";
+} from "@/core/decisions/inventory";
+import { resetFixtureCounters } from "@/fixtures/builders";
+import { heroGroupSix, heroGroupSeven, heroOffers } from "@/fixtures/repairScenarios";
 
 const TRIP = asTripId("TRIP-001");
 const WINDOW: TripWindow = {

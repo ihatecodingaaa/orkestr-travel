@@ -1,5 +1,5 @@
-import type { EvidenceId, JourneyItemId } from "./ids.js";
-import type { IsoDate, IsoDateTime } from "./time.js";
+import type { EvidenceId, JourneyItemId } from "./ids";
+import type { IsoDate, IsoDateTime } from "./time";
 
 /**
  * Where a claim came from, and what it is therefore allowed to establish.

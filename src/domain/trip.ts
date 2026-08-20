@@ -1,8 +1,8 @@
-import type { TripId } from "./ids.js";
-import type { IsoDateTime, TimeZoneId } from "./time.js";
-import type { BudgetIntent } from "./money.js";
-import type { TripWindow } from "./tripWindow.js";
-import type { DeparturePoint, Traveller } from "./traveller.js";
+import type { TripId } from "./ids";
+import type { IsoDateTime, TimeZoneId } from "./time";
+import type { BudgetIntent } from "./money";
+import type { TripWindow } from "./tripWindow";
+import type { DeparturePoint, Traveller } from "./traveller";
 
 /**
  * How densely the group wants its days filled.

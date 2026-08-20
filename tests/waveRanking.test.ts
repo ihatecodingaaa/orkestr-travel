@@ -1,9 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { asCurrencyCode, asTripId } from "@/domain/index.js";
-import type { TravelWavePlan } from "@/domain/index.js";
-import { comparePlans, rankPlans } from "@/core/waves/ranking.js";
-import { multiplyMoney, planCost } from "@/core/waves/cost.js";
-import { jpy, sgd } from "@/fixtures/builders.js";
+import { asCurrencyCode, asTripId } from "@/domain/index";
+import type { TravelWavePlan } from "@/domain/index";
+import { comparePlans, rankPlans } from "@/core/waves/ranking";
+import { multiplyMoney, planCost } from "@/core/waves/cost";
+import { jpy, sgd } from "@/fixtures/builders";
 
 /**
  * The ranking hierarchy, exercised directly on constructed plans.

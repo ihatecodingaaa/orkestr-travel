@@ -1,16 +1,16 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { asTravellerId, asTripId } from "@/domain/index.js";
-import type { Traveller, FlightOffer } from "@/domain/index.js";
-import { planTravelWaves } from "@/core/waves/engine.js";
-import { resetFixtureCounters } from "@/fixtures/builders.js";
-import { compareInstants } from "@/core/time/instant.js";
+import { asTravellerId, asTripId } from "@/domain/index";
+import type { Traveller, FlightOffer } from "@/domain/index";
+import { planTravelWaves } from "@/core/waves/engine";
+import { resetFixtureCounters } from "@/fixtures/builders";
+import { compareInstants } from "@/core/time/instant";
 import {
   familyEleven,
   familyOffers,
   familySeven,
   pairAnyDay,
   transitiveTrio,
-} from "@/fixtures/waveScenarios.js";
+} from "@/fixtures/waveScenarios";
 
 /**
  * Invariants that must hold for EVERY plan the engine produces, whatever the

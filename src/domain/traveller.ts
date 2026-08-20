@@ -1,8 +1,8 @@
-import type { TravellerId } from "./ids.js";
-import type { IsoDateTime, TimeZoneId } from "./time.js";
-import type { TravelRelationships } from "./relationships.js";
-import type { Constraint } from "./constraint.js";
-import type { AssistanceNeed } from "./assistance.js";
+import type { TravellerId } from "./ids";
+import type { IsoDateTime, TimeZoneId } from "./time";
+import type { TravelRelationships } from "./relationships";
+import type { Constraint } from "./constraint";
+import type { AssistanceNeed } from "./assistance";
 
 /**
  * Membership lifecycle. Group size is never hard-coded anywhere in this system;

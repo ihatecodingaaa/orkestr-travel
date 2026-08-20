@@ -1,7 +1,7 @@
-import type { Traveller } from "../../domain/traveller.js";
-import type { TravelUnit } from "../../domain/travelWave.js";
-import type { TravellerId } from "../../domain/ids.js";
-import { asTravelUnitId } from "../../domain/ids.js";
+import type { Traveller } from "../../domain/traveller";
+import type { TravelUnit } from "../../domain/travelWave";
+import type { TravellerId } from "../../domain/ids";
+import { asTravelUnitId } from "../../domain/ids";
 
 /**
  * Building travel units from relationships.

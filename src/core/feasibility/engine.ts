@@ -1,8 +1,8 @@
-import type { Constraint } from "../../domain/constraint.js";
-import type { FlightOffer } from "../../domain/flight.js";
-import type { Traveller } from "../../domain/traveller.js";
-import type { IsoDateTime } from "../../domain/time.js";
-import type { ConstraintId, FlightOfferId, TravellerId } from "../../domain/ids.js";
+import type { Constraint } from "../../domain/constraint";
+import type { FlightOffer } from "../../domain/flight";
+import type { Traveller } from "../../domain/traveller";
+import type { IsoDateTime } from "../../domain/time";
+import type { ConstraintId, FlightOfferId, TravellerId } from "../../domain/ids";
 import type {
   ConstraintOutcome,
   FeasibilityReport,
@@ -11,9 +11,9 @@ import type {
   TravellerOfferFeasibility,
   TravellerVerdict,
   UnknownOutcome,
-} from "../../domain/feasibility.js";
-import { constraintAuthority } from "../constraint/authority.js";
-import type { RuleOutcome } from "./rules.js";
+} from "../../domain/feasibility";
+import { constraintAuthority } from "../constraint/authority";
+import type { RuleOutcome } from "./rules";
 import {
   evaluateAirportAllowList,
   evaluateArriveBy,
@@ -22,7 +22,7 @@ import {
   evaluateCheckedBags,
   evaluateDepartureBound,
   evaluateMaxStops,
-} from "./rules.js";
+} from "./rules";
 
 /**
  * The deterministic feasibility engine.

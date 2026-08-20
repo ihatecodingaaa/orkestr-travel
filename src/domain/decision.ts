@@ -1,4 +1,4 @@
-import type { Brand } from "./brand.js";
+import type { Brand } from "./brand";
 
 /**
  * The decision inventory.

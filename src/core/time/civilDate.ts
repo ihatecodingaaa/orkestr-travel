@@ -1,5 +1,5 @@
-import type { IsoDate } from "../../domain/time.js";
-import { asIsoDate } from "../../domain/time.js";
+import type { IsoDate } from "../../domain/time";
+import { asIsoDate } from "../../domain/time";
 
 /**
  * Pure civil (calendar) date arithmetic.

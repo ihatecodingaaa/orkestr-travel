@@ -5,10 +5,10 @@ import type {
   TravelWaveId,
   TravellerId,
   TripId,
-} from "./ids.js";
-import type { IsoDateTime } from "./time.js";
-import type { Money } from "./money.js";
-import type { MagnitudeUnit } from "./feasibility.js";
+} from "./ids";
+import type { IsoDateTime } from "./time";
+import type { Money } from "./money";
+import type { MagnitudeUnit } from "./feasibility";
 
 /**
  * Compromise: asking one person, explicitly, to stretch one preference.

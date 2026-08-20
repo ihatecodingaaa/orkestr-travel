@@ -1,9 +1,9 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { asIsoDate, asTravellerId, asTripId } from "@/domain/index.js";
-import type { Constraint, Traveller, TripWindow } from "@/domain/index.js";
-import { planTravelWaves } from "@/core/waves/engine.js";
-import { repairPlan } from "@/core/repair/repair.js";
-import { buildConstraint, buildOffer, buildTraveller, resetFixtureCounters, sgd } from "@/fixtures/builders.js";
+import { asIsoDate, asTravellerId, asTripId } from "@/domain/index";
+import type { Constraint, Traveller, TripWindow } from "@/domain/index";
+import { planTravelWaves } from "@/core/waves/engine";
+import { repairPlan } from "@/core/repair/repair";
+import { buildConstraint, buildOffer, buildTraveller, resetFixtureCounters, sgd } from "@/fixtures/builders";
 
 const TRIP = asTripId("TRIP-001");
 const WINDOW: TripWindow = {

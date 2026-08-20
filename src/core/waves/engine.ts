@@ -1,8 +1,8 @@
-import type { FlightOffer } from "../../domain/flight.js";
-import type { Traveller } from "../../domain/traveller.js";
-import type { ReunionAnchor } from "../../domain/reunion.js";
-import type { FlightOfferId, TravelUnitId, TravellerId, TripId } from "../../domain/ids.js";
-import { asTravelWaveId } from "../../domain/ids.js";
+import type { FlightOffer } from "../../domain/flight";
+import type { Traveller } from "../../domain/traveller";
+import type { ReunionAnchor } from "../../domain/reunion";
+import type { FlightOfferId, TravelUnitId, TravellerId, TripId } from "../../domain/ids";
+import { asTravelWaveId } from "../../domain/ids";
 import type {
   RankedPlan,
   SoftInconvenience,
@@ -11,17 +11,17 @@ import type {
   TravelWavePlan,
   WaveEvidenceState,
   WaveSearchDiagnostics,
-} from "../../domain/travelWave.js";
-import type { SoftConstraintOutcome, UnknownOutcome } from "../../domain/feasibility.js";
-import { localDateOf, parseInstant } from "../time/instant.js";
-import { AssessmentTable } from "./candidates.js";
-import { planCost, multiplyMoney } from "./cost.js";
-import { rankPlans } from "./ranking.js";
-import { buildTravelUnits, preferredTogetherPairs } from "./units.js";
-import type { RelationshipProblem } from "./units.js";
-import { deriveReunionAnchor } from "./reunion.js";
-import { planKeyOf, searchPlans } from "./search.js";
-import type { RawWave, SearchOptions } from "./search.js";
+} from "../../domain/travelWave";
+import type { SoftConstraintOutcome, UnknownOutcome } from "../../domain/feasibility";
+import { localDateOf, parseInstant } from "../time/instant";
+import { AssessmentTable } from "./candidates";
+import { planCost, multiplyMoney } from "./cost";
+import { rankPlans } from "./ranking";
+import { buildTravelUnits, preferredTogetherPairs } from "./units";
+import type { RelationshipProblem } from "./units";
+import { deriveReunionAnchor } from "./reunion";
+import { planKeyOf, searchPlans } from "./search";
+import type { RawWave, SearchOptions } from "./search";
 
 /**
  * The travel wave engine.

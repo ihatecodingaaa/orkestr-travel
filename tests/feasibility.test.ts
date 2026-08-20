@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { asIsoDate, asIsoDateTime, asMinutesOfDay } from "@/domain/index.js";
-import type { Constraint, ConstraintValue, Traveller } from "@/domain/index.js";
-import { evaluateTravellerAgainstOffer } from "@/core/feasibility/engine.js";
+import { asIsoDate, asIsoDateTime, asMinutesOfDay } from "@/domain/index";
+import type { Constraint, ConstraintValue, Traveller } from "@/domain/index";
+import { evaluateTravellerAgainstOffer } from "@/core/feasibility/engine";
 import {
   buildConstraint,
   buildOffer,
@@ -10,7 +10,7 @@ import {
   resetFixtureCounters,
   sgd,
   UNKNOWN_BAGGAGE,
-} from "@/fixtures/builders.js";
+} from "@/fixtures/builders";
 
 /**
  * Boundary-value tests for the deterministic feasibility engine.

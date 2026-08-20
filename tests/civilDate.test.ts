@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { asIsoDate } from "@/domain/index.js";
+import { asIsoDate } from "@/domain/index";
 import {
   addDays,
   compareIsoDate,
@@ -9,7 +9,7 @@ import {
   isValidIsoDate,
   parseIsoDate,
   toDayNumber,
-} from "@/core/time/civilDate.js";
+} from "@/core/time/civilDate";
 
 /**
  * Calendar arithmetic must be exact and time-zone free. These tests pin the

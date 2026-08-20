@@ -1,18 +1,18 @@
-import type { FlightOffer } from "../../domain/flight.js";
-import type { Traveller } from "../../domain/traveller.js";
-import type { TravelWavePlan } from "../../domain/travelWave.js";
-import type { TripEvent } from "../../domain/tripEvent.js";
-import type { AcceptedCompromise } from "../../domain/compromise.js";
-import type { TripWindow } from "../../domain/tripWindow.js";
-import type { PlanRepairResult, HardBlocker, RepairQuestion } from "../../domain/planRepair.js";
-import type { ConstraintId, TravellerId, TripId } from "../../domain/ids.js";
-import { enumerateCandidatePlans } from "../waves/engine.js";
-import { deriveReunionAnchor } from "../waves/reunion.js";
-import { buildDecisionInventory, decisionsPreserved, diffDecisions } from "../decisions/inventory.js";
-import { analyseImpact } from "./impact.js";
-import { proposeCompromises } from "../compromise/engine.js";
-import { withAcceptedCompromises } from "../compromise/exceptions.js";
-import { isActiveMembership } from "../membership/membership.js";
+import type { FlightOffer } from "../../domain/flight";
+import type { Traveller } from "../../domain/traveller";
+import type { TravelWavePlan } from "../../domain/travelWave";
+import type { TripEvent } from "../../domain/tripEvent";
+import type { AcceptedCompromise } from "../../domain/compromise";
+import type { TripWindow } from "../../domain/tripWindow";
+import type { PlanRepairResult, HardBlocker, RepairQuestion } from "../../domain/planRepair";
+import type { ConstraintId, TravellerId, TripId } from "../../domain/ids";
+import { enumerateCandidatePlans } from "../waves/engine";
+import { deriveReunionAnchor } from "../waves/reunion";
+import { buildDecisionInventory, decisionsPreserved, diffDecisions } from "../decisions/inventory";
+import { analyseImpact } from "./impact";
+import { proposeCompromises } from "../compromise/engine";
+import { withAcceptedCompromises } from "../compromise/exceptions";
+import { isActiveMembership } from "../membership/membership";
 
 /**
  * Plan repair.

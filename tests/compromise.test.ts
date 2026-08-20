@@ -1,22 +1,22 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { asConstraintId, asTravellerId, asTripId } from "@/domain/index.js";
-import type { AcceptedCompromise, Traveller } from "@/domain/index.js";
-import { planTravelWaves } from "@/core/waves/engine.js";
-import { proposeCompromises, fingerprintRelaxations } from "@/core/compromise/engine.js";
-import { buildCompromiseFrontier } from "@/core/compromise/frontier.js";
+import { asConstraintId, asTravellerId, asTripId } from "@/domain/index";
+import type { AcceptedCompromise, Traveller } from "@/domain/index";
+import { planTravelWaves } from "@/core/waves/engine";
+import { proposeCompromises, fingerprintRelaxations } from "@/core/compromise/engine";
+import { buildCompromiseFrontier } from "@/core/compromise/frontier";
 import {
   acceptCompromise,
   originalConstraintOf,
   withAcceptedCompromises,
-} from "@/core/compromise/exceptions.js";
-import { buildConstraint, buildOffer, buildTraveller, resetFixtureCounters, sgd, UNKNOWN_BAGGAGE } from "@/fixtures/builders.js";
-import { familyEleven, familyOffers } from "@/fixtures/waveScenarios.js";
+} from "@/core/compromise/exceptions";
+import { buildConstraint, buildOffer, buildTraveller, resetFixtureCounters, sgd, UNKNOWN_BAGGAGE } from "@/fixtures/builders";
+import { familyEleven, familyOffers } from "@/fixtures/waveScenarios";
 import {
   frontierRegressionGroup,
   frontierRegressionOffers,
   heroGroupSix,
   heroOffers,
-} from "@/fixtures/repairScenarios.js";
+} from "@/fixtures/repairScenarios";
 
 const TRIP = asTripId("TRIP-001");
 

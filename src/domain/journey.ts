@@ -8,13 +8,13 @@ import type {
   TravelWaveId,
   TravellerId,
   TripId,
-} from "./ids.js";
-import type { IsoDate, IsoDateTime } from "./time.js";
-import type { Money } from "./money.js";
-import type { JourneyLeg } from "./journeyLeg.js";
-import type { ReunionAnchor } from "./reunion.js";
-import type { UnknownOutcome } from "./feasibility.js";
-import type { TripPace } from "./trip.js";
+} from "./ids";
+import type { IsoDate, IsoDateTime } from "./time";
+import type { Money } from "./money";
+import type { JourneyLeg } from "./journeyLeg";
+import type { ReunionAnchor } from "./reunion";
+import type { UnknownOutcome } from "./feasibility";
+import type { TripPace } from "./trip";
 
 /**
  * The journey and its package.

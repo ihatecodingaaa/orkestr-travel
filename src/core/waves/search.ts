@@ -1,6 +1,6 @@
-import type { FlightOfferId, TravelUnitId } from "../../domain/ids.js";
-import type { TravelUnit } from "../../domain/travelWave.js";
-import type { AssessmentTable } from "./candidates.js";
+import type { FlightOfferId, TravelUnitId } from "../../domain/ids";
+import type { TravelUnit } from "../../domain/travelWave";
+import type { AssessmentTable } from "./candidates";
 
 /**
  * Deterministic plan search.

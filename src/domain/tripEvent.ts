@@ -8,9 +8,9 @@ import type {
   TravellerId,
   TripEventId,
   TripId,
-} from "./ids.js";
-import type { IsoDateTime } from "./time.js";
-import type { Money } from "./money.js";
+} from "./ids";
+import type { IsoDateTime } from "./time";
+import type { Money } from "./money";
 
 /**
  * Everything that can change a plan, recorded explicitly.

@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { asIsoDateTime, asMinutesOfDay, asTravellerId } from "@/domain/index.js";
-import { evaluateOffer, evaluateOffers, worstVerdict } from "@/core/feasibility/engine.js";
+import { asIsoDateTime, asMinutesOfDay, asTravellerId } from "@/domain/index";
+import { evaluateOffer, evaluateOffers, worstVerdict } from "@/core/feasibility/engine";
 import {
   buildConstraint,
   buildOffer,
@@ -8,8 +8,8 @@ import {
   resetFixtureCounters,
   sgd,
   UNKNOWN_BAGGAGE,
-} from "@/fixtures/builders.js";
-import { anonymousGroup, familySevenExpectedSixJoined, mixedFour, simplePair } from "@/fixtures/groups.js";
+} from "@/fixtures/builders";
+import { anonymousGroup, familySevenExpectedSixJoined, mixedFour, simplePair } from "@/fixtures/groups";
 
 beforeEach(() => {
   resetFixtureCounters();

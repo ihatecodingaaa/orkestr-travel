@@ -1,7 +1,7 @@
-import type { ConstraintId, TravellerId } from "./ids.js";
-import type { DateRange, IsoDateTime, MinutesOfDay } from "./time.js";
-import type { Money } from "./money.js";
-import type { AssistanceNeedType } from "./assistance.js";
+import type { ConstraintId, TravellerId } from "./ids";
+import type { DateRange, IsoDateTime, MinutesOfDay } from "./time";
+import type { Money } from "./money";
+import type { AssistanceNeedType } from "./assistance";
 
 /**
  * The constraint model.

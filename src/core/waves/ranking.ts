@@ -1,5 +1,5 @@
-import type { RankingCriterion, TravelWavePlan } from "../../domain/travelWave.js";
-import { compareMoney } from "../money/money.js";
+import type { RankingCriterion, TravelWavePlan } from "../../domain/travelWave";
+import { compareMoney } from "../money/money";
 
 /**
  * The lexicographic decision hierarchy.

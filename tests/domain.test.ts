@@ -11,14 +11,14 @@ import {
   asTravelWaveId,
   asTravellerId,
   asTripId,
-} from "@/domain/index.js";
+} from "@/domain/index";
 import type {
   Constraint,
   Money,
   Traveller,
   TravelWave,
   TripWindow,
-} from "@/domain/index.js";
+} from "@/domain/index";
 
 const NOW = asIsoDateTime("2026-08-01T09:00:00+08:00");
 

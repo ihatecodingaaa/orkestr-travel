@@ -1,7 +1,7 @@
-import type { Trip } from "../../domain/trip.js";
-import type { Traveller } from "../../domain/traveller.js";
-import type { TripWindow } from "../../domain/tripWindow.js";
-import { isActiveMembership } from "../membership/membership.js";
+import type { Trip } from "../../domain/trip";
+import type { Traveller } from "../../domain/traveller";
+import type { TripWindow } from "../../domain/tripWindow";
+import { isActiveMembership } from "../membership/membership";
 
 /**
  * Derived views over a Trip.

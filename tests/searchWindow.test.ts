@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
-import { asIsoDate } from "@/domain/index.js";
-import type { TripWindow } from "@/domain/index.js";
-import { generateSearchWindows, DEFAULT_MAX_CANDIDATES } from "@/core/trip/searchWindow.js";
+import { asIsoDate } from "@/domain/index";
+import type { TripWindow } from "@/domain/index";
+import { generateSearchWindows, DEFAULT_MAX_CANDIDATES } from "@/core/trip/searchWindow";
 
 const d = asIsoDate;
 

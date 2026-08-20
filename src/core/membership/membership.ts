@@ -1,4 +1,4 @@
-import type { MembershipState } from "../../domain/traveller.js";
+import type { MembershipState } from "../../domain/traveller";
 
 /**
  * The membership state machine.

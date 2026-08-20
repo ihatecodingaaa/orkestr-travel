@@ -3,9 +3,9 @@ import type {
   FlightOfferId,
   TravelWaveId,
   TravellerId,
-} from "./ids.js";
-import type { DecisionKey } from "./decision.js";
-import type { TripEvent } from "./tripEvent.js";
+} from "./ids";
+import type { DecisionKey } from "./decision";
+import type { TripEvent } from "./tripEvent";
 
 /**
  * How far a change reaches.

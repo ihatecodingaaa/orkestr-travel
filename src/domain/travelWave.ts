@@ -4,15 +4,15 @@ import type {
   TravelWaveId,
   TravellerId,
   TripId,
-} from "./ids.js";
-import type { IsoDate, IsoDateTime } from "./time.js";
-import type { Money } from "./money.js";
-import type { Traveller } from "./traveller.js";
+} from "./ids";
+import type { IsoDate, IsoDateTime } from "./time";
+import type { Money } from "./money";
+import type { Traveller } from "./traveller";
 import type {
   ConstraintOutcome,
   SoftConstraintOutcome,
   UnknownOutcome,
-} from "./feasibility.js";
+} from "./feasibility";
 
 /**
  * Travel waves.

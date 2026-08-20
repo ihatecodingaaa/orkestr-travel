@@ -1,5 +1,5 @@
-import type { ReunionAnchorId, TravelWaveId, TripId, TravellerId } from "./ids.js";
-import type { IsoDateTime } from "./time.js";
+import type { ReunionAnchorId, TravelWaveId, TripId, TravellerId } from "./ids";
+import type { IsoDateTime } from "./time";
 
 /**
  * The moment a split group can first be whole.

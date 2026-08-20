@@ -1,8 +1,8 @@
-import type { Journey } from "../../domain/journey.js";
-import type { JourneyPackage } from "../../domain/journey.js";
-import type { EvidenceId } from "../../domain/ids.js";
-import type { IsoDateTime } from "../../domain/time.js";
-import { compareInstants } from "../time/instant.js";
+import type { Journey } from "../../domain/journey";
+import type { JourneyPackage } from "../../domain/journey";
+import type { EvidenceId } from "../../domain/ids";
+import type { IsoDateTime } from "../../domain/time";
+import { compareInstants } from "../time/instant";
 
 /**
  * Journey package validation.

@@ -1,10 +1,10 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { asIsoDate, asTravellerId, asTripId } from "@/domain/index.js";
-import type { Traveller } from "@/domain/index.js";
-import type { FlightOffer } from "@/domain/index.js";
-import { planTravelWaves } from "@/core/waves/engine.js";
-import { compareInstants } from "@/core/time/instant.js";
-import { buildConstraint, buildOffer, buildTraveller, resetFixtureCounters, sgd, UNKNOWN_BAGGAGE } from "@/fixtures/builders.js";
+import { asIsoDate, asTravellerId, asTripId } from "@/domain/index";
+import type { Traveller } from "@/domain/index";
+import type { FlightOffer } from "@/domain/index";
+import { planTravelWaves } from "@/core/waves/engine";
+import { compareInstants } from "@/core/time/instant";
+import { buildConstraint, buildOffer, buildTraveller, resetFixtureCounters, sgd, UNKNOWN_BAGGAGE } from "@/fixtures/builders";
 import {
   familyEleven,
   familyOffers,
@@ -13,7 +13,7 @@ import {
   offersInTwoCurrencies,
   pairAnyDay,
   transitiveTrio,
-} from "@/fixtures/waveScenarios.js";
+} from "@/fixtures/waveScenarios";
 
 const TRIP = asTripId("TRIP-001");
 

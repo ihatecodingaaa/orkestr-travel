@@ -1,4 +1,4 @@
-import type { IsoDate, DateRange } from "./time.js";
+import type { IsoDate, DateRange } from "./time";
 
 /**
  * When the trip may happen.

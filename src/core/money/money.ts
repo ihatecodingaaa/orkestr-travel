@@ -1,4 +1,4 @@
-import type { Money } from "../../domain/money.js";
+import type { Money } from "../../domain/money";
 
 /**
  * Exact money comparison.

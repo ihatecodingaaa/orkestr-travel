@@ -1,10 +1,10 @@
-import type { IsoDate } from "../../domain/time.js";
-import type { SearchWindowCandidate, TripWindow } from "../../domain/tripWindow.js";
+import type { IsoDate } from "../../domain/time";
+import type { SearchWindowCandidate, TripWindow } from "../../domain/tripWindow";
 import {
   isoDateToDayNumber,
   formatCivilDate,
   fromDayNumber,
-} from "../time/civilDate.js";
+} from "../time/civilDate";
 
 /**
  * SearchWindowGenerator.

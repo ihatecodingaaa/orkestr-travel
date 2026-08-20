@@ -1,13 +1,13 @@
-import type { TravelWavePlan } from "../../domain/travelWave.js";
-import type { TripWindow } from "../../domain/tripWindow.js";
-import type { ReunionAnchor } from "../../domain/reunion.js";
-import type { AcceptedCompromise } from "../../domain/compromise.js";
+import type { TravelWavePlan } from "../../domain/travelWave";
+import type { TripWindow } from "../../domain/tripWindow";
+import type { ReunionAnchor } from "../../domain/reunion";
+import type { AcceptedCompromise } from "../../domain/compromise";
 import type {
   DecisionDiff,
   DecisionRecord,
   DecisionsPreserved,
-} from "../../domain/decision.js";
-import { asDecisionKey } from "../../domain/decision.js";
+} from "../../domain/decision";
+import { asDecisionKey } from "../../domain/decision";
 
 /**
  * Building and comparing decision inventories.

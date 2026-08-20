@@ -1,8 +1,8 @@
 import { describe, it, expect } from "vitest";
-import { asCurrencyCode } from "@/domain/index.js";
-import type { Money } from "@/domain/index.js";
-import { amountOverLimit, compareMoney, formatMoney } from "@/core/money/money.js";
-import { jpy, sgd } from "@/fixtures/builders.js";
+import { asCurrencyCode } from "@/domain/index";
+import type { Money } from "@/domain/index";
+import { amountOverLimit, compareMoney, formatMoney } from "@/core/money/money";
+import { jpy, sgd } from "@/fixtures/builders";
 
 describe("money precision and comparison", () => {
   it("compares exactly at the boundary", () => {

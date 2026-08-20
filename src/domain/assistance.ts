@@ -1,6 +1,6 @@
-import type { AssistanceNeedId, TravellerId } from "./ids.js";
-import type { IsoDateTime } from "./time.js";
-import type { ConstraintVisibility } from "./constraint.js";
+import type { AssistanceNeedId, TravellerId } from "./ids";
+import type { IsoDateTime } from "./time";
+import type { ConstraintVisibility } from "./constraint";
 
 /**
  * Assistance and accessibility needs.

@@ -1,12 +1,12 @@
-import type { FlightOffer } from "../../domain/flight.js";
-import type { Traveller } from "../../domain/traveller.js";
-import type { Constraint } from "../../domain/constraint.js";
-import type { TravelWavePlan, TravelUnit } from "../../domain/travelWave.js";
-import type { UnknownOutcome, SoftConstraintOutcome } from "../../domain/feasibility.js";
-import type { TravellerId } from "../../domain/ids.js";
-import { enumerateCandidatePlans } from "../waves/engine.js";
-import type { WavePlanningOptions } from "../waves/engine.js";
-import { preferredTogetherPairs } from "../waves/units.js";
+import type { FlightOffer } from "../../domain/flight";
+import type { Traveller } from "../../domain/traveller";
+import type { Constraint } from "../../domain/constraint";
+import type { TravelWavePlan, TravelUnit } from "../../domain/travelWave";
+import type { UnknownOutcome, SoftConstraintOutcome } from "../../domain/feasibility";
+import type { TravellerId } from "../../domain/ids";
+import { enumerateCandidatePlans } from "../waves/engine";
+import type { WavePlanningOptions } from "../waves/engine";
+import { preferredTogetherPairs } from "../waves/units";
 
 /**
  * The compromise frontier.

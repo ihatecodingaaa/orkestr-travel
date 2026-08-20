@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { asTravelUnitId, asTravellerId } from "@/domain/index.js";
-import { buildConstraint, buildTraveller, resetFixtureCounters, sgd } from "@/fixtures/builders.js";
-import { buildTravelUnits, preferredTogetherPairs } from "@/core/waves/units.js";
-import { transitiveTrio, familySeven } from "@/fixtures/waveScenarios.js";
+import { asTravelUnitId, asTravellerId } from "@/domain/index";
+import { buildConstraint, buildTraveller, resetFixtureCounters, sgd } from "@/fixtures/builders";
+import { buildTravelUnits, preferredTogetherPairs } from "@/core/waves/units";
+import { transitiveTrio, familySeven } from "@/fixtures/waveScenarios";
 
 beforeEach(() => {
   resetFixtureCounters();

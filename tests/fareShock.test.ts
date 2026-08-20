@@ -1,11 +1,11 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { asTravellerId, asTripId } from "@/domain/index.js";
-import type { FlightOffer, Traveller } from "@/domain/index.js";
-import { MockFlightProvider, verificationPlan } from "@/core/providers/mockFlightProvider.js";
-import { evaluateOffer } from "@/core/feasibility/engine.js";
-import { repairPlan } from "@/core/repair/repair.js";
-import { planTravelWaves } from "@/core/waves/engine.js";
-import { buildConstraint, buildOffer, buildTraveller, resetFixtureCounters, sgd } from "@/fixtures/builders.js";
+import { asTravellerId, asTripId } from "@/domain/index";
+import type { FlightOffer, Traveller } from "@/domain/index";
+import { MockFlightProvider, verificationPlan } from "@/core/providers/mockFlightProvider";
+import { evaluateOffer } from "@/core/feasibility/engine";
+import { repairPlan } from "@/core/repair/repair";
+import { planTravelWaves } from "@/core/waves/engine";
+import { buildConstraint, buildOffer, buildTraveller, resetFixtureCounters, sgd } from "@/fixtures/builders";
 
 const TRIP = asTripId("TRIP-001");
 

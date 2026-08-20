@@ -1,5 +1,5 @@
-import type { ConstraintId, FlightOfferId, TravellerId } from "./ids.js";
-import type { IsoDateTime } from "./time.js";
+import type { ConstraintId, FlightOfferId, TravellerId } from "./ids";
+import type { IsoDateTime } from "./time";
 
 /**
  * The output of the deterministic feasibility engine.

@@ -1,11 +1,11 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { asTravellerId } from "@/domain/index.js";
-import type { Journey, JourneyLeg, Traveller } from "@/domain/index.js";
-import { planLegs } from "@/core/journey/legPlanner.js";
-import { validateJourney } from "@/core/journey/validate.js";
-import type { buildOffer } from "@/fixtures/builders.js";
-import { resetFixtureCounters } from "@/fixtures/builders.js";
-import * as F from "@/fixtures/journeyScenarios.js";
+import { asTravellerId } from "@/domain/index";
+import type { Journey, JourneyLeg, Traveller } from "@/domain/index";
+import { planLegs } from "@/core/journey/legPlanner";
+import { validateJourney } from "@/core/journey/validate";
+import type { buildOffer } from "@/fixtures/builders";
+import { resetFixtureCounters } from "@/fixtures/builders";
+import * as F from "@/fixtures/journeyScenarios";
 
 beforeEach(() => {
   resetFixtureCounters();

@@ -10,25 +10,25 @@
  * type-level casts that compile away to nothing.
  */
 
-export type { Brand } from "./brand.js";
+export type { Brand } from "./brand";
 
-export * from "./ids.js";
-export * from "./time.js";
-export * from "./money.js";
+export * from "./ids";
+export * from "./time";
+export * from "./money";
 
 export type {
   AssistanceNeed,
   AssistanceNeedType,
   AssistanceOperationalStatus,
-} from "./assistance.js";
-export type { TravelRelationships } from "./relationships.js";
+} from "./assistance";
+export type { TravelRelationships } from "./relationships";
 export type {
   AgeBand,
   DeparturePoint,
   MembershipState,
   PacePreference,
   Traveller,
-} from "./traveller.js";
+} from "./traveller";
 
 export type {
   Constraint,
@@ -42,16 +42,16 @@ export type {
   DeferredConstraintKind,
   EvaluableConstraintKind,
   NarrativeConstraintKind,
-} from "./constraint.js";
+} from "./constraint";
 
-export type { SearchWindowCandidate, TripWindow } from "./tripWindow.js";
-export type { DestinationOption, Trip, TripPace, TripStatus } from "./trip.js";
+export type { SearchWindowCandidate, TripWindow } from "./tripWindow";
+export type { DestinationOption, Trip, TripPace, TripStatus } from "./trip";
 export type {
   ReunionAnchor,
   ReunionLocationState,
   ReunionPurpose,
   ReunionStatus,
-} from "./reunion.js";
+} from "./reunion";
 export type {
   PlanCost,
   RankedPlan,
@@ -64,7 +64,7 @@ export type {
   WaveCandidate,
   WaveEvidenceState,
   WaveSearchDiagnostics,
-} from "./travelWave.js";
+} from "./travelWave";
 
 export type {
   BaggageAllowance,
@@ -77,7 +77,7 @@ export type {
   ProviderCapabilityState,
   SeatInformation,
   VerifyOfferResult,
-} from "./flight.js";
+} from "./flight";
 
 export type {
   ConstraintOutcome,
@@ -89,7 +89,7 @@ export type {
   TravellerVerdict,
   UnknownOutcome,
   UnknownReason,
-} from "./feasibility.js";
+} from "./feasibility";
 
 export type {
   AcceptedCompromise,
@@ -102,7 +102,7 @@ export type {
   ConstraintRelaxation,
   NoCompromiseReason,
   RelaxationKind,
-} from "./compromise.js";
+} from "./compromise";
 
 export type {
   DecisionDiff,
@@ -111,36 +111,36 @@ export type {
   DecisionRecord,
   DecisionSource,
   DecisionsPreserved,
-} from "./decision.js";
-export { asDecisionKey } from "./decision.js";
+} from "./decision";
+export { asDecisionKey } from "./decision";
 export type {
   CommitmentState,
   GroupCommitment,
   TravellerCommitment,
   TravellerCommitmentState,
-} from "./commitment.js";
+} from "./commitment";
 
-export type { TripEvent, TripEventRecord } from "./tripEvent.js";
+export type { TripEvent, TripEventRecord } from "./tripEvent";
 export type {
   ImpactAnalysis,
   ImpactRadius,
   ImpactReasonCode,
   ReverificationRequirement,
-} from "./impact.js";
+} from "./impact";
 export type {
   HardBlocker,
   PlanRepairResult,
   PlanRepairStatus,
   RepairQuestion,
-} from "./planRepair.js";
+} from "./planRepair";
 
 export type {
   CommunityEvidenceSummary,
   EvidenceFreshness,
   EvidenceSourceType,
   ResearchEvidence,
-} from "./evidence.js";
-export type { InferredInterest, ResearchProvider, ResearchQuery } from "./research.js";
+} from "./evidence";
+export type { InferredInterest, ResearchProvider, ResearchQuery } from "./research";
 
 export type {
   DecisionNeeded,
@@ -155,6 +155,6 @@ export type {
   JourneyItemType,
   JourneyPackage,
   JourneyPackageStatus,
-} from "./journey.js";
+} from "./journey";
 
-export type { JourneyLeg, LegDirection, LegStatus } from "./journeyLeg.js";
+export type { JourneyLeg, LegDirection, LegStatus } from "./journeyLeg";

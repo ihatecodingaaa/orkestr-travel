@@ -1,4 +1,4 @@
-import type { TravellerId } from "./ids.js";
+import type { TravellerId } from "./ids";
 
 /**
  * Who must, or would prefer to, travel together.

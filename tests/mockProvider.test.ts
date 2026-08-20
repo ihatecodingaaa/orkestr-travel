@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { asFlightOfferId, asIsoDate, asIsoDateTime } from "@/domain/index.js";
-import { MockFlightProvider, verificationPlan } from "@/core/providers/mockFlightProvider.js";
-import { buildOffer, resetFixtureCounters, sgd, jpy } from "@/fixtures/builders.js";
-import { outboundOffers } from "@/fixtures/journeyScenarios.js";
+import { asFlightOfferId, asIsoDate, asIsoDateTime } from "@/domain/index";
+import { MockFlightProvider, verificationPlan } from "@/core/providers/mockFlightProvider";
+import { buildOffer, resetFixtureCounters, sgd, jpy } from "@/fixtures/builders";
+import { outboundOffers } from "@/fixtures/journeyScenarios";
 
 beforeEach(() => {
   resetFixtureCounters();

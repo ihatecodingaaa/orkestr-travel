@@ -1,17 +1,17 @@
-import type { FlightOffer } from "../../domain/flight.js";
-import type { Traveller } from "../../domain/traveller.js";
-import type { TravelWavePlan } from "../../domain/travelWave.js";
-import type { UnknownOutcome } from "../../domain/feasibility.js";
+import type { FlightOffer } from "../../domain/flight";
+import type { Traveller } from "../../domain/traveller";
+import type { TravelWavePlan } from "../../domain/travelWave";
+import type { UnknownOutcome } from "../../domain/feasibility";
 import type {
   CompromiseProposal,
   ConstraintRelaxation,
   NoCompromiseReason,
-} from "../../domain/compromise.js";
-import { asCompromiseId } from "../../domain/ids.js";
-import type { WavePlanningOptions } from "../waves/engine.js";
-import { buildCompromiseFrontier } from "./frontier.js";
-import type { FrontierCandidate } from "./frontier.js";
-import { relaxationFor, separationRelaxation } from "./relaxation.js";
+} from "../../domain/compromise";
+import { asCompromiseId } from "../../domain/ids";
+import type { WavePlanningOptions } from "../waves/engine";
+import { buildCompromiseFrontier } from "./frontier";
+import type { FrontierCandidate } from "./frontier";
+import { relaxationFor, separationRelaxation } from "./relaxation";
 
 /**
  * The compromise engine.

@@ -1,13 +1,13 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { asEvidenceId, asJourneyItemId, asTravellerId } from "@/domain/index.js";
-import type { Journey, JourneyPackage, Traveller } from "@/domain/index.js";
-import { planLegs } from "@/core/journey/legPlanner.js";
-import { composeJourneyPackage, resetComposerCounters } from "@/core/journey/composer.js";
-import { validateJourneyPackage } from "@/core/journey/validate.js";
-import { LOCAL_FIXTURE_ASSUMPTIONS } from "@/core/journey/assumptions.js";
-import { resetFixtureCounters } from "@/fixtures/builders.js";
-import * as F from "@/fixtures/journeyScenarios.js";
-import { compareInstants } from "@/core/time/instant.js";
+import { asEvidenceId, asJourneyItemId, asTravellerId } from "@/domain/index";
+import type { Journey, JourneyPackage, Traveller } from "@/domain/index";
+import { planLegs } from "@/core/journey/legPlanner";
+import { composeJourneyPackage, resetComposerCounters } from "@/core/journey/composer";
+import { validateJourneyPackage } from "@/core/journey/validate";
+import { LOCAL_FIXTURE_ASSUMPTIONS } from "@/core/journey/assumptions";
+import { resetFixtureCounters } from "@/fixtures/builders";
+import * as F from "@/fixtures/journeyScenarios";
+import { compareInstants } from "@/core/time/instant";
 
 beforeEach(() => {
   resetFixtureCounters();

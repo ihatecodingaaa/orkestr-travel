@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { asIsoDate, asIsoDateTime, asTimeZoneId, asTripId, asTravellerId } from "@/domain/index.js";
-import type { Trip, TripWindow, Traveller } from "@/domain/index.js";
+import { asIsoDate, asIsoDateTime, asTimeZoneId, asTripId, asTravellerId } from "@/domain/index";
+import type { Trip, TripWindow, Traveller } from "@/domain/index";
 import {
   acceptableNights,
   activeTravellers,
@@ -11,9 +11,9 @@ import {
   pendingInviteCount,
   validateTraveller,
   validateTrip,
-} from "@/core/trip/trip.js";
-import { buildConstraint, buildTraveller, sgd } from "@/fixtures/builders.js";
-import { anonymousGroup, familySevenExpectedSixJoined } from "@/fixtures/groups.js";
+} from "@/core/trip/trip";
+import { buildConstraint, buildTraveller, sgd } from "@/fixtures/builders";
+import { anonymousGroup, familySevenExpectedSixJoined } from "@/fixtures/groups";
 
 const NOW = asIsoDateTime("2026-08-01T09:00:00+08:00");
 

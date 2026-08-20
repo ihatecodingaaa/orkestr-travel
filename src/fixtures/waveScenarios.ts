@@ -1,6 +1,6 @@
-import type { FlightOffer } from "../domain/flight.js";
-import type { Traveller } from "../domain/traveller.js";
-import { asIsoDate, asMinutesOfDay } from "../domain/index.js";
+import type { FlightOffer } from "../domain/flight";
+import type { Traveller } from "../domain/traveller";
+import { asIsoDate, asMinutesOfDay } from "../domain/index";
 import {
   buildConstraint,
   buildOffer,
@@ -8,7 +8,7 @@ import {
   jpy,
   sgd,
   UNKNOWN_BAGGAGE,
-} from "./builders.js";
+} from "./builders";
 
 /**
  * Wave-planning scenarios.

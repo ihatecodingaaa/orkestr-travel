@@ -1,10 +1,10 @@
-import type { FlightOffer } from "../../domain/flight.js";
-import type { Traveller } from "../../domain/traveller.js";
-import type { JourneyLeg } from "../../domain/journeyLeg.js";
-import type { TripId } from "../../domain/ids.js";
-import type { RelationshipProblem } from "../waves/units.js";
-import { planTravelWaves } from "../waves/engine.js";
-import { deriveReunionAnchor } from "../waves/reunion.js";
+import type { FlightOffer } from "../../domain/flight";
+import type { Traveller } from "../../domain/traveller";
+import type { JourneyLeg } from "../../domain/journeyLeg";
+import type { TripId } from "../../domain/ids";
+import type { RelationshipProblem } from "../waves/units";
+import { planTravelWaves } from "../waves/engine";
+import { deriveReunionAnchor } from "../waves/reunion";
 
 /**
  * Planning one journey leg.

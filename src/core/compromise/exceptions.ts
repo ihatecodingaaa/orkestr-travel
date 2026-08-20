@@ -1,15 +1,15 @@
-import type { Traveller } from "../../domain/traveller.js";
-import type { Constraint, ConstraintValue } from "../../domain/constraint.js";
+import type { Traveller } from "../../domain/traveller";
+import type { Constraint, ConstraintValue } from "../../domain/constraint";
 import type {
   AcceptedCompromise,
   CompromiseApprovalProblem,
   CompromiseApprovalResult,
   CompromiseProposal,
   CompromiseScope,
-} from "../../domain/compromise.js";
-import type { TravellerId } from "../../domain/ids.js";
-import type { IsoDateTime } from "../../domain/time.js";
-import { asMinutesOfDay } from "../../domain/time.js";
+} from "../../domain/compromise";
+import type { TravellerId } from "../../domain/ids";
+import type { IsoDateTime } from "../../domain/time";
+import { asMinutesOfDay } from "../../domain/time";
 
 /**
  * Accepting compromises, and applying them as trip-scoped exceptions.

@@ -1,7 +1,7 @@
-import type { JourneyId, JourneyLegId, TravellerId } from "./ids.js";
-import type { TripWindow } from "./tripWindow.js";
-import type { TravelWavePlan } from "./travelWave.js";
-import type { ReunionAnchor } from "./reunion.js";
+import type { JourneyId, JourneyLegId, TravellerId } from "./ids";
+import type { TripWindow } from "./tripWindow";
+import type { TravelWavePlan } from "./travelWave";
+import type { ReunionAnchor } from "./reunion";
 
 /**
  * A journey leg: one movement from one place to another.

@@ -1,13 +1,13 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
-import { asTravellerId, asTripId } from "@/domain/index.js";
-import { planTravelWaves } from "@/core/waves/engine.js";
-import { repairPlan } from "@/core/repair/repair.js";
-import { proposeCompromises } from "@/core/compromise/engine.js";
-import { resetFixtureCounters } from "@/fixtures/builders.js";
-import { familyOffers, familySeven } from "@/fixtures/waveScenarios.js";
-import { heroGroupSix, heroGroupSeven, heroOffers } from "@/fixtures/repairScenarios.js";
+import { asTravellerId, asTripId } from "@/domain/index";
+import { planTravelWaves } from "@/core/waves/engine";
+import { repairPlan } from "@/core/repair/repair";
+import { proposeCompromises } from "@/core/compromise/engine";
+import { resetFixtureCounters } from "@/fixtures/builders";
+import { familyOffers, familySeven } from "@/fixtures/waveScenarios";
+import { heroGroupSix, heroGroupSeven, heroOffers } from "@/fixtures/repairScenarios";
 
 const TRIP = asTripId("TRIP-001");
 

@@ -6,8 +6,8 @@ import type {
   TravelWaveId,
   TravellerId,
   TripId,
-} from "./ids.js";
-import type { IsoDateTime } from "./time.js";
+} from "./ids";
+import type { IsoDateTime } from "./time";
 
 /**
  * The group's agreed journey, and the evidence for why it is acceptable.

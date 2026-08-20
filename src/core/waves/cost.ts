@@ -1,6 +1,6 @@
-import type { Money } from "../../domain/money.js";
-import type { PlanCost } from "../../domain/travelWave.js";
-import { formatMoney } from "../money/money.js";
+import type { Money } from "../../domain/money";
+import type { PlanCost } from "../../domain/travelWave";
+import { formatMoney } from "../money/money";
 
 /**
  * Exact wave and plan costs.

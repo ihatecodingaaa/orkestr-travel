@@ -1,6 +1,6 @@
-import type { FlightOfferId } from "./ids.js";
-import type { DurationMinutes, IsoDate, IsoDateTime } from "./time.js";
-import type { Money } from "./money.js";
+import type { FlightOfferId } from "./ids";
+import type { DurationMinutes, IsoDate, IsoDateTime } from "./time";
+import type { Money } from "./money";
 
 /**
  * Flights, and the provider boundary.

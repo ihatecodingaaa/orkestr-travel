@@ -1,17 +1,17 @@
-import type { ConstraintValue } from "../../domain/constraint.js";
-import type { FlightOffer } from "../../domain/flight.js";
-import type { MagnitudeUnit, UnknownReason } from "../../domain/feasibility.js";
-import type { MinutesOfDay } from "../../domain/time.js";
-import { asMinutesOfDay } from "../../domain/time.js";
-import { compareMoney, formatMoney } from "../money/money.js";
+import type { ConstraintValue } from "../../domain/constraint";
+import type { FlightOffer } from "../../domain/flight";
+import type { MagnitudeUnit, UnknownReason } from "../../domain/feasibility";
+import type { MinutesOfDay } from "../../domain/time";
+import { asMinutesOfDay } from "../../domain/time";
+import { compareMoney, formatMoney } from "../money/money";
 import {
   compareInstants,
   formatMinutesOfDay,
   localDateOf,
   localMinutesOf,
   minutesBetween,
-} from "../time/instant.js";
-import { isDateWithin, isoDateToDayNumber } from "../time/civilDate.js";
+} from "../time/instant";
+import { isDateWithin, isoDateToDayNumber } from "../time/civilDate";
 
 /**
  * One comparison, one answer.

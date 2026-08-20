@@ -1,4 +1,4 @@
-import type { Constraint } from "../../domain/constraint.js";
+import type { Constraint } from "../../domain/constraint";
 
 /**
  * How much weight a constraint currently carries.

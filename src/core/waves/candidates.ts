@@ -1,11 +1,11 @@
-import type { FlightOffer } from "../../domain/flight.js";
+import type { FlightOffer } from "../../domain/flight";
 import type {
   TravelUnit,
   UnitOfferAssessment,
   WaveEvidenceState,
-} from "../../domain/travelWave.js";
-import type { FlightOfferId, TravelUnitId } from "../../domain/ids.js";
-import { evaluateOffer } from "../feasibility/engine.js";
+} from "../../domain/travelWave";
+import type { FlightOfferId, TravelUnitId } from "../../domain/ids";
+import { evaluateOffer } from "../feasibility/engine";
 
 /**
  * Assessing travel units against flight offers.

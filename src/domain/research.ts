@@ -1,4 +1,4 @@
-import type { ResearchEvidence, CommunityEvidenceSummary } from "./evidence.js";
+import type { ResearchEvidence, CommunityEvidenceSummary } from "./evidence";
 
 /**
  * The research boundary (Phase 6).

@@ -1,11 +1,11 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { asConstraintId, asTravellerId, asTripId } from "@/domain/index.js";
-import type { TravelWavePlan } from "@/domain/index.js";
-import { planTravelWaves } from "@/core/waves/engine.js";
-import { analyseImpact } from "@/core/repair/impact.js";
-import { buildDecisionInventory, diffDecisions } from "@/core/decisions/inventory.js";
-import { resetFixtureCounters } from "@/fixtures/builders.js";
-import { heroGroupSix, heroGroupSeven, heroOffers } from "@/fixtures/repairScenarios.js";
+import { asConstraintId, asTravellerId, asTripId } from "@/domain/index";
+import type { TravelWavePlan } from "@/domain/index";
+import { planTravelWaves } from "@/core/waves/engine";
+import { analyseImpact } from "@/core/repair/impact";
+import { buildDecisionInventory, diffDecisions } from "@/core/decisions/inventory";
+import { resetFixtureCounters } from "@/fixtures/builders";
+import { heroGroupSix, heroGroupSeven, heroOffers } from "@/fixtures/repairScenarios";
 
 const TRIP = asTripId("TRIP-001");
 const JOINED = { type: "TRAVELLER_JOINED" as const, travellerId: asTravellerId("T-007") };

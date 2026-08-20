@@ -1,7 +1,7 @@
-import type { FlightOffer } from "../domain/flight.js";
-import type { Traveller } from "../domain/traveller.js";
-import { asIsoDate, asMinutesOfDay } from "../domain/index.js";
-import { buildConstraint, buildOffer, buildTraveller, sgd } from "./builders.js";
+import type { FlightOffer } from "../domain/flight";
+import type { Traveller } from "../domain/traveller";
+import { asIsoDate, asMinutesOfDay } from "../domain/index";
+import { buildConstraint, buildOffer, buildTraveller, sgd } from "./builders";
 
 /**
  * Repair scenarios. All identities fictional, all offers LOCAL_FIXTURE.

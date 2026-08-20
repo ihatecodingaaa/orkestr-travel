@@ -1,8 +1,8 @@
-import type { ReunionAnchor } from "../../domain/reunion.js";
-import type { TravelWave } from "../../domain/travelWave.js";
-import type { TripId } from "../../domain/ids.js";
-import { asReunionAnchorId } from "../../domain/ids.js";
-import { parseInstant } from "../time/instant.js";
+import type { ReunionAnchor } from "../../domain/reunion";
+import type { TravelWave } from "../../domain/travelWave";
+import type { TripId } from "../../domain/ids";
+import { asReunionAnchorId } from "../../domain/ids";
+import { parseInstant } from "../time/instant";
 
 /**
  * Deriving the temporal reunion boundary.

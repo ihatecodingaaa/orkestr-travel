@@ -1,11 +1,11 @@
 import { describe, it, expect } from "vitest";
-import type { MembershipState } from "@/domain/index.js";
+import type { MembershipState } from "@/domain/index";
 import {
   allowedTransitionsFrom,
   canTransition,
   isActiveMembership,
   transitionMembership,
-} from "@/core/membership/membership.js";
+} from "@/core/membership/membership";
 
 const ALL_STATES: readonly MembershipState[] = [
   "INVITED",

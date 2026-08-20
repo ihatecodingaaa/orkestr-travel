@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { asIsoDateTime, asMinutesOfDay } from "@/domain/index.js";
+import { asIsoDateTime, asMinutesOfDay } from "@/domain/index";
 import {
   compareInstants,
   formatMinutesOfDay,
@@ -8,7 +8,7 @@ import {
   localMinutesOf,
   minutesBetween,
   parseInstant,
-} from "@/core/time/instant.js";
+} from "@/core/time/instant";
 
 describe("instant parsing and comparison", () => {
   it("requires an explicit offset and rejects a naked local time", () => {

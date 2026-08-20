@@ -1,6 +1,6 @@
-import type { IsoDate, IsoDateTime, MinutesOfDay } from "../../domain/time.js";
-import { asIsoDate, asIsoDateTime, asMinutesOfDay } from "../../domain/time.js";
-import { toDayNumber, fromDayNumber, parseIsoDate } from "./civilDate.js";
+import type { IsoDate, IsoDateTime, MinutesOfDay } from "../../domain/time";
+import { asIsoDate, asIsoDateTime, asMinutesOfDay } from "../../domain/time";
+import { toDayNumber, fromDayNumber, parseIsoDate } from "./civilDate";
 
 /**
  * Strict ISO-8601 instant handling.
