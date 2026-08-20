@@ -91,9 +91,10 @@ candidates to be reviewed and ported back to the startup later:
 | Dynamic membership | Yes (Phase 1) | Generic |
 | Exact money comparison, no FX | Yes (Phase 1) | Generic, and useful anywhere budgets are compared |
 | Time handling with mandatory offsets | Yes (Phase 1) | Generic |
-| Compromise engine | No (Phase 3) | Expected to be generic |
-| Impact Radius | No (Phase 3) | Expected to be generic |
-| Plan Repair | No (Phase 3) | Expected to be generic |
+| Compromise engine | Yes (Phase 3) | Generic. Any group decision has preferences to trade |
+| Impact Radius | Yes (Phase 3) | Generic |
+| Plan Repair | Yes (Phase 3) | Generic, and see the note below |
+| Decision inventory and preservation | Yes (Phase 3) | Generic, and arguably the most portable idea here |
 | Evidence and provenance patterns | Types only | Generic |
 | Travel-Wave-style grouping | Yes (Phase 2) | **Unclear. See the note below** |
 
@@ -127,6 +128,15 @@ the *feature* is probably travel-only. But three pieces underneath it are not:
 
 Those three are strong port-back candidates. The wave feature itself is not.
 Either way, nothing moves without the review in this section.
+
+**Phase 3 added three more that look genuinely domain-neutral.** The decision
+inventory with an old-only preservation denominator, the distinction between
+repairing and re-planning, and trip-scoped exceptions that never overwrite a
+stated preference are all about coordinating people rather than about flights.
+Dining has the same shapes: somebody joins late, somebody's budget is stretched,
+and an agreed arrangement should not be torn up because a better one appeared.
+
+They are still candidates, not commitments. The review in this section applies.
 
 ---
 

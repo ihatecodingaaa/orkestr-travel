@@ -103,6 +103,13 @@ review, not merely intended.
 | `waves/ranking.ts` | The lexicographic hierarchy |
 | `waves/reunion.ts` | The temporal reunion boundary |
 | `waves/engine.ts` | Wave planning orchestration and diagnostics |
+| `decisions/inventory.ts` | The decision inventory and preservation figure |
+| `compromise/relaxation.ts` | Soft violation to typed relaxation |
+| `compromise/exceptions.ts` | Trip-scoped acceptances, applied as a derived view |
+| `compromise/frontier.ts` | Candidate generation independent of Phase 2 ranking |
+| `compromise/engine.ts` | Proposal generation and lexicographic ranking |
+| `repair/impact.ts` | Impact radius and reverification flagging |
+| `repair/repair.ts` | Local-first plan repair |
 
 Two design points carry most of the safety:
 

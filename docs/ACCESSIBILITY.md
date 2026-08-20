@@ -6,7 +6,17 @@ assistance constraint as `DEFERRED_TO_LATER_PHASE` rather than assessing it.
 
 **In wave planning (Phase 2):** an assistance requirement makes its wave
 `UNRESOLVED`, and therefore its whole plan `UNRESOLVED`. It is never dropped and
-never quietly satisfied. A group where one traveller needs step-free access will
+never quietly satisfied.
+
+**In compromise and repair (Phase 3):** the uncertainty survives untouched, and
+a test asserts it. An assistance requirement is NOT treated as a blocker in the
+compromise frontier, but for a specific reason: it is structurally unresolvable
+in this phase, applies identically to every candidate, and so cannot distinguish
+one plan from another. Blocking on it would make compromise impossible for any
+group containing an assistance need, punishing exactly the travellers this
+product exists to serve. It stays in the plan's `unresolved` list and still
+forces the plan state to `UNRESOLVED`, so a repaired plan is never reported as
+fully provider-ready. A group where one traveller needs step-free access will
 see a plan that says plainly it cannot yet confirm that requirement.
 
 What IS enforceable today is the relationship. A traveller who states a

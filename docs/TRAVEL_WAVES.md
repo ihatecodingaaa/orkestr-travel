@@ -145,6 +145,17 @@ unresolved wave.
 the result is then explicitly **not** proven optimal. A partial search is never
 presented as complete.
 
+### retainAllPlans
+
+The search accepts `retainAllPlans`, defaulting to **false** so ordinary planning
+is unchanged. When true, the structural bounds still apply but the ranking-driven
+prunes are skipped, and every hard-feasible plan is returned.
+
+It exists for the compromise frontier. The win-based prune discards plans that
+cannot rank better *as things stand*, but a plan that ranks poorly under today's
+preferences may be the one needing the smallest compromise. See
+`COMPROMISE_ENGINE.md`.
+
 ## 7. Ranking
 
 A **plan state gate** runs first: if any fully FEASIBLE plan exists, only
@@ -259,7 +270,9 @@ All diagnostics are produced by domain code. No language model is involved.
   `LOCAL_FIXTURE`.
 - Assistance requirements are always `UNRESOLVED`. No provider can confirm them
   yet, and community evidence never will. See `ACCESSIBILITY.md`.
-- Return flights are not modelled. A wave carries one outbound offer.
+- **Return flights are not modelled. A wave carries ONE OUTBOUND offer.** Nothing
+  in this system plans a journey home. That gap is deliberate and is scheduled
+  for a dedicated later phase rather than being hidden.
 - Cost ranks totals only. It does not model who pays what.
 - The reunion anchor is temporal only.
 - Activity pods, compromise and plan repair are later phases.

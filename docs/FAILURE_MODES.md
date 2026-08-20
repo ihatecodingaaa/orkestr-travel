@@ -49,9 +49,24 @@ behalf.
 
 ## 7. Late joiner cannot fit any wave
 
-Correct behaviour: preserve every existing wave, and present the options
-honestly, which may include a new wave, a compromise from the joiner, or the
-joiner not travelling with the group.
+**Implemented in Phase 3.** Preserve every existing wave, then widen outward: add
+a new wave if a flight suits them, propose a compromise if only a soft preference
+blocks them, or report the hard blockers and stop. The core never picks which
+hard requirement should be weakened.
+
+## 7b. A change makes the agreed plan invalid
+
+Correct behaviour: report `COMMITMENT_INVALID` and repair the smallest area that
+needs it. Never re-optimise the whole trip because a change created an
+opportunity elsewhere: **validity is not re-optimisation**, and a plan that still
+works is kept.
+
+## 7c. A repaired plan looks fine but nothing checked the seats
+
+**This is the most likely honest-looking lie in the current system.** Phase 3 has
+no provider, so a traveller fitting a flight is `LOGICALLY_COMPATIBLE` and
+nothing more. Every changed wave is flagged for reverification, and the wording
+is asserted by test to avoid the words verified and confirmed.
 
 ## 8. Assistance need cannot be confirmed
 

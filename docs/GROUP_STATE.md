@@ -78,6 +78,14 @@ Passing a `WITHDRAWN` traveller is a validation ERROR, not a silent removal.
 Quietly planning around them would produce a plan that looks correct and covers
 the wrong people. Unknown ids and duplicates are errors for the same reason.
 
+## 4c. Membership changes after planning
+
+A traveller joining or leaving does NOT restart the workflow. Phase 3's plan
+repair integrates the change into the existing plan and reports exactly what
+survived. A `WITHDRAWN` traveller in the planning set remains a validation error,
+so somebody leaving is always a deliberate act rather than a silent removal. See
+`PLAN_REPAIR.md`.
+
 ## 5. Trip events
 
 Every change is recorded as a `TripEventRecord` with a timestamp and a

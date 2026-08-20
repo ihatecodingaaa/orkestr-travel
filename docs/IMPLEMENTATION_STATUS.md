@@ -8,8 +8,8 @@ what any other document, comment or UI label suggests. Any disagreement between
 this table and another document is a bug in the other document.
 
 - **Last updated:** 20 August 2026
-- **Phases completed:** Phase 0 (foundation), Phase 1 (deterministic core), Phase 2 (travel waves)
-- **Phase in progress:** none. Awaiting founder approval to begin Phase 3.
+- **Phases completed:** Phase 0 (foundation), Phase 1 (deterministic core), Phase 2 (travel waves), Phase 3 (compromise and repair)
+- **Phase in progress:** none. Awaiting founder approval to begin Phase 4.
 
 ## Legend
 
@@ -34,11 +34,15 @@ involvement and no network access.
 **There is still no application.** Nothing accepts user input, no UI exists, no
 flight provider is integrated, and no infrastructure has been provisioned.
 
-Travel waves are now built: the engine groups travellers into the smallest
-sensible set of flights, honours must-travel-with relationships, and derives the
-temporal reunion boundary.
+Travel waves group travellers into the smallest sensible set of flights, honour
+must-travel-with relationships, and derive the temporal reunion boundary.
 
-Verified at the last run: **249 tests across 13 files, all passing.** Lint and
+Phase 3 adds change: when somebody joins, leaves or changes their mind, the
+system computes how far the change reaches, repairs the smallest area that needs
+repairing, reports exactly how much of the existing plan survived, and asks only
+the people whose own decisions moved.
+
+Verified at the last run: **326 tests across 19 files, all passing.** Lint and
 typecheck clean.
 
 ---
@@ -51,7 +55,7 @@ typecheck clean.
 | Remote git backup | `IMPLEMENTED` | `origin` = github.com/ihatecodingaaa/orkestr-travel (private) |
 | TypeScript strict configuration | `IMPLEMENTED` | `tsconfig.json`; `npm run typecheck` passes |
 | Lint with type-aware rules | `IMPLEMENTED` | `eslint.config.mjs`; verified with a deliberate failing probe |
-| Test runner | `IMPLEMENTED` | vitest; 249 tests |
+| Test runner | `IMPLEMENTED` | vitest; 326 tests |
 | Combined quality gate | `IMPLEMENTED` | `npm run check` |
 | Documentation structure | `IMPLEMENTED` | 21 documents in `docs/`, plus `README.md` |
 | CI pipeline | `NOT IMPLEMENTED` | Not yet configured |
@@ -145,13 +149,42 @@ one offer in isolation:
 
 | Capability | Status | Phase |
 | --- | --- | --- |
-| Compromise engine | `PLANNED` | 3 |
-| Impact radius analysis | `PLANNED` | 3 |
-| Plan repair, decisions preserved | `PLANNED` | 3 |
-| Late join and leave handling | `PLANNED` | 3 |
 | Mock flight provider | `PLANNED` | 4 |
 | Journey package composition, meals | `PLANNED` | 4 |
 | User interface of any kind | `NOT IMPLEMENTED` | 5 |
+
+---
+
+## Compromise and repair (Phase 3)
+
+| Capability | Status | Module | Tests |
+| --- | --- | --- | --- |
+| Decision inventory with stable keys | `IMPLEMENTED` | `core/decisions/inventory.ts` | 12 |
+| Decisions Preserved (old-only denominator) | `IMPLEMENTED` | `core/decisions/inventory.ts` | (in the 12) |
+| Typed constraint relaxations | `IMPLEMENTED` | `core/compromise/relaxation.ts` | (in compromise) |
+| Trip-scoped exceptions, original never overwritten | `IMPLEMENTED` | `core/compromise/exceptions.ts` | (in compromise) |
+| Compromise frontier, independent of runnersUp | `IMPLEMENTED` | `core/compromise/frontier.ts` | (in compromise) |
+| Compromise proposals and lexicographic ranking | `IMPLEMENTED` | `core/compromise/engine.ts` | 19 |
+| Impact radius analysis | `IMPLEMENTED` | `core/repair/impact.ts` | 7 |
+| Plan repair, local-first | `IMPLEMENTED` | `core/repair/repair.ts` | 21 |
+| Late join | `IMPLEMENTED` | `core/repair/repair.ts` | (in the 21) |
+| Traveller leave | `IMPLEMENTED` | `core/repair/repair.ts` | (in the 21) |
+| Constraint change | `IMPLEMENTED` | `core/repair/repair.ts` | 6 |
+| Provider reverification flagging | `IMPLEMENTED` | `core/repair/impact.ts` | (in the 21) |
+| Core purity guards (clock, random, network, model, float money) | `IMPLEMENTED` | `tests/phase3Safety.test.ts` | 12 |
+
+### What Phase 3 explicitly does NOT do
+
+| Not done | Why |
+| --- | --- |
+| Verify provider capacity | No provider exists. A fitting traveller is `LOGICALLY_COMPATIBLE`, never a confirmed seat |
+| Resolve assistance requirements | Needs provider evidence. Stays `UNRESOLVED`, and the plan state stays `UNRESOLVED` with it |
+| Relax any hard constraint | Reports `HARD_CONSTRAINT_CHANGE_REQUIRED` and names blockers. The core never chooses which requirement to weaken |
+| Treat an UNKNOWN as relaxable | Evidence is missing; that is not a preference to trade |
+| Model return flights | Outbound only, unchanged from Phase 2 |
+| Model fare or provider events | Deferred to the Atlas phase |
+| Persist anything | Previous plans and accepted compromises are passed in by the caller |
+| Produce `ACTIVITY_ONLY` impact | Journey items do not exist until Phase 4 |
 
 ---
 

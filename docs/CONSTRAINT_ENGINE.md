@@ -65,6 +65,13 @@ unresolved everywhere.
 comparable value, so it reports `CONSTRAINT_NOT_MACHINE_EVALUABLE` and routes to a
 human.
 
+### How Phase 3 uses this
+
+The compromise engine relaxes only `SOFT` constraints, and only through a typed
+relaxation derived from a soft violation this engine produced. An `UNKNOWN` is
+never relaxable: it means evidence is missing, not that a preference is being
+missed. A `HARD` constraint is not a candidate at all. See `COMPROMISE_ENGINE.md`.
+
 ### Two representation choices worth knowing
 
 A **preferred budget** is not a separate kind. It is `BUDGET_MAX` with

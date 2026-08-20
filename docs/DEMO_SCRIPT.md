@@ -1,11 +1,11 @@
 # Demo Script
 
-**Status:** `PARTIAL`. Act 1 is now backed by working code; Acts 2 and 3 are not.
+**Status:** `PARTIAL`. Acts 1 and 2 are backed by working code; Act 3 is not.
 
-There is still no UI, so nothing can be *shown* yet. What changed in Phase 2 is
-that the wave split in Act 1 is computed by a real deterministic engine rather
-than being an aspiration. The fixture that produces it lives in
-`src/fixtures/waveScenarios.ts` and is exercised by the test suite.
+There is still no UI, so nothing can be *shown* yet. What exists is the
+engine output behind each act, computed deterministically and pinned by tests, so
+the numbers quoted below cannot drift away from what the code does. Fixtures live
+in `src/fixtures/waveScenarios.ts` and `src/fixtures/repairScenarios.ts`.
 
 ## 1. The scenario
 
@@ -59,26 +59,46 @@ Five things in that output are worth narrating, and all five are real:
 The reunion is a temporal boundary only: "not before Wed 15:00". No meeting point
 or transfer time is invented.
 
-## 3. Act 2: the late join - NOT BUILT (Phase 3)
+## 3. Act 2: the late join - BUILT
 
-Ryan joins after planning has already happened.
+Ryan joins after planning has already happened. He is available Wednesday and is
+comfortably within budget, so he suits Wave B exactly as it stands.
 
-- Available Wednesday only
-- Has a budget ceiling
-- Interested in food and night markets
+```
+Before   Wave A  Tue  Ama, Bo, Cai
+         Wave B  Wed  Gita, Elias, Nadia
 
-Correct behaviour, which is the demo:
+After    Wave A  Tue  Ama, Bo, Cai              UNCHANGED
+         Wave B  Wed  Gita, Elias, Nadia, Ryan
 
-1. Attempt to place him in the existing Wave B.
-2. Preserve Wave A entirely.
-3. Re-verify only the affected flight, if any.
-4. Add his food interest to the itinerary preferences.
-5. Preserve most existing journey decisions.
-6. Display the **real** decisions-preserved figure.
+status                LOCAL_REPAIR_FOUND
+impact                WAVE_ONLY
+decisions preserved   100% (10 of 10), 1 added
+approvals required    none
+reverification        Wave B only
+```
 
-The number shown must be derived from actual state. If it says 93 percent, then
-93 percent of the counted decisions genuinely survived. `PLAN_REPAIR.md` defines
-exactly what counts as a decision, so the figure can be checked.
+Four things to narrate, all of them real and all asserted by test:
+
+1. **Wave A is not regenerated.** Its flight, its membership and its place in the
+   plan are untouched, and the impact analysis lists it explicitly as unchanged.
+2. **Nobody is asked anything.** `approvalsRequired` is empty. The three people
+   in Wave A never hear about this.
+3. **The preservation figure is real.** Ten decisions existed, ten survived, one
+   was added. New decisions never enter the denominator, so adding Ryan cannot
+   flatter the number. `PLAN_REPAIR.md` defines exactly what counts.
+4. **Nothing claims Ryan has a seat.** Wave B is flagged for provider
+   reverification. He is LOGICALLY COMPATIBLE with that flight; whether a seat
+   exists is unknown, and the system says so.
+
+If instead Ryan had a soft budget preference the flight exceeded, the result
+would be `COMPROMISE_REQUIRED` with a proposal put to Ryan alone, naming the
+exact amount. If he had a hard budget nothing could satisfy, the result would be
+`NO_FEASIBLE_REPAIR` with the blocker named and no compromise invented. Both are
+in the test suite.
+
+His food and night-market interest is **not** part of the flight core and stays a
+Journey Package concern for a later phase.
 
 ## 4. Act 3: the package - NOT BUILT (Phase 4)
 

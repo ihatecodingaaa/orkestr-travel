@@ -24,8 +24,8 @@ convention, the module is named.
 | # | Principle | How it is enforced |
 | --- | --- | --- |
 | 1 | **Extract first, ask second.** Use what has already been said before asking anything | Design rule for Phase 6 extraction |
-| 2 | **Minimum questioning.** Fewest people, fewest questions | `RepairQuestion` names exactly one traveller (`planRepair.ts`) |
-| 3 | **Preserve decisions.** Change the fewest existing decisions necessary | `ImpactAnalysis`, `DecisionsPreserved` |
+| 2 | **Minimum questioning.** Fewest people, fewest questions | `RepairQuestion` names exactly one traveller; compromise ranking puts fewest-travellers first |
+| 3 | **Preserve decisions.** Change the fewest existing decisions necessary | `ImpactAnalysis`, `DecisionsPreserved`, local-first repair (Phase 3) |
 | 4 | **Orkestr absorbs complexity.** Users see decisions, not research | Design rule for the journey composer |
 | 5 | **Constraint ownership.** Every constraint belongs to one traveller | `Constraint.ownerTravellerId` is required |
 | 6 | **Consequential confirmation.** A proposed constraint is not authoritative until its owner confirms it | `origin` + `confirmation` + `consequential` |

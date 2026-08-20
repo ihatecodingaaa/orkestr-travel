@@ -103,7 +103,12 @@ describe("late join: A. slots into an existing wave", () => {
   });
 
   it("preserves every existing decision and adds exactly one", () => {
+    // These exact numbers are quoted in docs/DEMO_SCRIPT.md. Pinning them here
+    // means the document and the engine fail together rather than the document
+    // quietly going stale.
     const result = repairAfterJoin(() => heroGroupSeven()[6]!);
+    expect(result.decisionsPreserved.oldCount).toBe(10);
+    expect(result.decisionsPreserved.preservedCount).toBe(10);
     expect(result.decisionsPreserved.preservedPercent).toBe(100);
     expect(result.decisionsPreserved.changedCount).toBe(0);
     expect(result.decisionsPreserved.removedCount).toBe(0);

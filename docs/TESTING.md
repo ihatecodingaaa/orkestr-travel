@@ -4,7 +4,7 @@
 
 ## 1. Current state, honestly
 
-**249 tests across 13 files, all passing.**
+**326 tests across 19 files, all passing.**
 
 | Suite | Tests | Covers |
 | --- | --- | --- |
@@ -21,9 +21,23 @@
 | `waveRanking.test.ts` | 15 | Each ranking criterion in isolation, exact cost |
 | `waveEngine.test.ts` | 36 | Wave planning end to end, UNKNOWN, reunion, determinism |
 | `waveInvariants.test.ts` | 40 | Ten invariants across four group sizes (2, 3, 7, 11) |
+| `decisionInventory.test.ts` | 12 | Stable keys, changed vs removed, old-only denominator |
+| `compromise.test.ts` | 19 | The runnersUp regression, eligibility, rejection, exceptions |
+| `impact.test.ts` | 7 | Every impact radius, and that ACTIVITY_ONLY is never produced |
+| `planRepair.test.ts` | 21 | Late join matrix, leave, reverification |
+| `constraintChange.test.ts` | 6 | All six constraint-change shapes |
+| `phase3Safety.test.ts` | 12 | Core purity guards and behavioural guarantees |
 
-There are no tests for compromise, plan repair, providers or a UI, because none
-of those exist.
+There are no tests for providers, journey packages or a UI, because none of those
+exist.
+
+### Purity is enforced by the suite, not by review
+
+`phase3Safety.test.ts` reads every file under `src/core` and asserts it contains
+no clock read, no randomness, no network call, no model reference and no
+floating-point arithmetic on money. Comments are stripped first, so a rule is
+never tripped by the prose explaining it. A future change that breaks one of
+those properties fails the build rather than waiting to be noticed.
 
 ### Why ranking is tested twice
 

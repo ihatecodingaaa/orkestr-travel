@@ -37,7 +37,7 @@ fewest questions that still make the trip work.
 
 ## Current status
 
-**Phases 0, 1 and 2 complete.**
+**Phases 0, 1, 2 and 3 complete.**
 
 The deterministic core decides which flight offers are feasible for whom, what
 preferences they miss, and what it does not know. On top of that, the travel wave
@@ -47,11 +47,17 @@ can be in one place.
 
 No model is involved anywhere in that, and nothing touches the network.
 
-249 tests pass across 13 files. Lint and typecheck are clean.
+Phase 3 adds change. When somebody joins, leaves or changes their mind, the
+system works out how far the change reaches, repairs the smallest area that needs
+it, reports honestly how much of the existing plan survived, and asks only the
+people whose own decisions moved. Where a plan misses somebody's preference it
+proposes an explicit compromise to that person rather than deciding for them.
+
+326 tests pass across 19 files. Lint and typecheck are clean.
 
 **There is still no application.** No UI, no flight provider, no AI integration,
-no persistence and no deployed infrastructure. Compromise and plan repair are
-Phase 3 and are NOT built.
+no persistence and no deployed infrastructure. Flights are outbound-only, and no
+seat availability is ever claimed.
 
 `docs/IMPLEMENTATION_STATUS.md` is the authoritative status table and is kept
 brutally accurate. If a feature is not marked IMPLEMENTED there, it does not
@@ -85,6 +91,9 @@ src/core/       the deterministic engines
   constraint/     when a constraint is allowed to bind
   feasibility/    the feasibility engine and its per-constraint rules
   waves/          travel units, plan search, ranking, reunion anchor
+  compromise/     relaxations, trip-scoped exceptions, candidate frontier
+  decisions/      the decision inventory and the preservation figure
+  repair/         impact radius and local-first plan repair
 src/fixtures/   builders for arbitrary group sizes, fictional identities only
 tests/          vitest suites
 docs/           specification, design and status documents
@@ -144,7 +153,7 @@ Start with `docs/PRODUCT_SPEC.md` for what the product does, and
 | `GROUP_STATE.md` | Travellers, membership and trip events |
 | `TRAVEL_WAVES.md` | The wave engine and reunion anchors |
 | `CONSTRAINT_ENGINE.md` | Hard/soft/unknown and deterministic feasibility |
-| `COMPROMISE_ENGINE.md` | Minimum relaxation to unlock a plan |
+| `COMPROMISE_ENGINE.md` | Minimum relaxation, the frontier, and trip-scoped exceptions |
 | `PLAN_REPAIR.md` | Impact radius, decisions preserved, late join and leave |
 | `JOURNEY_PACKAGE.md` | The end-to-end trip package |
 | `EVIDENCE_MODEL.md` | Provenance and what each source may establish |
