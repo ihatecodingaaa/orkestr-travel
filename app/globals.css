@@ -1,0 +1,339 @@
+/*
+ * Orkestr Travel design tokens.
+ *
+ * The visual metaphor is orchestration: paths that branch apart and rejoin.
+ * Ink on warm paper, one accent for the journey line, and colour used to carry
+ * meaning only alongside a label, never instead of one.
+ *
+ * TRUTH TONES are the important part. `verified` is the only tone that reads as
+ * a positive confirmation, and nothing a local fixture produces may use it. The
+ * strongest tone available to demo data is `neutral`.
+ */
+
+:root {
+  --paper: #fbfaf7;
+  --paper-raised: #ffffff;
+  --paper-sunken: #f4f2ed;
+  --ink: #16181d;
+  --ink-soft: #4a4f5a;
+  --ink-faint: #7b8190;
+  --line: #e4e0d8;
+  --line-strong: #cfc9bd;
+
+  --accent: #1d4ed8;
+  --accent-soft: #eef2ff;
+  --accent-line: #93a7e8;
+
+  --wave-a: #1d4ed8;
+  --wave-b: #b45309;
+  --wave-c: #0f766e;
+
+  --tone-verified: #15803d;
+  --tone-verified-bg: #eefaf1;
+  --tone-neutral: #4a4f5a;
+  --tone-neutral-bg: #f1efea;
+  --tone-pending: #b45309;
+  --tone-pending-bg: #fdf4e7;
+  --tone-alert: #b91c1c;
+  --tone-alert-bg: #fdeceb;
+  --tone-unknown: #6b7280;
+  --tone-unknown-bg: #f3f4f6;
+
+  --radius: 14px;
+  --radius-sm: 9px;
+  --shadow: 0 1px 2px rgba(22, 24, 29, 0.05), 0 8px 24px -12px rgba(22, 24, 29, 0.18);
+
+  --font: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-display: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font);
+  -webkit-font-smoothing: antialiased;
+}
+
+body { font-size: 16px; line-height: 1.55; }
+
+h1, h2, h3 { font-family: var(--font-display); font-weight: 600; letter-spacing: -0.015em; margin: 0; }
+h1 { font-size: clamp(1.9rem, 5vw, 3rem); line-height: 1.1; }
+h2 { font-size: clamp(1.4rem, 3.5vw, 2rem); line-height: 1.2; }
+h3 { font-size: 1.1rem; line-height: 1.3; }
+p { margin: 0; }
+
+a { color: inherit; }
+
+/* Visible focus everywhere. Never removed. */
+:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.shell { max-width: 1080px; margin: 0 auto; padding: 0 1.25rem 5rem; }
+.stack { display: flex; flex-direction: column; }
+.gap-1 { gap: 0.5rem; } .gap-2 { gap: 0.85rem; } .gap-3 { gap: 1.4rem; } .gap-4 { gap: 2.2rem; }
+.row { display: flex; align-items: center; flex-wrap: wrap; gap: 0.6rem; }
+.muted { color: var(--ink-soft); }
+.faint { color: var(--ink-faint); font-size: 0.85rem; }
+.lede { font-size: 1.1rem; color: var(--ink-soft); max-width: 62ch; }
+
+.card {
+  background: var(--paper-raised);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+  box-shadow: var(--shadow);
+}
+
+.eyebrow {
+  font-size: 0.72rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  font-weight: 600;
+}
+
+/* ---------- truth badges ---------- */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+/* Every tone carries a distinct shape marker as well as a colour, so meaning
+   never depends on colour alone. */
+.badge::before { font-size: 0.7em; line-height: 1; }
+.badge-verified { color: var(--tone-verified); background: var(--tone-verified-bg); border-color: #bfe4c9; }
+.badge-verified::before { content: "\2713"; }
+.badge-neutral { color: var(--tone-neutral); background: var(--tone-neutral-bg); border-color: var(--line-strong); }
+.badge-neutral::before { content: "\25CF"; }
+.badge-pending { color: var(--tone-pending); background: var(--tone-pending-bg); border-color: #f0d9b5; }
+.badge-pending::before { content: "\25D1"; }
+.badge-alert { color: var(--tone-alert); background: var(--tone-alert-bg); border-color: #f3c4c1; }
+.badge-alert::before { content: "\26A0"; }
+.badge-unknown { color: var(--tone-unknown); background: var(--tone-unknown-bg); border-color: #e0e2e6; }
+.badge-unknown::before { content: "?"; }
+
+/* ---------- fixture banner ---------- */
+.fixture-banner {
+  background: var(--ink);
+  color: #f6f4ef;
+  padding: 0.6rem 1.25rem;
+  font-size: 0.85rem;
+  display: flex;
+  gap: 0.75rem;
+  align-items: baseline;
+  flex-wrap: wrap;
+  justify-content: center;
+  text-align: center;
+}
+.fixture-banner strong { letter-spacing: 0.06em; text-transform: uppercase; font-size: 0.75rem; }
+.fixture-banner span { color: #c9c6bd; }
+
+/* ---------- nav ---------- */
+.topbar {
+  border-bottom: 1px solid var(--line);
+  background: rgba(251, 250, 247, 0.9);
+  backdrop-filter: blur(8px);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+.topbar-inner { max-width: 1080px; margin: 0 auto; padding: 0.8rem 1.25rem; display: flex; gap: 1.5rem; align-items: center; flex-wrap: wrap; }
+.brand { font-family: var(--font-display); font-weight: 600; font-size: 1.1rem; text-decoration: none; }
+.brand span { color: var(--accent); }
+.nav { display: flex; gap: 0.35rem; flex-wrap: wrap; }
+.nav a {
+  padding: 0.35rem 0.7rem;
+  border-radius: 999px;
+  text-decoration: none;
+  font-size: 0.9rem;
+  color: var(--ink-soft);
+}
+.nav a:hover { background: var(--paper-sunken); }
+.nav a[aria-current="page"] { background: var(--ink); color: var(--paper); }
+
+/* ---------- buttons ---------- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1.1rem;
+  border-radius: 999px;
+  border: 1px solid var(--ink);
+  background: var(--ink);
+  color: var(--paper);
+  font: inherit;
+  font-weight: 600;
+  font-size: 0.92rem;
+  text-decoration: none;
+  cursor: pointer;
+}
+.btn:hover { background: #000; }
+.btn-secondary { background: transparent; color: var(--ink); border-color: var(--line-strong); }
+.btn-secondary:hover { background: var(--paper-sunken); }
+.btn-small { padding: 0.4rem 0.8rem; font-size: 0.85rem; }
+
+/* ---------- wave flow ---------- */
+.waveflow { display: grid; gap: 1rem; }
+.wave-card {
+  border: 1px solid var(--line);
+  border-left: 5px solid var(--wave-a);
+  border-radius: var(--radius);
+  background: var(--paper-raised);
+  padding: 1.1rem 1.25rem;
+}
+.wave-card[data-index="1"] { border-left-color: var(--wave-b); }
+.wave-card[data-index="2"] { border-left-color: var(--wave-c); }
+.wave-title { display: flex; align-items: baseline; gap: 0.6rem; flex-wrap: wrap; }
+.wave-time { font-variant-numeric: tabular-nums; font-weight: 600; }
+.avatars { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.75rem; }
+.avatar {
+  display: inline-flex; align-items: center; gap: 0.4rem;
+  background: var(--paper-sunken); border: 1px solid var(--line);
+  border-radius: 999px; padding: 0.2rem 0.65rem 0.2rem 0.25rem; font-size: 0.85rem;
+}
+.avatar i {
+  font-style: normal; width: 1.5rem; height: 1.5rem; border-radius: 999px;
+  background: var(--ink); color: var(--paper);
+  display: grid; place-items: center; font-size: 0.7rem; font-weight: 700;
+}
+
+/* The reunion marker: two paths rejoining. */
+.reunion {
+  margin-top: 1rem;
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--radius);
+  padding: 1rem 1.25rem;
+  background: var(--accent-soft);
+}
+.reunion-rule { height: 22px; position: relative; margin-bottom: 0.5rem; }
+.reunion-rule::before,
+.reunion-rule::after {
+  content: ""; position: absolute; top: 0; width: 45%; height: 22px;
+  border-bottom: 2px solid var(--accent-line);
+}
+.reunion-rule::before { left: 0; border-right: 2px solid var(--accent-line); border-bottom-right-radius: 12px; }
+.reunion-rule::after { right: 0; border-left: 2px solid var(--accent-line); border-bottom-left-radius: 12px; }
+
+/* ---------- timeline ---------- */
+.day {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--paper-raised);
+  overflow: hidden;
+}
+.day-head {
+  padding: 0.9rem 1.25rem;
+  background: var(--paper-sunken);
+  border-bottom: 1px solid var(--line);
+  display: flex; justify-content: space-between; gap: 1rem; flex-wrap: wrap; align-items: baseline;
+}
+/* A day where only part of the group has arrived is visually distinct, so the
+   split is obvious rather than merely accurate. */
+.day[data-partial="true"] .day-head { background: #fdf4e7; border-bottom-color: #f0d9b5; }
+.day-partial-note { color: var(--tone-pending); font-weight: 600; font-size: 0.85rem; }
+
+.timeline { list-style: none; margin: 0; padding: 0.5rem 0; }
+.timeline li {
+  display: grid;
+  grid-template-columns: 4.5rem 1fr;
+  gap: 0.9rem;
+  padding: 0.7rem 1.25rem;
+  border-left: 2px solid transparent;
+}
+.timeline li + li { border-top: 1px solid var(--paper-sunken); }
+.item-time { font-variant-numeric: tabular-nums; color: var(--ink-faint); font-size: 0.85rem; padding-top: 0.15rem; }
+.item-title { font-weight: 600; }
+.item-meta { display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; margin-top: 0.3rem; }
+.item-people { font-size: 0.85rem; color: var(--ink-soft); }
+.assumption {
+  font-size: 0.75rem; color: var(--tone-pending);
+  border: 1px dashed #f0d9b5; border-radius: var(--radius-sm);
+  padding: 0.05rem 0.4rem; background: var(--tone-pending-bg);
+}
+
+/* ---------- decisions ---------- */
+.decision {
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--tone-pending);
+  border-radius: var(--radius);
+  background: var(--paper-raised);
+  padding: 1rem 1.15rem;
+}
+.decision[data-tone="unknown"] { border-left-color: var(--tone-unknown); }
+
+/* ---------- change diff ---------- */
+.change { display: flex; gap: 0.75rem; align-items: baseline; padding: 0.6rem 0; }
+.change + .change { border-top: 1px solid var(--paper-sunken); }
+.chip {
+  font-size: 0.72rem; font-weight: 700; letter-spacing: 0.06em;
+  padding: 0.15rem 0.5rem; border-radius: 5px; text-transform: uppercase; white-space: nowrap;
+}
+.chip-UNCHANGED { background: var(--tone-neutral-bg); color: var(--tone-neutral); }
+.chip-CHANGED { background: var(--accent-soft); color: var(--accent); }
+.chip-ADDED { background: var(--tone-verified-bg); color: var(--tone-verified); }
+.chip-NEEDS_REVERIFICATION { background: var(--tone-pending-bg); color: var(--tone-pending); }
+
+.preservation { background: var(--paper-sunken); border-radius: var(--radius); padding: 1.1rem 1.25rem; }
+.preservation-primary { font-size: 1.15rem; font-weight: 600; }
+.preservation-pct { font-family: var(--font-display); font-size: 2.4rem; line-height: 1; color: var(--accent); }
+
+/* ---------- grids ---------- */
+.grid { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fill, minmax(255px, 1fr)); }
+.split { display: grid; gap: 1.5rem; grid-template-columns: 1fr; }
+@media (min-width: 860px) { .split { grid-template-columns: 1.55fr 1fr; } }
+
+/* ---------- demo controls ---------- */
+.demobar {
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  background: var(--paper-sunken);
+  padding: 0.85rem 1rem;
+  display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap;
+}
+.demobar .eyebrow { margin-right: auto; }
+
+/* ---------- motion ---------- */
+@keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+.animate-in { animation: rise 380ms ease-out both; }
+.animate-in:nth-child(2) { animation-delay: 70ms; }
+.animate-in:nth-child(3) { animation-delay: 140ms; }
+.animate-in:nth-child(4) { animation-delay: 210ms; }
+
+/* Motion is decoration only. Nothing essential depends on it, and it is fully
+   removed for anybody who has asked for reduced motion. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+  .animate-in { animation: none; opacity: 1; transform: none; }
+}
+
+/* ---------- hero ---------- */
+.hero { padding: clamp(3rem, 9vw, 6rem) 0 3rem; }
+.hero-paths { height: 90px; margin: 2rem 0; position: relative; }
+.hero-paths::before, .hero-paths::after {
+  content: ""; position: absolute; left: 0; right: 0; height: 44px;
+  border: 2px solid var(--accent-line); border-width: 0 0 2px 0;
+}
+.hero-paths::before { top: 0; border-radius: 0 0 90px 90px; opacity: 0.55; }
+.hero-paths::after { top: 22px; border-radius: 0 0 60px 60px; opacity: 0.3; }
+
+.sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+}
