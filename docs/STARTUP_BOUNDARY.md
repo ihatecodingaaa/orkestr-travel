@@ -97,6 +97,8 @@ candidates to be reviewed and ported back to the startup later:
 | Decision inventory and preservation | Yes (Phase 3) | Generic, and arguably the most portable idea here |
 | Evidence and provenance patterns | Types only | Generic |
 | Travel-Wave-style grouping | Yes (Phase 2) | **Unclear. See the note below** |
+| Provider-neutral adapter boundary | Yes (Phase 4) | Generic. Any external dependency benefits |
+| Status separated from provenance | Yes (Phase 4) | Generic, and one of the more portable ideas here |
 
 ### Porting back must be intentional
 

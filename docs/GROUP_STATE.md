@@ -86,6 +86,14 @@ survived. A `WITHDRAWN` traveller in the planning set remains a validation error
 so somebody leaving is always a deliberate act rather than a silent removal. See
 `PLAN_REPAIR.md`.
 
+## 4d. Membership can differ per journey leg
+
+A traveller is not automatically on every movement of a trip. Each `JourneyLeg`
+carries its own `planningTravellerIds`, so somebody can join partway through or
+go home early without the model bending. Assuming every member takes every leg is
+the assumption that would make those cases impossible to express later. See
+`JOURNEY_PACKAGE.md`.
+
 ## 5. Trip events
 
 Every change is recorded as a `TripEventRecord` with a timestamp and a

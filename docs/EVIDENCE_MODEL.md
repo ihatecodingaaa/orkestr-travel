@@ -60,6 +60,20 @@ written as copy.
 
 Disagreements between sources are shown, not averaged away.
 
+## 6b. What Phase 4 can actually produce
+
+Exactly one source kind: **`LOCAL_FIXTURE`**.
+
+Every flight offer, every suggested activity and every timing assumption in the
+current system traces to a fixture in this repository. The other source kinds
+exist in the model so the shape is right when a provider or a research layer
+arrives, but **nothing can produce them yet and nothing claims those sources
+exist**.
+
+The journey package validator refuses an evidence reference that does not
+resolve, and refuses a `VERIFIED` item that cites no evidence at all.
+Verified-on-nothing is the exact shape of an honest-looking lie.
+
 ## 7. Traceability
 
 Every factual reason shown to a user in a "why this fits your group" explanation

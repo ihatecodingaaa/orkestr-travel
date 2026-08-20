@@ -281,3 +281,39 @@ describe("journey package: validation catches dishonesty", () => {
     );
   });
 });
+
+describe("demo scenario, pinned", () => {
+  /**
+   * Pins the exact figures quoted in docs/DEMO_SCRIPT.md Act 3.
+   *
+   * The document states concrete numbers. If the engine changes, that document
+   * becomes a false claim about what the product does, so the two fail together
+   * rather than the document quietly going stale.
+   */
+  it("produces exactly the package the demo script describes", () => {
+    const { pkg, journey } = heroPackage(F.tokyoGroupSeven());
+
+    expect(pkg.days).toHaveLength(5);
+    expect(pkg.items).toHaveLength(32);
+    expect(pkg.status).toBe("UNRESOLVED");
+    expect(pkg.decisionsNeeded).toHaveLength(7);
+    expect(pkg.days[0]?.travellerIds).toHaveLength(3);
+    expect(pkg.reunionAnchors[0]?.notBefore).toBe("2026-08-26T17:00:00+09:00");
+    expect(validateJourneyPackage(pkg, journey)).toEqual([]);
+
+    // Two waves out, one wave home.
+    expect(journey.legs[0]?.wavePlan?.waveCount).toBe(2);
+    expect(journey.legs[1]?.wavePlan?.waveCount).toBe(1);
+
+    // Nothing booked, nothing verified.
+    expect(pkg.items.some((i) => i.status === "BOOKED" || i.status === "VERIFIED")).toBe(false);
+  });
+
+  it("produces the same item count with six travellers as with seven", () => {
+    // Adding Ryan to an existing wave creates no new items.
+    const six = heroPackage(F.tokyoGroupSix()).pkg;
+    const seven = heroPackage(F.tokyoGroupSeven()).pkg;
+    expect(six.items).toHaveLength(32);
+    expect(seven.items).toHaveLength(32);
+  });
+});

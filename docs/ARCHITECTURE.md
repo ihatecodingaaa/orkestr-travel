@@ -110,6 +110,11 @@ review, not merely intended.
 | `compromise/engine.ts` | Proposal generation and lexicographic ranking |
 | `repair/impact.ts` | Impact radius and reverification flagging |
 | `repair/repair.ts` | Local-first plan repair |
+| `providers/mockFlightProvider.ts` | Local development adapter; search and verify lifecycle |
+| `journey/legPlanner.ts` | Calls the wave engine once per leg |
+| `journey/assumptions.ts` | Caller-supplied timings, each carrying a source marker |
+| `journey/composer.ts` | Assembles days and items from facts that already exist |
+| `journey/validate.ts` | Refuses packages that would read as fine but are not |
 
 Two design points carry most of the safety:
 

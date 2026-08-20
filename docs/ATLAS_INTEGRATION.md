@@ -18,12 +18,31 @@ No Atlas-specific field name may travel past this interface. Responses are
 normalised into `FlightOffer` at the adapter, so a change in their payload shape
 touches one file.
 
-Planned implementations:
-
 | Implementation | Phase | Status |
 | --- | --- | --- |
-| `MockFlightProvider` | 4 | `PLANNED` |
+| `MockFlightProvider` | 4 | `IMPLEMENTED` |
 | `AtlasFlightProvider` | 7 | `BLOCKED` |
+
+### The contract shrank in Phase 4
+
+`createSandboxOrder` was **removed**. Nothing called it, and its shape was a guess
+about an Atlas API nobody has read. **A method invented ahead of an integration is
+a method the real provider will not match.** What remains is what the system
+actually does: `searchFlights`, `verifyOffer` and `getCapabilities`.
+
+Order creation will be added in Phase 10, in whatever shape the real
+documentation turns out to require.
+
+### MockFlightProvider is a development adapter
+
+It is **not** a simulation of Atlas and carries no vendor branding. It exists so
+the lifecycle can be exercised offline: a searched offer is not a verified one, a
+verified price can differ, and an offer can vanish between the two.
+
+`AtlasFlightProvider` will implement the same contract in Phase 7, **but only
+where Atlas is confirmed to support it.** Anything Atlas cannot do stays
+`UNSUPPORTED` or `UNKNOWN` rather than being faked to fit the interface. A test
+asserts no vendor name appears anywhere in generic business logic.
 
 ## 3. Entry conditions for Phase 7
 

@@ -37,7 +37,7 @@ fewest questions that still make the trip work.
 
 ## Current status
 
-**Phases 0, 1, 2 and 3 complete.**
+**Phases 0, 1, 2, 3 and 4 complete.**
 
 The deterministic core decides which flight offers are feasible for whom, what
 preferences they miss, and what it does not know. On top of that, the travel wave
@@ -53,11 +53,17 @@ it, reports honestly how much of the existing plan survived, and asks only the
 people whose own decisions moved. Where a plan misses somebody's preference it
 proposes an explicit compromise to that person rather than deciding for them.
 
-339 tests pass across 19 files. Lint and typecheck are clean.
+421 tests pass across 24 files. Lint and typecheck are clean.
 
-**There is still no application.** No UI, no flight provider, no AI integration,
-no persistence and no deployed infrastructure. Flights are outbound-only, and no
-seat availability is ever claimed.
+Phase 4 closes the outbound-only gap. A journey is now an ordered list of legs,
+each planned independently, so a group can get home again and a future multi-city
+trip needs more legs rather than a rewrite. A local flight provider models the
+search and verify lifecycle, and the whole trip assembles into a structured
+package of days and items.
+
+**There is still no application.** No UI, no real flight provider, no AI
+integration, no persistence and no deployed infrastructure. No seat availability
+is ever claimed.
 
 `docs/IMPLEMENTATION_STATUS.md` is the authoritative status table and is kept
 brutally accurate. If a feature is not marked IMPLEMENTED there, it does not
@@ -94,6 +100,8 @@ src/core/       the deterministic engines
   compromise/     relaxations, trip-scoped exceptions, candidate frontier
   decisions/      the decision inventory and the preservation figure
   repair/         impact radius and local-first plan repair
+  providers/      MockFlightProvider, a local development adapter
+  journey/        per-leg planning, package composition, validation
 src/fixtures/   builders for arbitrary group sizes, fictional identities only
 tests/          vitest suites
 docs/           specification, design and status documents

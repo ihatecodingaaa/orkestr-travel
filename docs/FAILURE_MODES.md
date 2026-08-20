@@ -68,6 +68,18 @@ no provider, so a traveller fitting a flight is `LOGICALLY_COMPATIBLE` and
 nothing more. Every changed wave is flagged for reverification, and the wording
 is asserted by test to avoid the words verified and confirmed.
 
+## 7d. A package looks complete but the group cannot get home
+
+**Closed in Phase 4.** A journey is an ordered list of legs and the return leg is
+planned like any other. A leg with no plan makes the package `INCOMPLETE`, and a
+traveller left off a leg's waves is a validation error rather than a silent gap.
+
+## 7e. A group activity is scheduled before half the group has landed
+
+The composer DROPS a whole-group activity that would fall before the reunion
+boundary rather than scheduling it for whoever happens to be there. The hero
+fixture contains one deliberately, and a test asserts it never appears.
+
 ## 8. Assistance need cannot be confirmed
 
 Correct behaviour: status stays `NEEDS_CONFIRMATION` with a handoff task. Never

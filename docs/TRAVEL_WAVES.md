@@ -270,9 +270,10 @@ All diagnostics are produced by domain code. No language model is involved.
   `LOCAL_FIXTURE`.
 - Assistance requirements are always `UNRESOLVED`. No provider can confirm them
   yet, and community evidence never will. See `ACCESSIBILITY.md`.
-- **Return flights are not modelled. A wave carries ONE OUTBOUND offer.** Nothing
-  in this system plans a journey home. That gap is deliberate and is scheduled
-  for a dedicated later phase rather than being hidden.
+- A wave carries ONE flight offer. **Getting home is no longer missing**: Phase 4
+  models a journey as an ordered list of LEGS, and the wave engine is called once
+  per leg. A leg's waves are entirely its own, so travellers who fly out together
+  do not have to fly home together. See `JOURNEY_PACKAGE.md`.
 - Cost ranks totals only. It does not model who pays what.
 - The reunion anchor is temporal only.
 - Activity pods, compromise and plan repair are later phases.

@@ -26,7 +26,7 @@ convention, the module is named.
 | 1 | **Extract first, ask second.** Use what has already been said before asking anything | Design rule for Phase 6 extraction |
 | 2 | **Minimum questioning.** Fewest people, fewest questions | `RepairQuestion` names exactly one traveller; compromise ranking puts fewest-travellers first |
 | 3 | **Preserve decisions.** Change the fewest existing decisions necessary | `ImpactAnalysis`, `DecisionsPreserved`, local-first repair (Phase 3) |
-| 4 | **Orkestr absorbs complexity.** Users see decisions, not research | Design rule for the journey composer |
+| 4 | **Orkestr absorbs complexity.** Users see decisions, not research | `JourneyPackage.decisionsNeeded` (Phase 4) |
 | 5 | **Constraint ownership.** Every constraint belongs to one traveller | `Constraint.ownerTravellerId` is required |
 | 6 | **Consequential confirmation.** A proposed constraint is not authoritative until its owner confirms it | `origin` + `confirmation` + `consequential` |
 | 7 | **Hard vs soft.** Hard is never silently violated; soft relaxes only through explicit compromise; unknown is a real third state | `ConstraintStrength`; wave states `FEASIBLE`/`INFEASIBLE`/`UNRESOLVED` |
@@ -34,7 +34,7 @@ convention, the module is named.
 | 9 | **Deterministic feasibility.** Models never decide whether a flight satisfies a hard constraint | `FeasibilityReport` is produced by pure code only |
 | 10 | **Model proposes, code decides.** | `EvaluableConstraintKind` vs `NarrativeConstraintKind` |
 | 11 | **Honest evidence.** Unknown stays unknown; community stays community; fixture stays fixture; sandbox stays sandbox; stale stays stale | `OfferEvidenceState`, `EvidenceSourceType`, `JourneyItemStatus` |
-| 12 | **Existing execution rails win.** Use Atlas for flights rather than pretending to be an airline | `FlightProvider` boundary |
+| 12 | **Existing execution rails win.** Use Atlas for flights rather than pretending to be an airline | `FlightProvider` boundary, with `MockFlightProvider` behind it and no vendor name in core logic |
 
 ## 4. Privacy wording
 

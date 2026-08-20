@@ -8,8 +8,8 @@ what any other document, comment or UI label suggests. Any disagreement between
 this table and another document is a bug in the other document.
 
 - **Last updated:** 20 August 2026
-- **Phases completed:** Phase 0 (foundation), Phase 1 (deterministic core), Phase 2 (travel waves), Phase 3 (compromise and repair)
-- **Phase in progress:** none. Awaiting founder approval to begin Phase 4.
+- **Phases completed:** Phase 0 (foundation), Phase 1 (deterministic core), Phase 2 (travel waves), Phase 3 (compromise and repair), Phase 4 (journey, legs, provider, package)
+- **Phase in progress:** none. Awaiting founder approval to begin Phase 5.
 
 ## Legend
 
@@ -42,7 +42,12 @@ system computes how far the change reaches, repairs the smallest area that needs
 repairing, reports exactly how much of the existing plan survived, and asks only
 the people whose own decisions moved.
 
-Verified at the last run: **339 tests across 19 files, all passing.** Lint and
+Phase 4 closes the outbound-only gap. A journey is an ordered list of legs, each
+planned independently, so a group can now get home; and the whole trip is
+assembled into a structured package of days and items with a local flight
+provider behind it.
+
+Verified at the last run: **421 tests across 24 files, all passing.** Lint and
 typecheck clean.
 
 ---
@@ -55,7 +60,7 @@ typecheck clean.
 | Remote git backup | `IMPLEMENTED` | `origin` = github.com/ihatecodingaaa/orkestr-travel (private) |
 | TypeScript strict configuration | `IMPLEMENTED` | `tsconfig.json`; `npm run typecheck` passes |
 | Lint with type-aware rules | `IMPLEMENTED` | `eslint.config.mjs`; verified with a deliberate failing probe |
-| Test runner | `IMPLEMENTED` | vitest; 339 tests |
+| Test runner | `IMPLEMENTED` | vitest; 421 tests |
 | Combined quality gate | `IMPLEMENTED` | `npm run check` |
 | Documentation structure | `IMPLEMENTED` | 21 documents in `docs/`, plus `README.md` |
 | CI pipeline | `NOT IMPLEMENTED` | Not yet configured |
@@ -80,7 +85,7 @@ same as implementing the behaviour it describes.
 | Travel waves, travel units, reunion anchors | `IMPLEMENTED` - engine built, see below |
 | Compromise, commitment, trip events, impact, plan repair | `TYPES ONLY` - no engine |
 | Evidence model, research provider interface | `TYPES ONLY` - no provider |
-| Journey package and items | `TYPES ONLY` - no composer |
+| Journey, legs, days, items, package | `IMPLEMENTED` - see below |
 
 ---
 
@@ -149,8 +154,6 @@ one offer in isolation:
 
 | Capability | Status | Phase |
 | --- | --- | --- |
-| Mock flight provider | `PLANNED` | 4 |
-| Journey package composition, meals | `PLANNED` | 4 |
 | User interface of any kind | `NOT IMPLEMENTED` | 5 |
 
 ---
@@ -185,6 +188,41 @@ one offer in isolation:
 | Model fare or provider events | Deferred to the Atlas phase |
 | Persist anything | Previous plans and accepted compromises are passed in by the caller |
 | Produce `ACTIVITY_ONLY` impact | Journey items do not exist until Phase 4 |
+
+---
+
+## Journey and provider (Phase 4)
+
+| Capability | Status | Module | Tests |
+| --- | --- | --- | --- |
+| Journey and JourneyLeg model | `IMPLEMENTED` | `domain/journeyLeg.ts` | 14 |
+| Round-trip support (outbound + return) | `IMPLEMENTED` | `core/journey/legPlanner.ts` | (in the 14) |
+| Per-leg travel waves, reusing Phase 2 | `IMPLEMENTED` | `core/journey/legPlanner.ts` | (in the 14) |
+| Per-leg reunion semantics | `IMPLEMENTED` | `core/journey/legPlanner.ts` | (in the 14) |
+| FlightProvider contract | `IMPLEMENTED` | `domain/flight.ts` | 16 |
+| MockFlightProvider (search + verify lifecycle) | `IMPLEMENTED` | `core/providers/mockFlightProvider.ts` | 16 |
+| Provider capabilities, tri-state | `IMPLEMENTED` | `core/providers/mockFlightProvider.ts` | (in the 16) |
+| Fare shock through existing engines | `IMPLEMENTED` | tests only; no new rules | 8 |
+| JourneyPackage, JourneyDay, JourneyItem | `IMPLEMENTED` | `core/journey/composer.ts` | 25 |
+| Pre-flight and arrival structures | `IMPLEMENTED` | `core/journey/composer.ts` | (in the 25) |
+| Meal items and in-flight requests | `IMPLEMENTED` | `core/journey/composer.ts` | (in the 25) |
+| Assistance tasks and status | `IMPLEMENTED` | `core/journey/composer.ts` | (in the 25) |
+| Caller-supplied assumptions, source-marked | `IMPLEMENTED` | `core/journey/assumptions.ts` | (in safety) |
+| Package validation | `IMPLEMENTED` | `core/journey/validate.ts` | (in the 25) |
+| Whole-package hero fixture, round trip | `IMPLEMENTED` | `fixtures/journeyScenarios.ts` | 12 |
+
+### What Phase 4 explicitly does NOT do
+
+| Not done | Why |
+| --- | --- |
+| Verify provider capacity | No real provider. A fitting traveller is `LOGICALLY_COMPATIBLE`, never a confirmed seat |
+| Resolve assistance | Needs provider evidence. Stays `NEEDS_CONFIRMATION`; the package stays `UNRESOLVED` |
+| Mark anything `BOOKED` or `VERIFIED` | Nothing has been arranged or checked with anybody. The validator refuses `BOOKED` |
+| Destination research | Activities are fixture-supplied and cited to the fixture, never discovered |
+| Hotel, restaurant, activity, maps or weather providers | None exist |
+| Optimise itinerary density | `pace` is stored and displayed only |
+| Add journey items to the decision inventory | Would inflate the preservation denominator. Reported as separate counts |
+| Produce any evidence source but `LOCAL_FIXTURE` | Nothing else exists to produce one |
 
 ---
 

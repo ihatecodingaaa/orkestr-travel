@@ -1,6 +1,7 @@
 # Demo Script
 
-**Status:** `PARTIAL`. Acts 1 and 2 are backed by working code; Act 3 is not.
+**Status:** `PARTIAL`. All three acts are backed by working code. There is still
+no UI, so nothing can be *shown* yet.
 
 There is still no UI, so nothing can be *shown* yet. What exists is the
 engine output behind each act, computed deterministically and pinned by tests, so
@@ -100,14 +101,46 @@ in the test suite.
 His food and night-market interest is **not** part of the flight core and stays a
 Journey Package concern for a later phase.
 
-## 4. Act 3: the package - NOT BUILT (Phase 4)
+## 4. Act 3: the package - BUILT
 
-Travel waves, flight offers, the reunion, the pre-flight plan, the arrival plan,
-one accessibility or assistance item, the day-by-day itinerary, meal ideas,
-community evidence, and one user-shared inspiration example.
+The whole trip assembles into a structured package. Round trip, not one way.
 
-Keep it understandable. A judge who cannot follow the story will not credit the
-engineering underneath it.
+```
+Leg 1  OUTBOUND  SIN -> NRT   Wave A  Tue  Ama, Bo, Cai
+                              Wave B  Wed  Gita, Elias, Nadia, Ryan
+Leg 2  RETURN    NRT -> SIN   Wave A  Sat  all seven together
+
+days              5
+items             32
+status            UNRESOLVED
+decisions needed  7
+day 1 present     3 travellers, not 7
+reunion boundary  Wed 26 Aug 17:00 JST, location UNKNOWN
+validation        0 problems
+```
+
+Six things worth narrating, all real and all asserted by test:
+
+1. **Two waves out, one wave home.** The return leg is planned independently, so
+   people who flew out separately come back together. Nothing forces the outbound
+   shape onto the return.
+2. **Day 1 has three travellers, not seven.** Wave B has not landed. The package
+   knows who is actually present on each day.
+3. **A whole-group activity scheduled before the reunion is DROPPED**, not
+   attended by half the group. The fixture contains one deliberately.
+4. **Nothing is BOOKED and nothing is VERIFIED.** Nothing has been arranged with
+   anybody or checked with any provider, and the validator refuses `BOOKED`.
+5. **The status is UNRESOLVED, not complete**, because Gita's assistance
+   requirement has no provider confirmation and every fare still needs
+   re-checking. Seven outstanding decisions say exactly what needs attention.
+6. **Airport and immigration timings are labelled assumptions**, not facts. They
+   are supplied by the fixture and carry a source marker, because those durations
+   genuinely vary and inventing one would put a made-up number into somebody's
+   plan.
+
+Adding Ryan changes the item count by **zero**. Pre-flight and arrival items are
+per-wave, so his arrival widens Wave B's existing items rather than creating new
+ones. Wave A's items are byte-identical before and after.
 
 ## 5. Honesty during the demo
 

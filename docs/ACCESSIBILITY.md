@@ -16,7 +16,24 @@ one plan from another. Blocking on it would make compromise impossible for any
 group containing an assistance need, punishing exactly the travellers this
 product exists to serve. It stays in the plan's `unresolved` list and still
 forces the plan state to `UNRESOLVED`, so a repaired plan is never reported as
-fully provider-ready. A group where one traveller needs step-free access will
+fully provider-ready.
+
+**In the journey package (Phase 4):** the need appears as an `ASSISTANCE_TASK`
+item with status `NEEDS_CONFIRMATION`, and as a
+`PROVIDER_ASSISTANCE_CONFIRMATION` entry in the package's decisions-needed list.
+The pre-flight plan also allows extra airport lead time for the wave carrying
+that traveller, which is the one adjustment the domain can make honestly from
+information it actually holds.
+
+```
+Requirement   step-free access
+Traveller     CONFIRMED (she stated it)
+Provider      UNKNOWN   (nobody has been asked; no provider exists)
+Action        NEEDS_PROVIDER_CONFIRMATION
+```
+
+A test asserts every assistance item stays at `NEEDS_CONFIRMATION`. It is never
+labelled verified. A group where one traveller needs step-free access will
 see a plan that says plainly it cannot yet confirm that requirement.
 
 What IS enforceable today is the relationship. A traveller who states a

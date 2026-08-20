@@ -4,7 +4,7 @@
 
 ## 1. Current state, honestly
 
-**339 tests across 19 files, all passing.**
+**421 tests across 24 files, all passing.**
 
 | Suite | Tests | Covers |
 | --- | --- | --- |
@@ -26,7 +26,12 @@
 | `impact.test.ts` | 7 | Every impact radius, and that ACTIVITY_ONLY is never produced |
 | `planRepair.test.ts` | 21 | Late join matrix, leave, reverification |
 | `constraintChange.test.ts` | 6 | All six constraint-change shapes |
-| `phase3Safety.test.ts` | 12 | Core purity guards and behavioural guarantees |
+| `phase3Safety.test.ts` | 17 | Core purity guards, behavioural guarantees, provider boundary |
+| `mockProvider.test.ts` | 16 | Search, verify, capabilities, determinism |
+| `fareShock.test.ts` | 8 | Unchanged, rise within budget, soft breach, hard breach, unavailable |
+| `journeyLeg.test.ts` | 14 | Round trip, per-leg planning sets, reunion semantics, validation |
+| `journeyPackage.test.ts` | 27 | Days, items, honesty, reunion enforcement, decisions needed |
+| `journeyRyan.test.ts` | 12 | Late join into an existing package, preservation separation |
 
 There are no tests for providers, journey packages or a UI, because none of those
 exist.
