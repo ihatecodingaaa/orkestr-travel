@@ -1,8 +1,8 @@
-import type { FlightOffer } from "../domain/flight.js";
-import type { Traveller } from "../domain/traveller.js";
-import type { Journey, InFlightRequest } from "../domain/journey.js";
-import type { JourneyLeg } from "../domain/journeyLeg.js";
-import type { TripWindow } from "../domain/tripWindow.js";
+import type { FlightOffer } from "../domain/flight";
+import type { Traveller } from "../domain/traveller";
+import type { Journey, InFlightRequest } from "../domain/journey";
+import type { JourneyLeg } from "../domain/journeyLeg";
+import type { TripWindow } from "../domain/tripWindow";
 import {
   asAssistanceNeedId,
   asEvidenceId,
@@ -12,9 +12,9 @@ import {
   asJourneyLegId,
   asTravellerId,
   asTripId,
-} from "../domain/index.js";
-import { buildConstraint, buildOffer, buildTraveller, sgd } from "./builders.js";
-import type { SuggestedActivity } from "../core/journey/composer.js";
+} from "../domain/index";
+import { buildConstraint, buildOffer, buildTraveller, sgd } from "./builders";
+import type { SuggestedActivity } from "../core/journey/composer";
 
 /**
  * The whole-journey hero fixture: Tokyo, 5 days 4 nights, round trip.
@@ -144,7 +144,12 @@ export function tokyoGroupSix(): readonly Traveller[] {
           type: "STEP_FREE_ACCESS",
           statedBy: "TRAVELLER",
           confirmedByOwner: true,
-          visibility: "SENSITIVE",
+          // PRIVATE rather than SENSITIVE, deliberately. Gita told the group so
+          // they could plan around it, and the group needs to know an assistance
+          // requirement exists in order to coordinate. What stays private is the
+          // detail, not the existence. The SENSITIVE path is implemented and
+          // tested separately for needs somebody does not want shared at all.
+          visibility: "PRIVATE",
           // The traveller has confirmed the NEED. No provider has confirmed it
           // can be met, and none exists to ask.
           operationalStatus: "NEEDS_CONFIRMATION",
@@ -157,9 +162,20 @@ export function tokyoGroupSix(): readonly Traveller[] {
       mustTravelWith: ["T-004"],
       constraints: [buildConstraint("T-005", { kind: "AVAILABLE_DATES", ranges: [WED, RETURN_DAYS] })],
     }),
+    // Nadia states a budget PREFERENCE rather than a limit. At the fixture fare
+    // it is comfortably met, so the baseline plan has no soft violations; it
+    // only bites if a fare later rises, which is what the fare-shock demo
+    // exercises without changing anything about the baseline.
     buildTraveller("T-006", "Nadia", {
       canTravelSeparately: true,
-      constraints: [buildConstraint("T-006", { kind: "AVAILABLE_DATES", ranges: [WED, RETURN_DAYS] })],
+      constraints: [
+        buildConstraint("T-006", { kind: "AVAILABLE_DATES", ranges: [WED, RETURN_DAYS] }),
+        buildConstraint(
+          "T-006",
+          { kind: "BUDGET_MAX", maxPerTraveller: sgd(430) },
+          { strength: "SOFT" },
+        ),
+      ],
     }),
   ];
 }

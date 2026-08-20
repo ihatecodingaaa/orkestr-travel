@@ -1,6 +1,6 @@
-import type { Traveller } from "../../domain/traveller.js";
-import type { JourneyLeg } from "../../domain/journeyLeg.js";
-import type { TravelWave } from "../../domain/travelWave.js";
+import type { Traveller } from "../../domain/traveller";
+import type { JourneyLeg } from "../../domain/journeyLeg";
+import type { TravelWave } from "../../domain/travelWave";
 import type {
   DecisionNeeded,
   InFlightRequest,
@@ -9,19 +9,19 @@ import type {
   JourneyItem,
   JourneyPackage,
   JourneyPackageStatus,
-} from "../../domain/journey.js";
-import type { ReunionAnchor } from "../../domain/reunion.js";
-import type { TripPace } from "../../domain/trip.js";
-import type { EvidenceId, JourneyItemId, TravellerId } from "../../domain/ids.js";
+} from "../../domain/journey";
+import type { ReunionAnchor } from "../../domain/reunion";
+import type { TripPace } from "../../domain/trip";
+import type { EvidenceId, JourneyItemId, TravellerId } from "../../domain/ids";
 import {
   asJourneyDayId,
   asJourneyItemId,
   asJourneyPackageId,
-} from "../../domain/ids.js";
-import type { IsoDate, IsoDateTime } from "../../domain/time.js";
-import { addMinutesToInstant, compareInstants, localDateOf, parseInstant } from "../time/instant.js";
-import { addDays, daysBetween } from "../time/civilDate.js";
-import type { JourneyAssumptions } from "./assumptions.js";
+} from "../../domain/ids";
+import type { IsoDate, IsoDateTime } from "../../domain/time";
+import { addMinutesToInstant, compareInstants, localDateOf, parseInstant } from "../time/instant";
+import { addDays, daysBetween } from "../time/civilDate";
+import type { JourneyAssumptions } from "./assumptions";
 
 /**
  * Composing the journey package.
@@ -248,7 +248,10 @@ function assistanceItems(
       items.push({
         id: nextItemId("ITEM-ASSIST"),
         type: "ASSISTANCE_TASK",
-        title: `Confirm ${need.type.toLowerCase().replace(/_/g, " ")} with the airline`,
+        // The flight is named because the same need recurs on every leg, and
+        // two identically titled tasks would look like a duplicate bug rather
+        // than two genuinely separate confirmations.
+        title: `Confirm ${need.type.toLowerCase().replace(/_/g, " ")} for ${leg.originCode} to ${leg.destinationCode} on ${wave.label}`,
         startsAt: wave.departureAt,
         travellerIds: [traveller.id],
         legId: leg.id,
@@ -455,7 +458,7 @@ function decisionsNeeded(
       needed.push({
         kind: "FARE_REVERIFICATION",
         travellerIds: wave.travellerIds,
-        subject: `${wave.label} on ${wave.offerId}`,
+        subject: `${leg.originCode} to ${leg.destinationCode}, ${wave.label}`,
         why: "the fare and availability came from a local fixture and have not been verified with any provider",
         legId: leg.id,
       });
