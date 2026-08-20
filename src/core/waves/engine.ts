@@ -44,6 +44,31 @@ export interface WavePlanningOptions extends SearchOptions {
   readonly planningTravellerIds: readonly TravellerId[];
 }
 
+/** Raw enumeration output: every plan built, before any gate or ranking. */
+export type CandidateEnumeration =
+  | {
+      readonly ok: false;
+      readonly reason: "VALIDATION_FAILED";
+      readonly errors: readonly RelationshipProblem[];
+      readonly warnings: readonly RelationshipProblem[];
+    }
+  | {
+      readonly ok: false;
+      readonly reason: "NO_PLAN_FOUND";
+      readonly explanation: string;
+      readonly uncoverableUnitIds: readonly TravelUnitId[];
+      readonly units: readonly TravelUnit[];
+      readonly diagnostics: WaveSearchDiagnostics;
+      readonly warnings: readonly RelationshipProblem[];
+    }
+  | {
+      readonly ok: true;
+      readonly plans: readonly TravelWavePlan[];
+      readonly units: readonly TravelUnit[];
+      readonly diagnostics: WaveSearchDiagnostics;
+      readonly warnings: readonly RelationshipProblem[];
+    };
+
 export type WavePlanningResult =
   | {
       readonly ok: false;
@@ -212,11 +237,18 @@ function buildPlan(raw: readonly RawWave[], ctx: BuildContext): TravelWavePlan |
   };
 }
 
-export function planTravelWaves(
+/**
+ * Enumerate every plan the search produced, WITHOUT the state gate or ranking.
+ *
+ * Exposed because the compromise frontier needs the raw candidate set. Ranking
+ * discards information the frontier depends on: a plan that ranks poorly under
+ * the current preferences may be the one needing the smallest compromise.
+ */
+export function enumerateCandidatePlans(
   allTravellers: readonly Traveller[],
   offers: readonly FlightOffer[],
   options: WavePlanningOptions,
-): WavePlanningResult {
+): CandidateEnumeration {
   const unitResult = buildTravelUnits(allTravellers, options.planningTravellerIds);
   if (!unitResult.ok) {
     return {
@@ -307,14 +339,30 @@ export function planTravelWaves(
     };
   }
 
-  // THE PLAN STATE GATE, applied before the lexicographic hierarchy.
-  //
-  // If any fully feasible plan exists, only feasible plans are ranked. A plan
-  // with an unresolved requirement is considered only when nothing better is
-  // available, because an unresolved requirement can still turn out to be a hard
-  // violation once somebody checks it. Documented in docs/TRAVEL_WAVES.md.
-  const feasible = allPlans.filter((p) => p.state === "FEASIBLE");
-  const eligible = feasible.length > 0 ? feasible : allPlans;
+  return { ok: true, plans: allPlans, units, diagnostics, warnings };
+}
+
+/**
+ * Plan travel waves: enumerate, gate on plan state, then rank.
+ *
+ * THE PLAN STATE GATE runs before the lexicographic hierarchy. If any fully
+ * feasible plan exists, only feasible plans are ranked. A plan with an
+ * unresolved requirement is considered only when nothing better is available,
+ * because an unresolved requirement can still turn out to be a hard violation
+ * once somebody checks it. Documented in docs/TRAVEL_WAVES.md.
+ */
+export function planTravelWaves(
+  allTravellers: readonly Traveller[],
+  offers: readonly FlightOffer[],
+  options: WavePlanningOptions,
+): WavePlanningResult {
+  const enumeration = enumerateCandidatePlans(allTravellers, offers, options);
+  if (!enumeration.ok) return enumeration;
+
+  const { plans, units, diagnostics, warnings } = enumeration;
+
+  const feasible = plans.filter((p) => p.state === "FEASIBLE");
+  const eligible = feasible.length > 0 ? feasible : plans;
 
   const { ordered, rejectedAt } = rankPlans(eligible);
   const selected = ordered[0];

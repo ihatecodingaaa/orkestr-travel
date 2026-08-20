@@ -92,7 +92,25 @@ export type {
   UnknownReason,
 } from "./feasibility.js";
 
-export type { Compromise, CompromiseApprovalState } from "./compromise.js";
+export type {
+  AcceptedCompromise,
+  CompromiseProposal,
+  CompromiseScope,
+  CompromiseState,
+  ConstraintRelaxation,
+  NoCompromiseReason,
+  RelaxationKind,
+} from "./compromise.js";
+
+export type {
+  DecisionDiff,
+  DecisionKey,
+  DecisionKind,
+  DecisionRecord,
+  DecisionSource,
+  DecisionsPreserved,
+} from "./decision.js";
+export { asDecisionKey } from "./decision.js";
 export type {
   CommitmentState,
   GroupCommitment,
@@ -101,8 +119,18 @@ export type {
 } from "./commitment.js";
 
 export type { TripEvent, TripEventRecord } from "./tripEvent.js";
-export type { Decision, DecisionKind, ImpactAnalysis, ImpactRadius } from "./impact.js";
-export type { DecisionsPreserved, RepairProposal, RepairQuestion } from "./planRepair.js";
+export type {
+  ImpactAnalysis,
+  ImpactRadius,
+  ImpactReasonCode,
+  ReverificationRequirement,
+} from "./impact.js";
+export type {
+  HardBlocker,
+  PlanRepairResult,
+  PlanRepairStatus,
+  RepairQuestion,
+} from "./planRepair.js";
 
 export type {
   CommunityEvidenceSummary,

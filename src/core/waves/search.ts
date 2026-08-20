@@ -40,6 +40,18 @@ export interface SearchOptions {
    * `searchLimitReached`, and the result is then explicitly NOT proven optimal.
    */
   readonly maxPlansExplored?: number;
+  /**
+   * Keep every hard-feasible plan instead of pruning branches that cannot win
+   * the Phase 2 ranking. Defaults to false, so ordinary planning is unchanged.
+   *
+   * WHY this exists: the win-based prune discards a three-wave arrangement as
+   * soon as a two-wave one is found, because it can never rank better AS THINGS
+   * STAND. But a plan that ranks poorly under the current preferences may be the
+   * one that needs the SMALLEST compromise, so the compromise frontier has to be
+   * able to see it. Retaining everything is bounded by `maxPlansExplored` and by
+   * the structural limits that always apply.
+   */
+  readonly retainAllPlans?: boolean;
 }
 
 export const DEFAULT_MAX_PLANS_EXPLORED = 200_000;
@@ -74,6 +86,7 @@ export function searchPlans(
 ): SearchResult {
   const maxPlansExplored = options.maxPlansExplored ?? DEFAULT_MAX_PLANS_EXPLORED;
   const maxWaves = options.maxWaves ?? offers.length;
+  const retainAllPlans = options.retainAllPlans ?? false;
 
   const plans: (readonly RawWave[])[] = [];
   const seenPlanKeys = new Set<string>();
@@ -149,6 +162,9 @@ export function searchPlans(
    */
   function cannotWin(open: readonly OpenWave[]): boolean {
     if (open.length > maxWaves) return true;
+    // The structural bound above always applies. The ranking-based prunes below
+    // are skipped when the caller needs every hard-feasible plan.
+    if (retainAllPlans) return false;
     if (bestFeasibleWaveCount !== undefined && open.length > bestFeasibleWaveCount) return true;
 
     const alreadyUnresolved = open.some((w) => w.hasUnresolved);

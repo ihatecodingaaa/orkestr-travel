@@ -1,51 +1,166 @@
-import type { CompromiseId, ConstraintId, FlightOfferId, TravelWaveId, TravellerId } from "./ids.js";
+import type {
+  CompromiseId,
+  ConstraintId,
+  FlightOfferId,
+  TravelWaveId,
+  TravellerId,
+  TripId,
+} from "./ids.js";
 import type { IsoDateTime } from "./time.js";
+import type { Money } from "./money.js";
+import type { MagnitudeUnit } from "./feasibility.js";
 
 /**
- * The compromise engine's proposals (Phase 3).
+ * Compromise: asking one person, explicitly, to stretch one preference.
  *
- * When nothing satisfies everyone, the engine looks for the SMALLEST soft
- * relaxation that unlocks a viable option. Two rules are absolute:
+ * Three rules are absolute and are carried by these types rather than by
+ * convention:
  *
- *   * A HARD constraint is never relaxed automatically. It is not a candidate
- *     here at all; the type only ever refers to soft constraints.
- *   * Only the traveller who owns the constraint is asked. Principle 2 means the
- *     rest of the group is not surveyed about someone else's preference.
+ *   A HARD constraint is never relaxed. It is not a candidate at all. When only
+ *   hard requirements block a trip, the engine reports that fact and stops; it
+ *   does not decide which requirement somebody should give up.
+ *
+ *   UNKNOWN is never relaxable. An unknown means evidence is missing, not that a
+ *   preference is being missed. Treating it as relaxable would convert "we could
+ *   not check this" into "somebody agreed to ignore it".
+ *
+ *   Only the OWNER approves. The organiser cannot accept on somebody else's
+ *   behalf, which is why every relaxation names exactly one owning traveller and
+ *   a proposal records approvals per traveller.
  */
-export type CompromiseApprovalState =
-  | "PROPOSED"
-  | "ACCEPTED"
-  | "DECLINED"
-  /** The plan moved on and this proposal no longer applies. */
-  | "WITHDRAWN";
 
-export interface Compromise {
-  readonly id: CompromiseId;
+/**
+ * The kinds of relaxation the deterministic domain can actually compute.
+ *
+ * Every kind here maps onto an existing evaluable constraint kind and an exact
+ * magnitude the Phase 1 engine already produces. No kind is invented for
+ * expressive convenience; if the domain cannot compute it, it is not here.
+ */
+export type RelaxationKind =
+  | "BUDGET_INCREASE"
+  | "EARLIER_DEPARTURE"
+  | "LATER_DEPARTURE"
+  | "LATER_ARRIVAL"
+  | "ADDITIONAL_STOP"
+  | "RELAX_DIRECT_PREFERENCE"
+  | "REDUCE_BAGGAGE_REQUIREMENT"
+  | "ALTERNATE_AIRPORT"
+  | "DATE_WINDOW_RELAXATION"
+  | "SEPARATE_PREFERRED_TRAVELLERS";
 
-  /** The single traveller who must approve. Never a list. */
-  readonly affectedTravellerId: TravellerId;
-  /** Always a SOFT constraint. Hard constraints never appear here. */
+/**
+ * How far a compromise reaches in time.
+ *
+ * THIS_PLAN is the default and the safe one. Accepting a compromise must never
+ * overwrite the traveller's underlying preference, so the acceptance is stored
+ * as a scoped exception and the original constraint stays exactly as stated.
+ */
+export type CompromiseScope = "THIS_PLAN" | "THIS_TRIP";
+
+/**
+ * One concrete, typed relaxation.
+ *
+ * `originalValueLabel` and `proposedValueLabel` are for display only. The
+ * authoritative values are the typed fields, so nothing downstream has to parse
+ * prose to know what was agreed.
+ */
+export interface ConstraintRelaxation {
+  readonly kind: RelaxationKind;
   readonly constraintId: ConstraintId;
+  readonly ownerTravellerId: TravellerId;
 
-  /** The preference as stated, rendered for display. */
-  readonly originalValueLabel: string;
-  /** What the engine proposes instead, rendered for display. */
-  readonly proposedValueLabel: string;
-  /** How far the relaxation goes, in the constraint's own unit. */
+  /** Exact distance past the stated preference. Always positive. */
   readonly magnitude: number;
-  readonly unit: "CURRENCY_MINOR" | "MINUTES" | "STOPS" | "COUNT";
+  readonly unit: MagnitudeUnit;
 
-  /** What accepting this makes possible. At least one must be present. */
+  /** Present for money relaxations, so the exact amount is never re-derived. */
+  readonly originalMoney?: Money;
+  readonly proposedMoney?: Money;
+
+  /** Display text. Never the authoritative representation. */
+  readonly originalValueLabel: string;
+  readonly proposedValueLabel: string;
+
+  /** Why this relaxation is needed, in terms of the comparison performed. */
+  readonly reason: string;
+}
+
+export type CompromiseState = "PENDING" | "ACCEPTED" | "REJECTED" | "WITHDRAWN" | "EXPIRED";
+
+/**
+ * A proposal put to one or more travellers.
+ *
+ * A proposal groups the relaxations required to make ONE candidate plan
+ * acceptable. It may touch more than one traveller, but each of them approves
+ * only their own relaxations, which is why `approvals` is keyed by traveller
+ * rather than being a single flag.
+ */
+export interface CompromiseProposal {
+  readonly id: CompromiseId;
+  readonly tripId: TripId;
+
+  /**
+   * Stable content fingerprint over the relaxations.
+   *
+   * Two proposals asking for exactly the same thing have the same fingerprint,
+   * which is how a rejected proposal is prevented from being re-offered
+   * unchanged.
+   */
+  readonly fingerprint: string;
+
+  readonly relaxations: readonly ConstraintRelaxation[];
+  /** Derived from the relaxations, sorted. Everyone whose approval is needed. */
+  readonly affectedTravellerIds: readonly TravellerId[];
+  readonly affectedConstraintIds: readonly ConstraintId[];
+
+  /** The plan this unlocks, identified by its canonical key. */
+  readonly unlocksPlanKey: string;
   readonly unlocksOfferIds: readonly FlightOfferId[];
   readonly unlocksWaveIds: readonly TravelWaveId[];
 
-  /**
-   * Count of existing decisions that stay intact if this is accepted. Shown to
-   * the traveller so the ask is framed by what it protects, not just what it costs.
-   */
-  readonly decisionsPreservedCount: number;
+  /** Existing decisions that survive if this is accepted. Framing, not pressure. */
+  readonly decisionsPreservedCount?: number;
 
-  readonly approval: CompromiseApprovalState;
-  readonly proposedAt: IsoDateTime;
-  readonly respondedAt?: IsoDateTime;
+  readonly scope: CompromiseScope;
+  readonly state: CompromiseState;
+
+  /**
+   * Supplied by the caller. The deterministic core never reads a clock, so a
+   * proposal has no timestamp unless one is handed to it.
+   */
+  readonly proposedAt?: IsoDateTime;
 }
+
+/**
+ * A traveller's accepted exception, stored SEPARATELY from their constraint.
+ *
+ * This is the mechanism that keeps Principle 5 intact under compromise. Ama's
+ * stated preference remains "at most 450 SGD" forever; the acceptance records
+ * that, for this plan only, she agreed to 477. Anyone can still see what she
+ * actually prefers, and the exception can be withdrawn without reconstructing
+ * her original wishes from a mutated field.
+ */
+export interface AcceptedCompromise {
+  readonly compromiseId: CompromiseId;
+  readonly tripId: TripId;
+  readonly travellerId: TravellerId;
+  readonly constraintId: ConstraintId;
+  readonly relaxation: ConstraintRelaxation;
+  readonly scope: CompromiseScope;
+  /** The plan the acceptance was given for, when scope is THIS_PLAN. */
+  readonly planKey?: string;
+  readonly acceptedAt?: IsoDateTime;
+}
+
+/** Why the compromise engine could not offer anything. */
+export type NoCompromiseReason =
+  /** Only hard requirements block the trip. The core will not choose which to weaken. */
+  | "HARD_CONSTRAINT_CHANGE_REQUIRED"
+  /** Blockers are unknowns. More evidence is needed, not a compromise. */
+  | "UNRESOLVED_EVIDENCE_REQUIRED"
+  /** Everything already works; nobody needs to give anything up. */
+  | "NO_COMPROMISE_NEEDED"
+  /** Every candidate was already rejected and nothing has changed since. */
+  | "ALL_CANDIDATES_REJECTED"
+  /** The bounded search stopped early. The answer is not proven complete. */
+  | "SEARCH_LIMIT_REACHED";

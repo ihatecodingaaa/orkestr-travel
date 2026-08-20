@@ -43,6 +43,7 @@ export type TripEvent =
       readonly newPrice: Money;
     }
   | { readonly type: "COMPROMISE_ACCEPTED"; readonly compromiseId: CompromiseId }
+  | { readonly type: "COMPROMISE_REJECTED"; readonly compromiseId: CompromiseId }
   | { readonly type: "COMMITMENT_CREATED"; readonly commitmentId: CommitmentId }
   | {
       readonly type: "COMMITMENT_INVALIDATED";
