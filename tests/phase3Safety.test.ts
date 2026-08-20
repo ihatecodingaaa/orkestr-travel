@@ -224,3 +224,60 @@ describe("behavioural safety guarantees", () => {
     expect(result.status).not.toBe("SEARCH_LIMIT_REACHED");
   });
 });
+
+describe("Phase 4 provider and journey safety", () => {
+  it("keeps every vendor name out of generic business logic", () => {
+    // The provider boundary exists so nothing above it knows who it is talking
+    // to. A vendor name in core logic is that boundary already leaking.
+    for (const file of coreSources()) {
+      if (file.includes("providers")) continue; // adapters may name themselves
+      const code = codeOnly(readFileSync(file, "utf8"));
+      expect(code, `${file} names Atlas`).not.toMatch(/\bAtlas\b/i);
+      expect(code, `${file} names ATRIP`).not.toMatch(/\bATRIP\b/i);
+    }
+  });
+
+  it("keeps the provider free of fare, budget and feasibility rules", () => {
+    // A provider supplies facts. Deciding what they mean belongs to exactly one
+    // place, and a second copy in an adapter could disagree with it.
+    const provider = readFileSync(
+      join(process.cwd(), "src", "core", "providers", "mockFlightProvider.ts"),
+      "utf8",
+    );
+    const code = codeOnly(provider);
+    expect(code).not.toMatch(/budget/i);
+    expect(code).not.toMatch(/feasib/i);
+    expect(code).not.toMatch(/constraint/i);
+  });
+
+  it("hard-codes no airport or immigration durations in the composer", () => {
+    // Every such figure is an assumption supplied by the caller and carries a
+    // source marker. Freezing one here would put an invented number into a plan
+    // people arrange their lives around.
+    const composer = readFileSync(
+      join(process.cwd(), "src", "core", "journey", "composer.ts"),
+      "utf8",
+    );
+    const code = codeOnly(composer);
+    expect(code).not.toMatch(/=\s*120\b|=\s*90\b|=\s*60\s*;/);
+    expect(code).toMatch(/assumptions\./);
+  });
+
+  it("marks every fixture assumption as an assumption", () => {
+    const assumptions = readFileSync(
+      join(process.cwd(), "src", "core", "journey", "assumptions.ts"),
+      "utf8",
+    );
+    expect(assumptions).toContain("LOCAL_FIXTURE_ASSUMPTION");
+  });
+
+  it("labels every fixture flight offer as LOCAL_FIXTURE", () => {
+    const builders = readFileSync(
+      join(process.cwd(), "src", "fixtures", "builders.ts"),
+      "utf8",
+    );
+    expect(builders).toContain('evidenceState: "LOCAL_FIXTURE"');
+    // No override parameter exists, so a fixture cannot claim another source.
+    expect(builders).not.toMatch(/evidenceState:\s*options\./);
+  });
+});
