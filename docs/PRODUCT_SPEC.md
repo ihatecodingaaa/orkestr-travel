@@ -33,7 +33,7 @@ convention, the module is named.
 | 8 | **Privacy.** Private constraints are not attributed publicly | `ConstraintVisibility` |
 | 9 | **Deterministic feasibility.** Models never decide whether a flight satisfies a hard constraint | `FeasibilityReport` is produced by pure code only |
 | 10 | **Model proposes, code decides.** | `EvaluableConstraintKind` vs `NarrativeConstraintKind` |
-| 11 | **Honest evidence.** Unknown stays unknown; community stays community; fixture stays fixture; sandbox stays sandbox; stale stays stale | `OfferEvidenceState`, `EvidenceSourceType`, `JourneyItemStatus` |
+| 11 | **Honest evidence.** Unknown stays unknown; community stays community; fixture stays fixture; sandbox stays sandbox; stale stays stale | `OfferEvidenceState`, `EvidenceSourceType`, `JourneyItemStatus`, and the truth-badge system that renders them |
 | 12 | **Existing execution rails win.** Use Atlas for flights rather than pretending to be an airline | `FlightProvider` boundary, with `MockFlightProvider` behind it and no vendor name in core logic |
 
 ## 4. Privacy wording

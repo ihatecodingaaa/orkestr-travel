@@ -1,7 +1,7 @@
 # Hackathon Master Plan
 
 **Event:** Alibaba Cloud x Atlas Agentic AI Hackathon 2026
-**Status:** Phases 0, 1, 2, 3 and 4 complete. Phase 5 not started.
+**Status:** Phases 0 through 5 complete. Phase 6 not started.
 
 ## 1. The thesis
 
@@ -40,7 +40,7 @@ automatically. Each begins on founder instruction.**
 | 2 | Travel waves, reunion anchors | **COMPLETE** |
 | 3 | Compromise, impact radius, plan repair, late join and leave | **COMPLETE** |
 | 4 | Mock provider, journey package, meals, local fixture demo | **COMPLETE** |
-| 5 | Local UI, mobile first, wave visualisation | Not started |
+| 5 | Local UI, mobile first, wave visualisation | **COMPLETE** |
 | 6 | Qwen extraction and web research, evidence | Needs approval |
 | 7 | Atlas provider | Needs approval, documentation and credentials |
 | 8 | Persistence, private multi-user | Needs an infrastructure decision |

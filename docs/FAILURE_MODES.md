@@ -80,6 +80,17 @@ The composer DROPS a whole-group activity that would fall before the reunion
 boundary rather than scheduling it for whoever happens to be there. The hero
 fixture contains one deliberately, and a test asserts it never appears.
 
+## 7f. The interface makes something look more certain than it is
+
+**The most likely honest-looking failure in a demo.** A green tick beside a
+suggestion, or an assistance request styled like a confirmation, would overstate
+what the system knows while looking completely normal.
+
+Mitigation is structural rather than editorial: domain state maps to appearance
+in ONE module, the positive tone is unreachable for anything a local fixture
+produces, and tests assert that a suggestion is styled differently from a
+booking and that assistance never reaches a verified tone.
+
 ## 8. Assistance need cannot be confirmed
 
 Correct behaviour: status stays `NEEDS_CONFIRMATION` with a handoff task. Never

@@ -1,158 +1,172 @@
 # Demo Script
 
-**Status:** `PARTIAL`. All three acts are backed by working code. There is still
-no UI, so nothing can be *shown* yet.
+**Status:** `IMPLEMENTED` for the local build. Every screen below exists and
+runs offline with `npm run dev`.
 
-There is still no UI, so nothing can be *shown* yet. What exists is the
-engine output behind each act, computed deterministically and pinned by tests, so
-the numbers quoted below cannot drift away from what the code does. Fixtures live
-in `src/fixtures/waveScenarios.ts` and `src/fixtures/repairScenarios.ts`.
+**Everything is LOCAL FIXTURE data.** No airline, no web search, no AI. The
+banner at the top of every screen says so, permanently, and is not a tooltip.
 
-## 1. The scenario
+---
 
-A multi-generational family trip to Tokyo, 5 days and 4 nights.
+## Before you start
 
-- Expected travellers: 7
-- Initially joined: 6
-- Mix: grandparents, parents, a teenager, a young adult
-
-At least one traveller **explicitly declares** a mobility or assistance
-requirement. It is stated by that person. **It is never inferred from their age**,
-and the demo narration must make that distinction out loud, because it is one of
-the strongest differentiators in the product.
-
-Availability constraints make a single shared flight impossible.
-
-## 2. Act 1: the split - BUILT
-
-The travel wave engine produces, from the seven-person fixture:
-
-```
-Wave A   Tue 25 Aug 14:00 SGT -> 22:00 JST   Ama, Bo, Cai, Kai      FEASIBLE
-Wave B   Wed 26 Aug 07:00 SGT -> 15:00 JST   Gita, Elias, Nadia     UNRESOLVED
-
-plan state        UNRESOLVED
-waves             2
-arrival spread    1020 minutes (17 hours)
-cost              2780.00 SGD, comparable
-soft violations   0
-reunion boundary  not before Wed 26 Aug 15:00 JST, location UNKNOWN
+```bash
+npm install
+npm run dev          # http://localhost:3000
 ```
 
-Note that Wave A takes the LATER Tuesday flight, not the early one. That is
-criterion 4 doing its job: leaving later cuts the gap between the two arrivals
-from 24 hours to 17, so the group is whole sooner. It is not a cost decision, and
-the engine can say which criterion decided it.
+The demo is driven by the URL, so every step is a real navigation and the back
+button works as undo. Any point can be reached directly if something goes wrong:
 
-Five things in that output are worth narrating, and all five are real:
+| Step | Address |
+| --- | --- |
+| Baseline | `/demo` |
+| After Ryan joins | `/demo/waves?stage=RYAN_JOINED` |
+| Fare rise past a preference | `/demo/journey?stage=RYAN_JOINED&fare=SOFT_BREACH` |
+| Fare rise past a hard limit | `/demo/journey?stage=RYAN_JOINED&fare=HARD_BREACH` |
+| A private view | `/demo/participant/T-006?stage=RYAN_JOINED&fare=SOFT_BREACH` |
 
-1. **The trip was not declared impossible.** Availability split across two days
-   and the engine found the two-wave answer rather than failing.
-2. **Gita and Elias are together** because Gita stated a must-travel-with
-   companion. They are one indivisible unit; the engine cannot separate them.
-3. **Kai is not alone.** Kai withheld permission to travel in a one-person wave,
-   so the engine grouped them with the other Tuesday travellers.
-4. **The plan says UNRESOLVED, not confirmed.** Gita's step-free requirement
-   cannot be checked without a provider, so the engine reports it as unresolved
-   instead of quietly claiming the flight is accessible. This is the honesty
-   point of the whole demo.
+The same address always produces the same screen. Nothing is random and nothing
+reads a clock.
 
-The reunion is a temporal boundary only: "not before Wed 15:00". No meeting point
-or transfer time is invented.
+---
 
-## 3. Act 2: the late join - BUILT
+## The three-minute sequence
 
-Ryan joins after planning has already happened. He is available Wednesday and is
-comfortably within budget, so he suits Wave B exactly as it stands.
+### 0:00 - The problem (20 seconds)
 
-```
-Before   Wave A  Tue  Ama, Bo, Cai
-         Wave B  Wed  Gita, Elias, Nadia
+Open `/`.
 
-After    Wave A  Tue  Ama, Bo, Cai              UNCHANGED
-         Wave B  Wed  Gita, Elias, Nadia, Ryan
+> "Six people want five days in Tokyo. They live in different places, they are
+> free on different days, one of them needs step-free access and travels with her
+> husband. The usual answer is a group chat that never resolves."
 
-status                LOCAL_REPAIR_FOUND
-impact                WAVE_ONLY
-decisions preserved   100% (10 of 10), 1 added
-approvals required    none
-reverification        Wave B only
-```
+Point at the disabled text box.
 
-Four things to narrate, all of them real and all asserted by test:
+> "Reading free text isn't built yet, so this build says so rather than
+> pretending. Everything here comes from a structured demo fixture."
 
-1. **Wave A is not regenerated.** Its flight, its membership and its place in the
-   plan are untouched, and the impact analysis lists it explicitly as unchanged.
-2. **Nobody is asked anything.** `approvalsRequired` is empty. The three people
-   in Wave A never hear about this.
-3. **The preservation figure is real.** Ten decisions existed, ten survived, one
-   was added. New decisions never enter the denominator, so adding Ryan cannot
-   flatter the number. `PLAN_REPAIR.md` defines exactly what counts.
-4. **Nothing claims Ryan has a seat.** Wave B is flagged for provider
-   reverification. He is LOGICALLY COMPATIBLE with that flight; whether a seat
-   exists is unknown, and the system says so.
+Click **Load the family demo**.
 
-If instead Ryan had a soft budget preference the flight exceeded, the result
-would be `COMPROMISE_REQUIRED` with a proposal put to Ryan alone, naming the
-exact amount. If he had a hard budget nothing could satisfy, the result would be
-`NO_FEASIBLE_REPAIR` with the blocker named and no compromise invented. Both are
-in the test suite.
+### 0:20 - Who is going (25 seconds)
 
-His food and night-market interest is **not** part of the flight core and stays a
-Journey Package concern for a later phase.
+`/demo`
 
-## 4. Act 3: the package - BUILT
+> "Six of seven expected travellers have joined. Notice what the group can see:
+> that somebody has a budget requirement, not what it says. Personal figures stay
+> with their owner."
 
-The whole trip assembles into a structured package. Round trip, not one way.
+Point at Gita's card.
+
+> "She has stated she needs step-free access. Two separate badges: she has
+> confirmed the requirement, and the airline has confirmed nothing. Those are
+> different facts and the interface never merges them."
+
+### 0:45 - The split (40 seconds)
+
+`/demo/waves` - **the signature screen.**
+
+> "One flight doesn't work for everyone. So Orkestr doesn't give up; it finds the
+> smallest split that does."
 
 ```
-Leg 1  OUTBOUND  SIN -> NRT   Wave A  Tue  Ama, Bo, Cai
-                              Wave B  Wed  Gita, Elias, Nadia, Ryan
-Leg 2  RETURN    NRT -> SIN   Wave A  Sat  all seven together
-
-days              5
-items             32
-status            UNRESOLVED
-decisions needed  7
-day 1 present     3 travellers, not 7
-reunion boundary  Wed 26 Aug 17:00 JST, location UNKNOWN
-validation        0 problems
+Wave A   Tue 25 Aug   Ama, Bo, Cai
+Wave B   Wed 26 Aug   Gita, Elias, Nadia
+         Everyone together from Wed 26 Aug, 17:00
 ```
 
-Six things worth narrating, all real and all asserted by test:
+> "Gita and Elias are together because she said she needs to be with him. Not
+> because they share a surname."
 
-1. **Two waves out, one wave home.** The return leg is planned independently, so
-   people who flew out separately come back together. Nothing forces the outbound
-   shape onto the return.
-2. **Day 1 has three travellers, not seven.** Wave B has not landed. The package
-   knows who is actually present on each day.
-3. **A whole-group activity scheduled before the reunion is DROPPED**, not
-   attended by half the group. The fixture contains one deliberately.
-4. **Nothing is BOOKED and nothing is VERIFIED.** Nothing has been arranged with
-   anybody or checked with any provider, and the validator refuses `BOOKED`.
-5. **The status is UNRESOLVED, not complete**, because Gita's assistance
-   requirement has no provider confirmation and every fare still needs
-   re-checking. Seven outstanding decisions say exactly what needs attention.
-6. **Airport and immigration timings are labelled assumptions**, not facts. They
-   are supplied by the fixture and carry a source marker, because those durations
-   genuinely vary and inventing one would put a made-up number into somebody's
-   plan.
+Point at **Why this works**.
 
-Adding Ryan changes the item count by **zero**. Pre-flight and arrival items are
-per-wave, so his arrival widens Wave B's existing items rather than creating new
-ones. Wave A's items are byte-identical before and after.
+> "Every line is derived from the planning result, not written by a model. Two
+> groups rather than three. Everyone together within 24 hours. And one line
+> that's still open: the airline hasn't confirmed the assistance."
 
-## 5. Honesty during the demo
+Scroll to the return leg.
 
-Every label shown on screen must be true at the moment it is shown. Sandbox data
-says sandbox. Recorded data says recorded. An unconfirmed assistance request says
-needs confirmation.
+> "And they don't all come home together. The return is planned separately, so
+> the two groups fly out and one group flies back."
 
-If a live call fails during the presentation, the correct move is to show the
-labelled recorded fallback and say what it is. That is a stronger demonstration
-of the product's discipline than a fake success.
+### 1:25 - The whole journey (30 seconds)
 
-## 6. Timing
+`/demo/journey`
 
-Three minutes. Act 1 roughly 60 seconds, Act 2 roughly 60 seconds, Act 3 roughly
-45 seconds, with a short opening framing of the problem.
+> "Day one only has three people on it, and the interface says so. Nothing for
+> the whole group is scheduled before everybody has landed."
+
+Point at a demo-assumption label.
+
+> "Airport timings are labelled as demo assumptions, because how early you need
+> to arrive genuinely varies. We're not going to invent a number and present it
+> as an airline rule."
+
+### 1:55 - Ryan joins (35 seconds)
+
+Click **Ryan joins**.
+
+> "Ryan joins after all of this was agreed. Watch what does NOT happen."
+
+```
+Wave A   unchanged
+Wave B   + Ryan, same flight
+10 of 10 existing flight decisions stayed intact
+1 new decision was added
+```
+
+> "Wave A is untouched. Those three people are never asked anything. Ten of ten
+> existing decisions survived, and one was added for Ryan."
+
+> "And it says Wave B needs re-checking. Ryan fits that flight's requirements.
+> Whether a seat exists, nobody has checked, and we don't claim otherwise."
+
+### 2:30 - The fare moves (20 seconds)
+
+Click **Check the fares**.
+
+> "The fare went up by thirty dollars. That crosses one traveller's preferred
+> budget."
+
+> "The group is told that one traveller would need to stretch a preference. It is
+> not told who, and it is not told the number."
+
+Open the private view.
+
+> "Only she sees this: thirty dollars above her preferred budget, four-thirty
+> normally, four-sixty for this trip. And her usual preference is not changed by
+> accepting. It's recorded as an exception, not an overwrite."
+
+### 2:50 - What still needs a person (10 seconds)
+
+`/demo/decisions`
+
+> "Orkestr prepared thirty-two journey items. Seven things still need a human or
+> an airline. That's the product: it absorbs the complexity and hands back the
+> decisions."
+
+---
+
+## What a judge should take away
+
+1. **It doesn't give up.** No single flight works, so it finds the smallest split
+   that does.
+2. **It changes as little as possible.** A late joiner costs three people
+   nothing.
+3. **It never overstates.** Nothing is booked, nothing is verified, no seat is
+   claimed, and assistance is not confirmed just because somebody asked for it.
+4. **Privacy is structural.** The group learns the effect; only the owner learns
+   the detail.
+5. **Nothing here is AI.** Every decision is deterministic and tested. Qwen
+   arrives in Phase 6 to read language and gather evidence, not to make these
+   judgements.
+
+---
+
+## What is NOT in this demo
+
+Real flights. Real prices. Real availability. Any airline. Any web search. Any
+language model. Any account or login. Any saved data. Any booking or payment.
+
+Later phases replace the fixture provider with Atlas and add Qwen for extraction
+and research. Until then, the banner tells the truth on every screen.

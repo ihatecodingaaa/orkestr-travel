@@ -37,7 +37,7 @@ fewest questions that still make the trip work.
 
 ## Current status
 
-**Phases 0, 1, 2, 3 and 4 complete.**
+**Phases 0 through 5 complete.**
 
 The deterministic core decides which flight offers are feasible for whom, what
 preferences they miss, and what it does not know. On top of that, the travel wave
@@ -53,7 +53,7 @@ it, reports honestly how much of the existing plan survived, and asks only the
 people whose own decisions moved. Where a plan misses somebody's preference it
 proposes an explicit compromise to that person rather than deciding for them.
 
-421 tests pass across 24 files. Lint and typecheck are clean.
+498 tests pass across 29 files. Lint and typecheck are clean.
 
 Phase 4 closes the outbound-only gap. A journey is now an ordered list of legs,
 each planned independently, so a group can get home again and a future multi-city
@@ -61,9 +61,15 @@ trip needs more legs rather than a rewrite. A local flight provider models the
 search and verify lifecycle, and the whole trip assembles into a structured
 package of days and items.
 
-**There is still no application.** No UI, no real flight provider, no AI
-integration, no persistence and no deployed infrastructure. No seat availability
-is ever claimed.
+Phase 5 adds the interface. There is now a running local application, and the
+honesty rules are rendered rather than merely documented: a suggestion is not
+styled like a booking, a traveller confirming they need assistance is not styled
+like an airline confirming it can provide it, and no group surface carries a
+private figure.
+
+**There is still no real provider, no AI, no persistence and no deployment.** The
+app runs entirely offline from fixture data, makes no network request, has no
+sign-in, and never claims a seat is available.
 
 `docs/IMPLEMENTATION_STATUS.md` is the authoritative status table and is kept
 brutally accurate. If a feature is not marked IMPLEMENTED there, it does not
@@ -102,6 +108,11 @@ src/core/       the deterministic engines
   repair/         impact radius and local-first plan repair
   providers/      MockFlightProvider, a local development adapter
   journey/        per-leg planning, package composition, validation
+src/ui/
+  view/           view models: turn domain output into safe presentation state
+  components/     presentational React, containing no business rules
+  demo/           the deterministic demo scenario
+app/            the Next.js application
 src/fixtures/   builders for arbitrary group sizes, fictional identities only
 tests/          vitest suites
 docs/           specification, design and status documents
@@ -115,7 +126,18 @@ Requires Node 20 or newer.
 
 ```bash
 npm install
+npm run dev        # http://localhost:3000
+```
+
+Then open `/` and choose **Load the family demo**. The app needs no network,
+no keys and no configuration; everything it shows is fixture data compiled into
+the bundle. `docs/DEMO_SCRIPT.md` walks through the three-minute sequence.
+
+Quality gates:
+
+```bash
 npm run check      # lint + typecheck + tests
+npm run verify     # the above, plus the production build
 ```
 
 Individually:

@@ -8,8 +8,8 @@ what any other document, comment or UI label suggests. Any disagreement between
 this table and another document is a bug in the other document.
 
 - **Last updated:** 20 August 2026
-- **Phases completed:** Phase 0 (foundation), Phase 1 (deterministic core), Phase 2 (travel waves), Phase 3 (compromise and repair), Phase 4 (journey, legs, provider, package)
-- **Phase in progress:** none. Awaiting founder approval to begin Phase 5.
+- **Phases completed:** Phase 0 (foundation), Phase 1 (deterministic core), Phase 2 (travel waves), Phase 3 (compromise and repair), Phase 4 (journey, legs, provider, package), Phase 5 (local interface)
+- **Phase in progress:** none. Awaiting founder approval to begin Phase 6.
 
 ## Legend
 
@@ -47,8 +47,14 @@ planned independently, so a group can now get home; and the whole trip is
 assembled into a structured package of days and items with a local flight
 provider behind it.
 
-Verified at the last run: **421 tests across 24 files, all passing.** Lint and
-typecheck clean.
+Phase 5 adds the interface. There is now a running local application over the
+deterministic domain, and the honesty rules are rendered rather than merely
+documented: a suggestion is not styled like a booking, a traveller confirming
+they need assistance is not styled like an airline confirming it can provide it,
+and no group surface carries a private figure.
+
+Verified at the last run: **498 tests across 29 files, all passing.** Lint,
+typecheck and the production build are clean.
 
 ---
 
@@ -60,11 +66,11 @@ typecheck clean.
 | Remote git backup | `IMPLEMENTED` | `origin` = github.com/ihatecodingaaa/orkestr-travel (private) |
 | TypeScript strict configuration | `IMPLEMENTED` | `tsconfig.json`; `npm run typecheck` passes |
 | Lint with type-aware rules | `IMPLEMENTED` | `eslint.config.mjs`; verified with a deliberate failing probe |
-| Test runner | `IMPLEMENTED` | vitest; 421 tests |
+| Test runner | `IMPLEMENTED` | vitest; 498 tests |
 | Combined quality gate | `IMPLEMENTED` | `npm run check` |
 | Documentation structure | `IMPLEMENTED` | 21 documents in `docs/`, plus `README.md` |
 | CI pipeline | `NOT IMPLEMENTED` | Not yet configured |
-| Production build script | `NOT IMPLEMENTED` | Nothing to build yet; there is no application or bundle |
+| Production build | `IMPLEMENTED` | `npm run build`; 7 routes. `npm run verify` runs the full gate |
 
 ---
 
@@ -154,7 +160,7 @@ one offer in isolation:
 
 | Capability | Status | Phase |
 | --- | --- | --- |
-| User interface of any kind | `NOT IMPLEMENTED` | 5 |
+
 
 ---
 
@@ -223,6 +229,38 @@ one offer in isolation:
 | Optimise itinerary density | `pace` is stored and displayed only |
 | Add journey items to the decision inventory | Would inflate the preservation denominator. Reported as separate counts |
 | Produce any evidence source but `LOCAL_FIXTURE` | Nothing else exists to produce one |
+
+---
+
+## Interface (Phase 5)
+
+| Capability | Status | Where | Tests |
+| --- | --- | --- | --- |
+| Next.js application, App Router | `IMPLEMENTED` | `app/` | build: 7 routes |
+| View-model layer (no rules in React) | `IMPLEMENTED` | `src/ui/view/` | 61 |
+| Truth and evidence presentation | `IMPLEMENTED` | `src/ui/view/truth.ts` | 12 |
+| Privacy selectors (group vs owner) | `IMPLEMENTED` | `src/ui/view/privacy.ts` | 9 |
+| Persistent fixture banner | `IMPLEMENTED` | `src/ui/components/FixtureBanner.tsx` | 2 |
+| Group board | `IMPLEMENTED` | `app/demo` | |
+| Travel groups and reunion visual | `IMPLEMENTED` | `app/demo/waves` | |
+| Journey package, day by day | `IMPLEMENTED` | `app/demo/journey` | |
+| Decisions needed | `IMPLEMENTED` | `app/demo/decisions` | |
+| Private participant view | `IMPLEMENTED` | `app/demo/participant/[id]` | |
+| Ryan late-join flow | `IMPLEMENTED` | URL state | 11 |
+| Fare-shock flow, all five outcomes | `IMPLEMENTED` | URL state | 6 |
+| Reduced-motion support | `IMPLEMENTED` | `app/globals.css` | |
+
+### What the interface explicitly does NOT do
+
+| Not done | Why |
+| --- | --- |
+| Read free text | Nothing parses language. The box is disabled and labelled |
+| Call any network | Everything is compiled-in fixture data. The demo runs offline |
+| Authenticate anybody | The participant route says plainly it is not a private link |
+| Claim a seat exists | Re-verification says compatible, never available |
+| Show a private figure to the group | Privacy selectors prevent it; tests assert it |
+| Style a suggestion like a booking | The verified tone is unreachable for fixture data |
+| Persist anything | No database, no storage. State is in the URL |
 
 ---
 

@@ -99,6 +99,8 @@ candidates to be reviewed and ported back to the startup later:
 | Travel-Wave-style grouping | Yes (Phase 2) | **Unclear. See the note below** |
 | Provider-neutral adapter boundary | Yes (Phase 4) | Generic. Any external dependency benefits |
 | Status separated from provenance | Yes (Phase 4) | Generic, and one of the more portable ideas here |
+| Truth-badge presentation system | Yes (Phase 5) | Generic. Any product showing data of mixed reliability needs it |
+| Audience-based privacy selectors | Yes (Phase 5) | Generic. Dining has exactly the same group/owner split |
 
 ### Porting back must be intentional
 

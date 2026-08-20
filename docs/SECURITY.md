@@ -52,6 +52,24 @@ type change that a reviewer would see.
 No test may call a paid or live API. Development uses the Atlas sandbox
 exclusively. Production bookings are prohibited during development.
 
+## 6b. The local interface
+
+The Phase 5 application makes no network request of any kind. There is no
+analytics SDK, no third-party tracking, no external font or image host, no QR
+service and no telemetry. Everything it renders is fixture data compiled into
+the bundle, so the demo runs with networking switched off.
+
+There is **no authentication and none is implied**. The participant route says
+plainly that it is not a private link. A capability URL that is not actually a
+capability would be worse than making no claim at all, so the claim is not made.
+
+Demo state lives in the URL, but an accepted compromise never does: an
+acceptance is a real act by a real person, and putting it in a query parameter
+would imply anybody holding the link had given it.
+
+No real passenger data exists anywhere in the repository. Every identity in
+every fixture is invented.
+
 ## 7. Separation from the startup repository
 
 Orkestr Travel is a separate repository from the Orkestr startup (`orkestr_luc`),

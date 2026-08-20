@@ -4,7 +4,7 @@
 
 ## 1. Current state, honestly
 
-**421 tests across 24 files, all passing.**
+**498 tests across 29 files, all passing.**
 
 | Suite | Tests | Covers |
 | --- | --- | --- |
@@ -33,8 +33,14 @@
 | `journeyPackage.test.ts` | 27 | Days, items, honesty, reunion enforcement, decisions needed |
 | `journeyRyan.test.ts` | 12 | Late join into an existing package, preservation separation |
 
-There are no tests for providers, journey packages or a UI, because none of those
-exist.
+| `truth.test.ts` | 12 | No badge may look stronger than the state behind it |
+| `privacy.test.ts` | 9 | Group surfaces carry no private figure, name or id |
+| `viewModels.test.ts` | 23 | Group board, waves, journey, decisions, URL state |
+| `ryanAndFare.test.ts` | 17 | Late join and all five fare scenarios, deterministic |
+| `components.test.tsx` | 16 | Rendered DOM, including accessible text |
+
+There are no tests for a real provider, AI extraction or web research, because
+none of those exist.
 
 ### Purity is enforced by the suite, not by review
 

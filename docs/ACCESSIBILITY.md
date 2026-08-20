@@ -18,6 +18,30 @@ product exists to serve. It stays in the plan's `unresolved` list and still
 forces the plan state to `UNRESOLVED`, so a repaired plan is never reported as
 fully provider-ready.
 
+**In the interface (Phase 5):** a stated need renders with TWO separate badges,
+and a test asserts they never merge:
+
+```
+Step-free access
+  [Confirmed by traveller]        she said so
+  [Needs airline confirmation]    nobody has asked; no airline is connected
+```
+
+The provider badge can only reach a positive tone when a provider genuinely
+said yes, which nothing in this build can produce. A need marked SENSITIVE is
+withheld from group surfaces entirely, because in a small party even an
+unattributed mention identifies the person.
+
+### Accessibility OF the interface
+
+Semantic HTML throughout, with `article`, `section`, `nav` and heading structure
+rather than nested `div`s. Every control is a real link or button, so keyboard
+navigation works without any handler of ours. Focus is always visible and never
+removed. Colour never carries meaning alone: every truth badge pairs a colour
+with a word and a shape glyph. Motion is decoration only and is removed entirely
+under `prefers-reduced-motion`. The preservation percentage is `aria-hidden`
+because on its own it reads as "nothing happened"; the counts carry the meaning.
+
 **In the journey package (Phase 4):** the need appears as an `ASSISTANCE_TASK`
 item with status `NEEDS_CONFIRMATION`, and as a
 `PROVIDER_ASSISTANCE_CONFIRMATION` entry in the package's decisions-needed list.

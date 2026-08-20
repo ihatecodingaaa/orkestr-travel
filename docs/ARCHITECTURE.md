@@ -116,6 +116,25 @@ review, not merely intended.
 | `journey/composer.ts` | Assembles days and items from facts that already exist |
 | `journey/validate.ts` | Refuses packages that would read as fine but are not |
 
+## 5c. Interface layer (built)
+
+`app/` holds the Next.js application and `src/ui/` the layer between it and the
+domain.
+
+| Layer | May do | May never do |
+| --- | --- | --- |
+| `src/ui/view/` | Turn domain output into presentation models | Evaluate a constraint or decide feasibility |
+| `src/ui/components/` | Render a view model | Contain any business rule |
+| `app/` | Route, compose, await server data | Compare money, judge validity, decide privacy |
+
+Every screen is server-rendered and demo state lives in the URL, so there is no
+client state to fall out of step with what is displayed. That also makes the
+demo reproducible: each screen is a pure function of its address.
+
+The privacy rule and the truth-badge mapping each live in exactly one module.
+Scattering either through render functions would make a leak a matter of
+vigilance rather than a matter of type-checking.
+
 Two design points carry most of the safety:
 
 **Timestamps are passed in, never read.** `evaluateOffers` takes `evaluatedAt`

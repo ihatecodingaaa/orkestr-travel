@@ -227,6 +227,18 @@ interpret:
 
 Tests pin both the separation and the absence of any journey-item decision kind.
 
+## 12b. How the package is rendered
+
+Phase 5 renders the package day by day. `JourneyDay.travellerIds` drives a
+visual distinction, so a day where only part of the group has landed looks
+different and says so in words. Status and evidence render as separate badges,
+and the builder's refusal to emit `BOOKED` or `VERIFIED` means no local fixture
+can ever appear as an arrangement.
+
+Assumption-derived timings carry a visible "demo assumption, not an airline
+requirement" label, because a three-hour airport lead rendered as a plain
+instruction reads as something an airline requires.
+
 ## 13. Limitations
 
 - **No provider capacity.** A traveller fitting a flight is `LOGICALLY_COMPATIBLE`
