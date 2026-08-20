@@ -2,7 +2,9 @@ import js from "@eslint/js";
 import tseslint from "typescript-eslint";
 
 export default tseslint.config(
-  { ignores: ["node_modules/**", "dist/**", "coverage/**"] },
+  // Generated output is not source. Linting .next produces thousands of errors
+  // about machine-written code and buries anything real.
+  { ignores: ["node_modules/**", "dist/**", "coverage/**", ".next/**", "next-env.d.ts"] },
 
   js.configs.recommended,
 
