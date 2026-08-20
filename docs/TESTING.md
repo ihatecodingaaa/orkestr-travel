@@ -4,7 +4,7 @@
 
 ## 1. Current state, honestly
 
-**326 tests across 19 files, all passing.**
+**339 tests across 19 files, all passing.**
 
 | Suite | Tests | Covers |
 | --- | --- | --- |
@@ -22,7 +22,7 @@
 | `waveEngine.test.ts` | 36 | Wave planning end to end, UNKNOWN, reunion, determinism |
 | `waveInvariants.test.ts` | 40 | Ten invariants across four group sizes (2, 3, 7, 11) |
 | `decisionInventory.test.ts` | 12 | Stable keys, changed vs removed, old-only denominator |
-| `compromise.test.ts` | 19 | The runnersUp regression, eligibility, rejection, exceptions |
+| `compromise.test.ts` | 32 | The runnersUp regression, eligibility, rejection, exceptions, approval authority, frontier bounds |
 | `impact.test.ts` | 7 | Every impact radius, and that ACTIVITY_ONLY is never produced |
 | `planRepair.test.ts` | 21 | Late join matrix, leave, reverification |
 | `constraintChange.test.ts` | 6 | All six constraint-change shapes |

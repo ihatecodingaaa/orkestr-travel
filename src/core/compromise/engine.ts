@@ -49,7 +49,17 @@ export type CompromiseResult =
   | {
       readonly ok: true;
       readonly proposals: readonly CompromiseProposal[];
+      /** True when a bound stopped the search before the space was exhausted. */
       readonly searchLimitReached: boolean;
+      /**
+       * Whether the top proposal is provably the smallest compromise available.
+       *
+       * Deliberately redundant with `!searchLimitReached`. A single boolean
+       * named for the claim being made is much harder to misread than a flag
+       * the caller has to remember to invert, and the claim here is one nobody
+       * should make by accident.
+       */
+      readonly minimalityProven: boolean;
       readonly plansExamined: number;
     }
   | {
@@ -299,5 +309,11 @@ export function proposeCompromises(
     };
   });
 
-  return { ok: true, proposals, searchLimitReached, plansExamined };
+  return {
+    ok: true,
+    proposals,
+    searchLimitReached,
+    minimalityProven: !searchLimitReached,
+    plansExamined,
+  };
 }

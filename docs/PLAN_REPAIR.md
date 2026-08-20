@@ -162,9 +162,15 @@ purpose: a tidier plan never justifies moving somebody who was already settled.
 | `NO_FEASIBLE_REPAIR` | Nothing works, and the blockers are hard requirements |
 | `UNRESOLVED` | A repair exists but carries requirements nobody could establish |
 | `SEARCH_LIMIT_REACHED` | The bounded search stopped early |
+| `INVALID_REQUEST` | The request itself was invalid; nothing was attempted |
 
 `SEARCH_LIMIT_REACHED` outranks everything: presenting a bounded search as
 complete is the one mistake that cannot be corrected downstream.
+
+`INVALID_REQUEST` covers a request that could not be honoured at all, most
+importantly an **unauthorised compromise approval**: somebody attempting to
+accept a relaxation of a constraint they do not own. `approvalProblems` carries
+the typed reasons. Nothing is attempted and nothing is changed.
 
 **`UNRESOLVED` outranks `NO_REPAIR_NEEDED`.** A plan can be unchanged and still
 carry a requirement nobody has established, and a status of "nothing to do" would

@@ -42,7 +42,7 @@ system computes how far the change reaches, repairs the smallest area that needs
 repairing, reports exactly how much of the existing plan survived, and asks only
 the people whose own decisions moved.
 
-Verified at the last run: **326 tests across 19 files, all passing.** Lint and
+Verified at the last run: **339 tests across 19 files, all passing.** Lint and
 typecheck clean.
 
 ---
@@ -55,7 +55,7 @@ typecheck clean.
 | Remote git backup | `IMPLEMENTED` | `origin` = github.com/ihatecodingaaa/orkestr-travel (private) |
 | TypeScript strict configuration | `IMPLEMENTED` | `tsconfig.json`; `npm run typecheck` passes |
 | Lint with type-aware rules | `IMPLEMENTED` | `eslint.config.mjs`; verified with a deliberate failing probe |
-| Test runner | `IMPLEMENTED` | vitest; 326 tests |
+| Test runner | `IMPLEMENTED` | vitest; 339 tests |
 | Combined quality gate | `IMPLEMENTED` | `npm run check` |
 | Documentation structure | `IMPLEMENTED` | 21 documents in `docs/`, plus `README.md` |
 | CI pipeline | `NOT IMPLEMENTED` | Not yet configured |

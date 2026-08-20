@@ -1,6 +1,10 @@
 import type { TravellerId, TripId } from "./ids.js";
 import type { ImpactAnalysis, ReverificationRequirement } from "./impact.js";
-import type { CompromiseProposal, NoCompromiseReason } from "./compromise.js";
+import type {
+  CompromiseApprovalProblem,
+  CompromiseProposal,
+  NoCompromiseReason,
+} from "./compromise.js";
 import type { DecisionDiff, DecisionsPreserved } from "./decision.js";
 import type { TravelWavePlan, WaveSearchDiagnostics } from "./travelWave.js";
 import type { UnknownOutcome } from "./feasibility.js";
@@ -35,7 +39,16 @@ export type PlanRepairStatus =
   /** A repair exists but carries requirements that could not be established. */
   | "UNRESOLVED"
   /** The bounded search stopped early. The answer is not proven complete. */
-  | "SEARCH_LIMIT_REACHED";
+  | "SEARCH_LIMIT_REACHED"
+  /**
+   * The request itself was invalid and nothing was attempted.
+   *
+   * The clearest case is an unauthorised compromise approval: somebody tried to
+   * accept a relaxation of a constraint they do not own. That is refused rather
+   * than skipped, because a caller who believes a traveller agreed to something
+   * has to be told when that belief is wrong.
+   */
+  | "INVALID_REQUEST";
 
 /**
  * A question the repair needs answered.
@@ -74,6 +87,8 @@ export interface PlanRepairResult {
   readonly noCompromiseReason?: NoCompromiseReason;
   /** Populated when status is NO_FEASIBLE_REPAIR. The core never picks one to weaken. */
   readonly hardBlockers: readonly HardBlocker[];
+  /** Populated when status is INVALID_REQUEST. Nothing was attempted. */
+  readonly approvalProblems?: readonly CompromiseApprovalProblem[];
 
   /** Only the travellers whose own decisions are genuinely affected. */
   readonly approvalsRequired: readonly RepairQuestion[];

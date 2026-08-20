@@ -190,7 +190,39 @@ export function repairPlan(
 
   // Accepted compromises are applied as a DERIVED view. The travellers' stated
   // preferences are never overwritten.
-  const effective = withAcceptedCompromises(travellers, accepted, previousPlan?.planKey);
+  //
+  // An invalid acceptance stops the whole repair. Most importantly, an approval
+  // from somebody who does not own the constraint is refused here rather than
+  // being skipped: proceeding would hand back a plan that quietly ignored an
+  // approval the caller believes they have.
+  const applied = withAcceptedCompromises(travellers, accepted, previousPlan?.planKey);
+  if (!applied.ok) {
+    const emptyInventory = buildDecisionInventory({});
+    const noDiff = diffDecisions(emptyInventory, emptyInventory);
+    return {
+      tripId: options.tripId,
+      status: "INVALID_REQUEST",
+      impact: analyseImpact({ event: options.event, decisionDiff: noDiff }),
+      ...(previousPlan === undefined ? {} : { previousPlan }),
+      decisionDiff: noDiff,
+      decisionsPreserved: decisionsPreserved(noDiff),
+      compromisesRequired: [],
+      hardBlockers: [],
+      approvalProblems: applied.problems,
+      approvalsRequired: [],
+      reverificationRequired: [],
+      unresolved: [],
+      diagnostics: {
+        travelUnitsConsidered: 0,
+        waveCandidatesConsidered: 0,
+        plansConsidered: 0,
+        branchesPruned: 0,
+        searchLimitReached: false,
+      },
+      searchLimitReached: false,
+    };
+  }
+  const effective = applied.travellers;
 
   const enumeration = enumerateCandidatePlans(effective, offers, {
     tripId: options.tripId,

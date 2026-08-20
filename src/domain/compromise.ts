@@ -164,3 +164,47 @@ export type NoCompromiseReason =
   | "ALL_CANDIDATES_REJECTED"
   /** The bounded search stopped early. The answer is not proven complete. */
   | "SEARCH_LIMIT_REACHED";
+
+/**
+ * Why an attempt to accept a compromise was refused.
+ *
+ * These are ERRORS, not conditions to be worked around. An acceptance that
+ * cannot be validated must never be quietly dropped: the caller believes a
+ * traveller agreed to something, and if that belief is wrong they have to be
+ * told, not left with a plan that silently ignored it.
+ */
+export type CompromiseApprovalProblemCode =
+  /**
+   * Somebody tried to approve a relaxation of a constraint they do not own.
+   *
+   * The organiser cannot accept on a traveller's behalf, and one traveller
+   * cannot accept for another. This is the single most important refusal in the
+   * compromise path: a preference belongs to its owner, and so does the decision
+   * to give it up.
+   */
+  | "UNAUTHORIZED_COMPROMISE_APPROVAL"
+  /** The constraint named by the relaxation is not on this trip. */
+  | "UNKNOWN_CONSTRAINT"
+  /** The traveller named by the approval is not on this trip. */
+  | "UNKNOWN_TRAVELLER"
+  /** The relaxation targets a constraint that is not SOFT. Never relaxable. */
+  | "CONSTRAINT_NOT_RELAXABLE"
+  /** The proposal does not contain a relaxation for the approving traveller. */
+  | "NO_RELAXATION_FOR_TRAVELLER";
+
+export interface CompromiseApprovalProblem {
+  readonly code: CompromiseApprovalProblemCode;
+  readonly travellerId: TravellerId;
+  readonly constraintId?: ConstraintId;
+  readonly message: string;
+}
+
+/**
+ * The outcome of an approval attempt.
+ *
+ * On failure NOTHING is created and nothing is mutated. There is no partial
+ * acceptance and no half-applied exception.
+ */
+export type CompromiseApprovalResult =
+  | { readonly ok: true; readonly accepted: readonly AcceptedCompromise[] }
+  | { readonly ok: false; readonly problems: readonly CompromiseApprovalProblem[] };

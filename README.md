@@ -53,7 +53,7 @@ it, reports honestly how much of the existing plan survived, and asks only the
 people whose own decisions moved. Where a plan misses somebody's preference it
 proposes an explicit compromise to that person rather than deciding for them.
 
-326 tests pass across 19 files. Lint and typecheck are clean.
+339 tests pass across 19 files. Lint and typecheck are clean.
 
 **There is still no application.** No UI, no flight provider, no AI integration,
 no persistence and no deployed infrastructure. Flights are outbound-only, and no

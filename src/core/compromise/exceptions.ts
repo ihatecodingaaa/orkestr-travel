@@ -1,10 +1,18 @@
 import type { Traveller } from "../../domain/traveller.js";
 import type { Constraint, ConstraintValue } from "../../domain/constraint.js";
-import type { AcceptedCompromise } from "../../domain/compromise.js";
+import type {
+  AcceptedCompromise,
+  CompromiseApprovalProblem,
+  CompromiseApprovalResult,
+  CompromiseProposal,
+  CompromiseScope,
+} from "../../domain/compromise.js";
+import type { TravellerId } from "../../domain/ids.js";
+import type { IsoDateTime } from "../../domain/time.js";
 import { asMinutesOfDay } from "../../domain/time.js";
 
 /**
- * Applying accepted compromises as trip-scoped exceptions.
+ * Accepting compromises, and applying them as trip-scoped exceptions.
  *
  * THE ORIGINAL PREFERENCE IS NEVER OVERWRITTEN.
  *
@@ -23,6 +31,9 @@ import { asMinutesOfDay } from "../../domain/time.js";
  *
  *   A second compromise is measured against her real preference, so consecutive
  *   small stretches cannot quietly ratchet a budget upwards.
+ *
+ * AND NOBODY ACCEPTS FOR ANYBODY ELSE. An approval from the wrong traveller is
+ * an explicit, typed failure that creates nothing. It is not skipped over.
  */
 
 /** Produce the relaxed value implied by an accepted relaxation. */
@@ -76,35 +87,171 @@ function relaxedValue(
   }
 }
 
+/** Relationship-derived relaxations use a synthetic, clearly prefixed identity. */
+function isRelationshipDerived(constraintId: string): boolean {
+  return constraintId.startsWith("PREFER_TOGETHER:");
+}
+
+/**
+ * Validate an acceptance against the travellers it claims to be about.
+ *
+ * Returns every problem found, so a caller sees all of them at once rather than
+ * fixing them one at a time.
+ */
+export function validateAcceptance(
+  travellers: readonly Traveller[],
+  accepted: AcceptedCompromise,
+): readonly CompromiseApprovalProblem[] {
+  const problems: CompromiseApprovalProblem[] = [];
+
+  const approver = travellers.find((t) => t.id === accepted.travellerId);
+  if (approver === undefined) {
+    problems.push({
+      code: "UNKNOWN_TRAVELLER",
+      travellerId: accepted.travellerId,
+      constraintId: accepted.constraintId,
+      message: `traveller ${accepted.travellerId} is not on this trip`,
+    });
+  }
+
+  let constraint: Constraint | undefined;
+  for (const traveller of travellers) {
+    for (const candidate of traveller.constraints) {
+      if (candidate.id === accepted.constraintId) constraint = candidate;
+    }
+  }
+
+  if (constraint === undefined) {
+    // A relationship-derived relaxation has no constraint record, so it is
+    // validated on ownership alone rather than reported as unknown.
+    if (!isRelationshipDerived(accepted.constraintId)) {
+      problems.push({
+        code: "UNKNOWN_CONSTRAINT",
+        travellerId: accepted.travellerId,
+        constraintId: accepted.constraintId,
+        message: `constraint ${accepted.constraintId} is not on this trip`,
+      });
+    }
+  } else {
+    // THE CENTRAL REFUSAL. Approving somebody else's compromise is an error,
+    // not something to skip over. A caller who believes a traveller agreed to
+    // something must be told when that belief is wrong.
+    if (constraint.ownerTravellerId !== accepted.travellerId) {
+      problems.push({
+        code: "UNAUTHORIZED_COMPROMISE_APPROVAL",
+        travellerId: accepted.travellerId,
+        constraintId: accepted.constraintId,
+        message: `traveller ${accepted.travellerId} cannot approve a compromise on constraint ${accepted.constraintId}, which belongs to ${constraint.ownerTravellerId}`,
+      });
+    }
+    if (constraint.strength !== "SOFT") {
+      problems.push({
+        code: "CONSTRAINT_NOT_RELAXABLE",
+        travellerId: accepted.travellerId,
+        constraintId: accepted.constraintId,
+        message: `constraint ${accepted.constraintId} is ${constraint.strength}, and only a SOFT constraint can be relaxed`,
+      });
+    }
+  }
+
+  if (accepted.relaxation.ownerTravellerId !== accepted.travellerId) {
+    problems.push({
+      code: "UNAUTHORIZED_COMPROMISE_APPROVAL",
+      travellerId: accepted.travellerId,
+      constraintId: accepted.constraintId,
+      message: `the relaxation is owned by ${accepted.relaxation.ownerTravellerId}, not by the approving traveller ${accepted.travellerId}`,
+    });
+  }
+
+  return problems;
+}
+
+/**
+ * Accept a compromise on behalf of ONE traveller.
+ *
+ * The only supported way to create an AcceptedCompromise. It refuses,
+ * explicitly and without creating anything, when the approving traveller does
+ * not own what they are being asked to give up.
+ *
+ * A proposal may need several people. Each of them calls this for themselves,
+ * and each call yields only their own acceptances.
+ */
+export function acceptCompromise(
+  travellers: readonly Traveller[],
+  proposal: CompromiseProposal,
+  approvingTravellerId: TravellerId,
+  options: { readonly scope?: CompromiseScope; readonly acceptedAt?: IsoDateTime } = {},
+): CompromiseApprovalResult {
+  const mine = proposal.relaxations.filter((r) => r.ownerTravellerId === approvingTravellerId);
+
+  if (mine.length === 0) {
+    return {
+      ok: false,
+      problems: [
+        {
+          code: "NO_RELAXATION_FOR_TRAVELLER",
+          travellerId: approvingTravellerId,
+          message: `proposal ${proposal.id} asks nothing of traveller ${approvingTravellerId}`,
+        },
+      ],
+    };
+  }
+
+  const scope = options.scope ?? proposal.scope;
+  const candidates: AcceptedCompromise[] = mine.map((relaxation) => ({
+    compromiseId: proposal.id,
+    tripId: proposal.tripId,
+    travellerId: approvingTravellerId,
+    constraintId: relaxation.constraintId,
+    relaxation,
+    scope,
+    ...(scope === "THIS_PLAN" ? { planKey: proposal.unlocksPlanKey } : {}),
+    ...(options.acceptedAt === undefined ? {} : { acceptedAt: options.acceptedAt }),
+  }));
+
+  const problems = candidates.flatMap((c) => validateAcceptance(travellers, c));
+  // Nothing is created when anything is wrong. There is no partial acceptance.
+  if (problems.length > 0) return { ok: false, problems };
+
+  return { ok: true, accepted: candidates };
+}
+
+export type ApplyExceptionsResult =
+  | { readonly ok: true; readonly travellers: readonly Traveller[] }
+  | { readonly ok: false; readonly problems: readonly CompromiseApprovalProblem[] };
+
 /**
  * A derived traveller list with accepted exceptions applied.
  *
  * Pure. The input array and every traveller in it are left untouched; only
- * copies are returned. Exceptions scoped to a different plan are ignored.
+ * copies are returned. Exceptions scoped to a different plan are skipped, which
+ * is not an error: a plan-scoped acceptance simply does not apply elsewhere.
+ *
+ * An INVALID acceptance fails the whole call. It used to be silently ignored,
+ * which meant a caller could hold an unauthorised approval and be shown a plan
+ * that quietly disregarded it, with nothing anywhere saying so.
  */
 export function withAcceptedCompromises(
   travellers: readonly Traveller[],
   accepted: readonly AcceptedCompromise[],
   planKey?: string,
-): readonly Traveller[] {
+): ApplyExceptionsResult {
+  const problems = accepted.flatMap((a) => validateAcceptance(travellers, a));
+  if (problems.length > 0) return { ok: false, problems };
+
   const applicable = accepted.filter((a) => {
     if (a.scope === "THIS_TRIP") return true;
-    // A plan-scoped acceptance applies only to the plan it was given for.
     return a.planKey !== undefined && a.planKey === planKey;
   });
-  if (applicable.length === 0) return travellers;
+  if (applicable.length === 0) return { ok: true, travellers };
 
   const byConstraint = new Map(applicable.map((a) => [a.constraintId as string, a] as const));
 
-  return travellers.map((traveller) => {
+  const updated = travellers.map((traveller) => {
     let touched = false;
     const constraints: Constraint[] = traveller.constraints.map((constraint) => {
       const exception = byConstraint.get(constraint.id);
       if (exception === undefined) return constraint;
-      // Guard: an exception must belong to the constraint's owner. A mismatch
-      // would apply one person's agreement to another person's requirement.
-      if (exception.travellerId !== constraint.ownerTravellerId) return constraint;
-
       const value = relaxedValue(constraint.value, exception);
       if (value === undefined) return constraint;
       touched = true;
@@ -112,6 +259,8 @@ export function withAcceptedCompromises(
     });
     return touched ? { ...traveller, constraints } : traveller;
   });
+
+  return { ok: true, travellers: updated };
 }
 
 /** The stated preference, unchanged, for showing alongside any exception. */

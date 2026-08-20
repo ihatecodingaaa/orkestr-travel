@@ -3,7 +3,7 @@
 **Status:** `IMPLEMENTED` (Phase 3).
 
 Code: `src/core/compromise/` (relaxation, exceptions, frontier, engine).
-Types: `src/domain/compromise.ts`. Covered by 19 tests.
+Types: `src/domain/compromise.ts`. Covered by 32 tests.
 
 ---
 
@@ -67,9 +67,29 @@ systematically blind to its own best answers, and **the blindness would be
 invisible**: the engine would still return something plausible.
 
 So the frontier runs its own enumeration through `enumerateCandidatePlans` with
-`retainAllPlans: true`. That keeps every structural bound (wave cap, search
-limit, no hard violations, no split travel units) and drops only the
-ranking-driven prunes.
+`retainAllPlans: true`.
+
+### retainAllPlans is bounded
+
+> **`retainAllPlans` means "retain all plans WITHIN THE BOUNDED SEARCH". It does
+> NOT mean unlimited combinatorial enumeration.**
+
+`maxWaves` is checked **before** the `retainAllPlans` early-return, and
+`maxPlansExplored` is checked independently of pruning altogether, at the top of
+every recursion step. What is dropped is only the ranking-driven prune: the one
+that discards a branch because it cannot beat the best plan found so far.
+
+### Complete search versus search limit reached
+
+| | Meaning |
+| --- | --- |
+| `searchLimitReached: false`, `minimalityProven: true` | The space was exhausted within the bounds. The smallest compromise found **is** the smallest that exists |
+| `searchLimitReached: true`, `minimalityProven: false` | The search stopped early. A compromise may still be returned, but **minimality is NOT proven** and it must not be described as the minimum |
+
+`minimalityProven` is deliberately redundant with `!searchLimitReached`. A single
+boolean named for the claim being made is much harder to misread than a flag the
+caller has to remember to invert, and this is a claim nobody should make by
+accident.
 
 ### The regression, proved rather than asserted
 
@@ -184,9 +204,30 @@ a measured utility.
 Every relaxation names exactly one `ownerTravellerId`. A proposal lists every
 traveller whose approval it needs, and each of them approves only their own.
 
-**The organiser cannot accept on somebody else's behalf.** Applying an accepted
-compromise checks that the acceptance belongs to the constraint's owner before it
-takes effect; a mismatch is ignored rather than applied.
+**The organiser cannot accept on somebody else's behalf**, and one traveller
+cannot accept for another.
+
+`acceptCompromise()` is the only supported way to create an `AcceptedCompromise`,
+and an approval from the wrong person is an **explicit typed failure**:
+
+| Code | When |
+| --- | --- |
+| `UNAUTHORIZED_COMPROMISE_APPROVAL` | The approver does not own the constraint |
+| `UNKNOWN_CONSTRAINT` | The constraint is not on this trip |
+| `UNKNOWN_TRAVELLER` | The approver is not on this trip |
+| `CONSTRAINT_NOT_RELAXABLE` | The constraint is not SOFT |
+| `NO_RELAXATION_FOR_TRAVELLER` | The proposal asks nothing of this person |
+
+On failure **nothing is created and nothing is mutated**. There is no partial
+acceptance.
+
+`withAcceptedCompromises()` validates too, and an invalid acceptance fails the
+whole call rather than being skipped. Plan repair surfaces that as
+`INVALID_REQUEST`, carrying the problems.
+
+> This used to be a silent skip. Silence was wrong: a caller could hold an
+> unauthorised approval and be shown a plan that quietly disregarded it, with
+> nothing anywhere saying so.
 
 ### Public and private wording
 

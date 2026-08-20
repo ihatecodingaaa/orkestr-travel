@@ -1,11 +1,16 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { asTravellerId, asTripId } from "@/domain/index.js";
+import { asConstraintId, asTravellerId, asTripId } from "@/domain/index.js";
 import type { AcceptedCompromise, Traveller } from "@/domain/index.js";
 import { planTravelWaves } from "@/core/waves/engine.js";
 import { proposeCompromises, fingerprintRelaxations } from "@/core/compromise/engine.js";
 import { buildCompromiseFrontier } from "@/core/compromise/frontier.js";
-import { withAcceptedCompromises, originalConstraintOf } from "@/core/compromise/exceptions.js";
+import {
+  acceptCompromise,
+  originalConstraintOf,
+  withAcceptedCompromises,
+} from "@/core/compromise/exceptions.js";
 import { buildConstraint, buildOffer, buildTraveller, resetFixtureCounters, sgd, UNKNOWN_BAGGAGE } from "@/fixtures/builders.js";
+import { familyEleven, familyOffers } from "@/fixtures/waveScenarios.js";
 import {
   frontierRegressionGroup,
   frontierRegressionOffers,
@@ -263,10 +268,11 @@ describe("trip-scoped exceptions", () => {
   it("does NOT overwrite the traveller's stated preference", () => {
     const travellers = softBudgetGroup(300);
     const accepted = acceptedFor(travellers);
-    const relaxed = withAcceptedCompromises(travellers, [accepted]);
+    const applied = withAcceptedCompromises(travellers, [accepted]);
+    if (!applied.ok) throw new Error("expected the exception to apply");
 
     // The derived view carries the agreed figure...
-    const relaxedValue = relaxed[0]?.constraints[0]?.value;
+    const relaxedValue = applied.travellers[0]?.constraints[0]?.value;
     expect(relaxedValue?.kind).toBe("BUDGET_MAX");
     if (relaxedValue?.kind === "BUDGET_MAX") {
       expect(relaxedValue.maxPerTraveller.amountMinor).toBe(40000);
@@ -287,6 +293,12 @@ describe("trip-scoped exceptions", () => {
     expect(JSON.stringify(travellers)).toBe(snapshot);
   });
 
+  it("applies a THIS_TRIP acceptance regardless of plan", () => {
+    const travellers = softBudgetGroup(300);
+    const applied = withAcceptedCompromises(travellers, [acceptedFor(travellers)], "ANY-PLAN");
+    expect(applied.ok).toBe(true);
+  });
+
   it("measures a second compromise against the ORIGINAL preference, not the stretched one", () => {
     // Otherwise consecutive small stretches would ratchet a budget upwards.
     const travellers = softBudgetGroup(300);
@@ -296,27 +308,220 @@ describe("trip-scoped exceptions", () => {
     expect(JSON.stringify(once)).toBe(JSON.stringify(twice));
   });
 
-  it("ignores an exception scoped to a different plan", () => {
+  it("skips an exception scoped to a different plan without failing", () => {
     const travellers = softBudgetGroup(300);
     const accepted: AcceptedCompromise = {
       ...acceptedFor(travellers),
       scope: "THIS_PLAN",
       planKey: "SOME-OTHER-PLAN",
     };
-    const relaxed = withAcceptedCompromises(travellers, [accepted], "THE-CURRENT-PLAN");
-    expect(relaxed).toBe(travellers);
+    const applied = withAcceptedCompromises(travellers, [accepted], "THE-CURRENT-PLAN");
+    // Not applicable is not an error: it simply does not apply here.
+    if (!applied.ok) throw new Error("scope mismatch must not be an error");
+    expect(applied.travellers).toBe(travellers);
   });
 
-  it("refuses to apply one traveller's acceptance to another's constraint", () => {
+  it("FAILS EXPLICITLY when one traveller tries to approve another's compromise", () => {
+    // Previously this was silently ignored. Silence meant a caller could hold an
+    // unauthorised approval and be shown a plan that quietly disregarded it.
     const travellers = softBudgetGroup(300);
     const wrongOwner: AcceptedCompromise = {
       ...acceptedFor(travellers),
       travellerId: asTravellerId("T-999"),
     };
-    const relaxed = withAcceptedCompromises(travellers, [wrongOwner]);
-    const value = relaxed[0]?.constraints[0]?.value;
+    const applied = withAcceptedCompromises(travellers, [wrongOwner]);
+
+    expect(applied.ok).toBe(false);
+    if (!applied.ok) {
+      expect(applied.problems.map((p) => p.code)).toContain("UNAUTHORIZED_COMPROMISE_APPROVAL");
+    }
+    // And nothing was changed on the way out.
+    const value = travellers[0]?.constraints[0]?.value;
     if (value?.kind === "BUDGET_MAX") {
       expect(value.maxPerTraveller.amountMinor).toBe(30000);
     }
+  });
+});
+
+describe("acceptCompromise: approval authority", () => {
+  function proposalFor(travellers: readonly Traveller[]) {
+    const result = proposeCompromises(travellers, heroOffers(), {
+      tripId: TRIP,
+      planningTravellerIds: [asTravellerId("T-001")],
+    });
+    if (!result.ok) throw new Error("expected proposals");
+    return result.proposals[0]!;
+  }
+
+  it("accepts a compromise from its rightful owner", () => {
+    const travellers = softBudgetGroup(300);
+    const result = acceptCompromise(travellers, proposalFor(travellers), asTravellerId("T-001"));
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.accepted).toHaveLength(1);
+      expect(result.accepted[0]?.travellerId).toBe(asTravellerId("T-001"));
+      expect(result.accepted[0]?.scope).toBe("THIS_PLAN");
+      // A plan-scoped acceptance records which plan it was given for.
+      expect(result.accepted[0]?.planKey).toBeDefined();
+    }
+  });
+
+  it("REFUSES an approval from somebody who is not on the trip", () => {
+    const travellers = softBudgetGroup(300);
+    const result = acceptCompromise(travellers, proposalFor(travellers), asTravellerId("T-999"));
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.problems.map((p) => p.code)).toContain("NO_RELAXATION_FOR_TRAVELLER");
+    }
+  });
+
+  it("REFUSES an approval for a constraint the approver does not own", () => {
+    // The organiser cannot accept on a traveller's behalf, and one traveller
+    // cannot accept for another. The refusal is explicit and creates nothing.
+    const travellers = [
+      ...softBudgetGroup(300),
+      buildTraveller("T-002", "Bo", { canTravelSeparately: true }),
+    ];
+    const proposal = proposalFor(travellers);
+    const hijacked = {
+      ...proposal,
+      relaxations: proposal.relaxations.map((r) => ({
+        ...r,
+        ownerTravellerId: asTravellerId("T-002"),
+      })),
+    };
+    const result = acceptCompromise(travellers, hijacked, asTravellerId("T-002"));
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.problems.map((p) => p.code)).toContain("UNAUTHORIZED_COMPROMISE_APPROVAL");
+      expect(result.problems[0]?.message).toContain("belongs to");
+    }
+  });
+
+  it("creates NOTHING when any part of the approval is invalid", () => {
+    const travellers = softBudgetGroup(300);
+    const proposal = proposalFor(travellers);
+    const broken = {
+      ...proposal,
+      relaxations: proposal.relaxations.map((r) => ({
+        ...r,
+        constraintId: asConstraintId("C-DOES-NOT-EXIST"),
+      })),
+    };
+    const result = acceptCompromise(travellers, broken, asTravellerId("T-001"));
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.problems.map((p) => p.code)).toContain("UNKNOWN_CONSTRAINT");
+      expect(result).not.toHaveProperty("accepted");
+    }
+  });
+
+  it("REFUSES to accept a relaxation of a HARD constraint", () => {
+    // Same traveller and the SAME constraint id, but hardened. Building a
+    // separate group would produce a different generated id and the refusal
+    // would come from the id not existing, which would prove nothing.
+    const travellers = softBudgetGroup(300);
+    const proposal = proposalFor(travellers);
+
+    const hardened: readonly Traveller[] = travellers.map((t) => ({
+      ...t,
+      constraints: t.constraints.map((c) => ({ ...c, strength: "HARD" as const })),
+    }));
+
+    const result = acceptCompromise(hardened, proposal, asTravellerId("T-001"));
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.problems.map((p) => p.code)).toContain("CONSTRAINT_NOT_RELAXABLE");
+    }
+  });
+
+  it("refuses a proposal that asks nothing of the approving traveller", () => {
+    const travellers = [
+      ...softBudgetGroup(300),
+      buildTraveller("T-002", "Bo", { canTravelSeparately: true }),
+    ];
+    const result = acceptCompromise(travellers, proposalFor(travellers), asTravellerId("T-002"));
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.problems.map((p) => p.code)).toContain("NO_RELAXATION_FOR_TRAVELLER");
+    }
+  });
+
+  it("is deterministic", () => {
+    const run = (): string => {
+      resetFixtureCounters();
+      const travellers = softBudgetGroup(300);
+      return JSON.stringify(acceptCompromise(travellers, proposalFor(travellers), asTravellerId("T-001")));
+    };
+    expect(new Set([run(), run(), run()]).size).toBe(1);
+  });
+});
+
+describe("frontier boundedness", () => {
+  /**
+   * retainAllPlans means "retain all plans WITHIN THE BOUNDED SEARCH", not
+   * "enumerate without limit". These tests pin that distinction, because an
+   * unbounded frontier would be a genuine denial-of-service on a large group.
+   */
+  it("respects maxPlansExplored even with retainAllPlans", () => {
+    const travellers = frontierRegressionGroup();
+    const frontier = buildCompromiseFrontier(travellers, frontierRegressionOffers(), {
+      ...opts(travellers),
+      maxPlansExplored: 1,
+    });
+    if (!frontier.ok) throw new Error("expected a frontier");
+    expect(frontier.searchLimitReached).toBe(true);
+    expect(frontier.plansExamined).toBeLessThanOrEqual(1);
+  });
+
+  it("respects maxWaves even with retainAllPlans", () => {
+    const travellers = frontierRegressionGroup();
+    const frontier = buildCompromiseFrontier(travellers, frontierRegressionOffers(), {
+      ...opts(travellers),
+      maxWaves: 1,
+    });
+    // One wave cannot cover travellers split across two days, so nothing is
+    // buildable; the bound was respected rather than ignored.
+    if (frontier.ok) expect(frontier.candidates).toHaveLength(0);
+  });
+
+  it("reports SEARCH LIMIT REACHED and does NOT claim minimality", () => {
+    const travellers = frontierRegressionGroup();
+    const result = proposeCompromises(travellers, frontierRegressionOffers(), {
+      ...opts(travellers),
+      maxPlansExplored: 1,
+    });
+    if (result.ok) {
+      expect(result.searchLimitReached).toBe(true);
+      // The claim the caller must not make.
+      expect(result.minimalityProven).toBe(false);
+    } else {
+      expect(result.searchLimitReached).toBe(true);
+    }
+  });
+
+  it("claims minimality only when the search completed", () => {
+    const travellers = frontierRegressionGroup();
+    const result = proposeCompromises(travellers, frontierRegressionOffers(), opts(travellers));
+    if (!result.ok) throw new Error("expected proposals");
+    expect(result.searchLimitReached).toBe(false);
+    expect(result.minimalityProven).toBe(true);
+    // And the smallest ask really is first.
+    expect(result.proposals[0]?.relaxations[0]?.magnitude).toBe(1000);
+  });
+
+  it("stays bounded on a larger group rather than exploding", () => {
+    // Eleven travellers and four flights. Without a bound this is a large
+    // partition space; the frontier must still terminate and report honestly.
+    resetFixtureCounters();
+    const travellers = familyEleven();
+    const frontier = buildCompromiseFrontier(travellers, familyOffers(), {
+      tripId: TRIP,
+      planningTravellerIds: travellers.map((t) => asTravellerId(t.id)),
+      maxPlansExplored: 50,
+    });
+    if (!frontier.ok) throw new Error("expected a frontier");
+    expect(frontier.plansExamined).toBeLessThanOrEqual(50);
   });
 });

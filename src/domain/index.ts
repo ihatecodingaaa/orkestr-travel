@@ -94,6 +94,9 @@ export type {
 
 export type {
   AcceptedCompromise,
+  CompromiseApprovalProblem,
+  CompromiseApprovalProblemCode,
+  CompromiseApprovalResult,
   CompromiseProposal,
   CompromiseScope,
   CompromiseState,
