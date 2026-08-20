@@ -75,7 +75,6 @@ export type {
   OfferEvidenceState,
   ProviderCapabilities,
   ProviderCapabilityState,
-  SandboxOrderResult,
   SeatInformation,
   VerifyOfferResult,
 } from "./flight.js";
@@ -144,10 +143,18 @@ export type {
 export type { InferredInterest, ResearchProvider, ResearchQuery } from "./research.js";
 
 export type {
-  ActivityPod,
-  FitReason,
+  DecisionNeeded,
+  DecisionNeededKind,
+  InFlightRequest,
+  InFlightRequestStatus,
+  InFlightRequestType,
+  Journey,
+  JourneyDay,
   JourneyItem,
   JourneyItemStatus,
   JourneyItemType,
   JourneyPackage,
+  JourneyPackageStatus,
 } from "./journey.js";
+
+export type { JourneyLeg, LegDirection, LegStatus } from "./journeyLeg.js";

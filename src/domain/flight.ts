@@ -110,7 +110,6 @@ export type ProviderCapabilityState = "SUPPORTED" | "UNSUPPORTED" | "UNKNOWN";
 export interface ProviderCapabilities {
   readonly search: ProviderCapabilityState;
   readonly verifyOffer: ProviderCapabilityState;
-  readonly sandboxOrder: ProviderCapabilityState;
   readonly baggageDetail: ProviderCapabilityState;
   readonly seatSelection: ProviderCapabilityState;
   readonly mealSelection: ProviderCapabilityState;
@@ -134,24 +133,27 @@ export interface VerifyOfferResult {
   readonly previousPrice?: Money;
 }
 
-export interface SandboxOrderResult {
-  readonly providerOrderId: string;
-  readonly createdAt: IsoDateTime;
-  /** Always true in every phase currently planned. Guards against a real booking. */
-  readonly isSandbox: true;
-}
-
 /**
  * The provider boundary.
  *
- * MockFlightProvider implements this in Phase 4; AtlasFlightProvider in Phase 7.
- * Nothing above this interface may know which one it is talking to.
+ * Deliberately SMALL. It carries only the two operations the system actually
+ * performs today, plus capability reporting. An order-creation method was
+ * removed in Phase 4: nothing calls it, and its shape was a guess about an Atlas
+ * API nobody has read. A method invented ahead of the integration is a method
+ * the real provider will not match.
+ *
+ * MockFlightProvider implements this in Phase 4. AtlasFlightProvider will
+ * implement the same contract in Phase 7, but ONLY where Atlas is confirmed to
+ * support it; anything Atlas cannot do stays UNSUPPORTED or UNKNOWN rather than
+ * being faked to fit.
+ *
+ * Nothing above this interface may know which provider it is talking to, and no
+ * vendor name appears in generic business logic.
  */
 export interface FlightProvider {
   readonly name: string;
-  readonly capabilities: ProviderCapabilities;
+  getCapabilities(): ProviderCapabilities;
 
   searchFlights(request: FlightSearchRequest): Promise<readonly FlightOffer[]>;
   verifyOffer(offerId: FlightOfferId): Promise<VerifyOfferResult>;
-  createSandboxOrder(offerId: FlightOfferId): Promise<SandboxOrderResult>;
 }

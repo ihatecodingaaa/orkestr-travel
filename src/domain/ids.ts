@@ -20,6 +20,9 @@ export type FlightOfferId = Brand<string, "FlightOfferId">;
 export type CompromiseId = Brand<string, "CompromiseId">;
 export type CommitmentId = Brand<string, "CommitmentId">;
 export type TripEventId = Brand<string, "TripEventId">;
+export type JourneyId = Brand<string, "JourneyId">;
+export type JourneyLegId = Brand<string, "JourneyLegId">;
+export type JourneyDayId = Brand<string, "JourneyDayId">;
 export type JourneyItemId = Brand<string, "JourneyItemId">;
 export type JourneyPackageId = Brand<string, "JourneyPackageId">;
 export type EvidenceId = Brand<string, "EvidenceId">;
@@ -39,6 +42,9 @@ export const asFlightOfferId = (value: string): FlightOfferId => value as Flight
 export const asCompromiseId = (value: string): CompromiseId => value as CompromiseId;
 export const asCommitmentId = (value: string): CommitmentId => value as CommitmentId;
 export const asTripEventId = (value: string): TripEventId => value as TripEventId;
+export const asJourneyId = (value: string): JourneyId => value as JourneyId;
+export const asJourneyLegId = (value: string): JourneyLegId => value as JourneyLegId;
+export const asJourneyDayId = (value: string): JourneyDayId => value as JourneyDayId;
 export const asJourneyItemId = (value: string): JourneyItemId => value as JourneyItemId;
 export const asJourneyPackageId = (value: string): JourneyPackageId =>
   value as JourneyPackageId;
