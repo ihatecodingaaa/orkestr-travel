@@ -90,6 +90,28 @@ export class QwenLanguageUnderstandingProvider implements LanguageUnderstandingP
         // Deterministic as the provider will allow. A group's trip should not
         // change because a model was sampled at a different temperature.
         temperature: 0,
+        /**
+         * NON-THINKING MODE, explicitly.
+         *
+         * `qwen3.7-plus` is a hybrid-thinking model, so leaving this unset takes
+         * the model's default rather than a choice we made. Under a
+         * non-streaming request that means the server buffers an entire
+         * reasoning phase before it sends anything, which is a plausible reading
+         * of a request that returns nothing at all until the client gives up.
+         *
+         * Non-thinking is also the RIGHT mode here on the merits, independently
+         * of latency. Extraction is a bounded transformation -- untrusted
+         * conversation in, structured proposals out, deterministic validation
+         * after. It is not the planning engine. Feasibility, travel waves,
+         * compromise and plan repair are pure functions and always will be, so
+         * there is no judgement here for a reasoning phase to improve.
+         *
+         * On the wire this is a top-level body field. The OpenAI SDKs surface it
+         * as `extra_body` because it is not a standard OpenAI parameter, and
+         * `extra_body` is merged into the top level of the request JSON. This
+         * transport builds the body directly, so it goes here.
+         */
+        enable_thinking: false,
         // No max_tokens, deliberately. Capping output under structured output
         // truncates the JSON mid-object, which arrives as MALFORMED_JSON and
         // looks like a model failure rather than the configuration error it is.

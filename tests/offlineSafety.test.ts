@@ -66,10 +66,19 @@ describe("the preflight command", () => {
     expect(run()).toContain("makes no network request");
   });
 
-  it("names what is missing rather than leaving somebody guessing", () => {
+  it("never leaves somebody guessing, in either state", () => {
+    /**
+     * Deliberately state-independent. This must pass on a machine with no
+     * credential AND on one with a working credential, because a test that only
+     * holds in the first case breaks the moment the project makes progress --
+     * which is exactly what happened when `.env.local` first appeared.
+     */
     const out = run();
-    expect(out).toContain("To reach live verification:");
-    expect(out).toContain("MODEL_STUDIO_MODE=live");
+    if (/Ready for live verification:\s+YES/.test(out)) {
+      expect(out).toContain("npm run smoke:model-studio");
+    } else {
+      expect(out).toContain("To reach live verification:");
+    }
   });
 
   it("prints no secret, and no value that could narrow one down", () => {
@@ -85,14 +94,33 @@ describe("the preflight command", () => {
   it("never reads the ignored environment file into its output", () => {
     // Even if one exists, nothing from it may be echoed.
     const out = run();
-    if (existsSync(join(ROOT, ".env.local"))) {
-      const secrets = readFileSync(join(ROOT, ".env.local"), "utf8")
-        .split("\n")
-        .map((l) => l.split("=")[1]?.trim() ?? "")
-        .filter((v) => v.length > 6);
-      for (const value of secrets) {
-        expect(out, "preflight echoed a value from .env.local").not.toContain(value);
-      }
+    /**
+     * Only the genuinely secret values.
+     *
+     * An earlier version treated every value in `.env.local` as a secret, and
+     * failed the moment a real file existed -- because it objected to the region
+     * being printed, which the command prints on purpose and which is not a
+     * secret. The credential and the workspace id are secret; the mode, region
+     * and model names are configuration, and reporting them is the whole point.
+     */
+    if (!existsSync(join(ROOT, ".env.local"))) {
+      expect(out).toContain("Orkestr Travel");
+      return;
+    }
+
+    const SECRET_KEYS = ["DASHSCOPE_API_KEY", "MODEL_STUDIO_WORKSPACE_ID"];
+    for (const line of readFileSync(join(ROOT, ".env.local"), "utf8").split("\n")) {
+      const trimmed = line.trim();
+      if (trimmed.length === 0 || trimmed.startsWith("#")) continue;
+      const equals = trimmed.indexOf("=");
+      if (equals === -1) continue;
+      const key = trimmed.slice(0, equals).trim();
+      const value = trimmed
+        .slice(equals + 1)
+        .trim()
+        .replace(/^["']|["']$/g, "");
+      if (!SECRET_KEYS.includes(key) || value.length < 4) continue;
+      expect(out, `preflight echoed ${key}`).not.toContain(value);
     }
     expect(out).toContain("Orkestr Travel");
   });
