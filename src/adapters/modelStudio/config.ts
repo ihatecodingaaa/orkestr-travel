@@ -108,7 +108,10 @@ export interface ModelStudioConfig {
   readonly extractionModel: string;
   readonly researchModel: string;
   readonly structuredOutputMode: StructuredOutputMode;
+  /** Deadline for one extraction call. */
   readonly timeoutMs: number;
+  /** Deadline for one research call. Separate because the workload is. */
+  readonly researchTimeoutMs: number;
 }
 
 export interface ModelStudioNotConfigured {
@@ -123,8 +126,26 @@ export interface ModelStudioNotConfigured {
 
 export type ModelStudioConfigResult = ModelStudioConfig | ModelStudioNotConfigured;
 
-/** Default deadline for a single call. Overridable, never unbounded. */
+/** Default deadline for a single EXTRACTION call. Overridable, never unbounded. */
 export const DEFAULT_TIMEOUT_MS = 30_000;
+
+/**
+ * Default deadline for a single RESEARCH call.
+ *
+ * Four times the extraction ceiling, because it is a different workload and
+ * pretending otherwise cost us a failed run. Extraction is one round trip that
+ * transforms text. Research reasons, runs a web search, fetches several pages
+ * and synthesises -- network round trips outside our control, each of which we
+ * simply have to wait for.
+ *
+ * The number comes from measurement, not from taste. A bounded four-source
+ * question about one attraction took 55,068ms end to end, using one search and
+ * two extractor calls. 30s was not a tight budget, it was the wrong unit.
+ *
+ * Still a hard ceiling. Bounded and generous is a different thing from
+ * unbounded, and a demo that hangs is worse than one that fails.
+ */
+export const DEFAULT_RESEARCH_TIMEOUT_MS = 120_000;
 
 /**
  * The environment, as this module needs it.
@@ -273,12 +294,17 @@ export function readModelStudioConfig(env: EnvSource = process.env): ModelStudio
   const structuredOutputMode: StructuredOutputMode =
     modeRaw === "json_schema" ? "json_schema" : "json_object";
 
-  const timeoutRaw = readEnv(env, "MODEL_STUDIO_TIMEOUT_MS");
-  const parsedTimeout = timeoutRaw === undefined ? Number.NaN : Number(timeoutRaw);
-  const timeoutMs =
-    Number.isInteger(parsedTimeout) && parsedTimeout > 0 && parsedTimeout <= 120_000
-      ? parsedTimeout
-      : DEFAULT_TIMEOUT_MS;
+  const readTimeout = (name: string, fallback: number, ceiling: number): number => {
+    const raw = readEnv(env, name);
+    const parsed = raw === undefined ? Number.NaN : Number(raw);
+    return Number.isInteger(parsed) && parsed > 0 && parsed <= ceiling ? parsed : fallback;
+  };
+  const timeoutMs = readTimeout("MODEL_STUDIO_TIMEOUT_MS", DEFAULT_TIMEOUT_MS, 120_000);
+  const researchTimeoutMs = readTimeout(
+    "MODEL_STUDIO_RESEARCH_TIMEOUT_MS",
+    DEFAULT_RESEARCH_TIMEOUT_MS,
+    300_000,
+  );
 
   return {
     configured: true,
@@ -291,6 +317,7 @@ export function readModelStudioConfig(env: EnvSource = process.env): ModelStudio
     researchModel: readEnv(env, "QWEN_RESEARCH_MODEL") ?? DEFAULT_RESEARCH_MODEL,
     structuredOutputMode,
     timeoutMs,
+    researchTimeoutMs,
   };
 }
 
@@ -320,5 +347,6 @@ export function describeConfig(config: ModelStudioConfigResult): Record<string, 
     researchModel: config.researchModel,
     structuredOutputMode: config.structuredOutputMode,
     timeoutMs: String(config.timeoutMs),
+    researchTimeoutMs: String(config.researchTimeoutMs),
   };
 }

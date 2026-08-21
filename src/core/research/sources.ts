@@ -53,6 +53,18 @@ export const DEFAULT_HOST_AUTHORITY: readonly HostAuthorityRule[] = [
   { suffix: ".gov.uk", authority: "OFFICIAL_WEB" },
   { suffix: ".gov.sg", authority: "OFFICIAL_WEB" },
   { suffix: "jnto.go.jp", authority: "OFFICIAL_WEB" },
+  /**
+   * Japanese local government. `.lg.jp` is registry-restricted to local public
+   * bodies, which makes it a deterministic signal rather than a guess.
+   *
+   * Both of these were returned by a real live search for accessibility
+   * information about one attraction, and both classified as UNKNOWN before
+   * being added -- honest, but it meant the genuine official page could not
+   * establish the operational fact it actually stated. Added from verified
+   * observation, never from the model's opinion of what looks official.
+   */
+  { suffix: ".lg.jp", authority: "OFFICIAL_WEB" },
+  { suffix: "tokyo-park.or.jp", authority: "OFFICIAL_WEB" },
   // Operators and venues.
   { suffix: "narita-airport.jp", authority: "OFFICIAL_WEB" },
   { suffix: "haneda-airport.jp", authority: "OFFICIAL_WEB" },

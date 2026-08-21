@@ -92,14 +92,42 @@ export class QwenWebResearchProvider implements ResearchProvider {
 
     const outcome = await this.transport.send({
       path: "/responses",
-      timeoutMs: Math.min(budget.timeoutMs, this.config.timeoutMs),
+      /**
+       * The RESEARCH ceiling, not the extraction one.
+       *
+       * These were previously conflated by a `Math.min` against the extraction
+       * timeout, so a 30s text-transformation budget silently capped a workload
+       * measured at 55s. The first live research call failed on that alone.
+       */
+      timeoutMs: Math.min(budget.timeoutMs, this.config.researchTimeoutMs),
       body: {
         model: this.config.researchModel,
         input: [
           { role: "system", content: RESEARCH_SYSTEM_PROMPT },
-          { role: "user", content: buildResearchInstruction({ ...question, maxSources }) },
+          {
+            role: "user",
+            content: buildResearchInstruction(
+              { ...question, maxSources },
+              { maxExtractedPages: budget.maxExtractedPages },
+            ),
+          },
         ],
         tools: [{ type: "web_search" }, { type: "web_extractor" }],
+        /**
+         * Stated explicitly, though it is also the default, because the default
+         * is load-bearing here and looks like an oversight.
+         *
+         * Two provider rules constrain this line, both found by calling the API:
+         * `web_extractor` may not be declared without `web_search`, and it may
+         * not run with thinking disabled ("Normal mode does not support
+         * web_extractor"). Setting this to false to chase the latency -- which
+         * is exactly what fixed the structured-extraction path -- returns a 400
+         * and removes the ability to read pages at all.
+         *
+         * So the latency of this call is a floor imposed by the tool, not slack
+         * to be tuned out.
+         */
+        enable_thinking: true,
       },
     });
 
@@ -119,21 +147,53 @@ export class QwenWebResearchProvider implements ResearchProvider {
     for (let i = 0; i < read.searchOperations; i += 1) ledgerBudget.recordSearchOperation();
     ledgerBudget.recordExtractedPages(read.extractedUrls.length);
 
-    // Every URL here came from a provider tool call. Nothing from the prose.
-    const collection = collectSources(
-      read.sources.map((source) => ({
-        url: source.url,
-        ...(source.title === undefined ? {} : { title: source.title }),
-        ...(source.searchQuery === undefined ? {} : { searchQuery: source.searchQuery }),
-        ...(source.rank === undefined ? {} : { rank: source.rank }),
-        providerOperationId: context.requestId,
-      })),
-      {
-        ingestionOrigin: "WEB_SEARCH",
-        retrievedAt: context.now,
-        maxSources,
-      },
-    );
+    /**
+     * Every URL here came from a provider tool call. Nothing from the prose.
+     *
+     * EXTRACTED PAGES COME FIRST, and that ordering is the point.
+     *
+     * A live run exposed the defect this fixes. `web_extractor` fetched three
+     * pages -- including the attraction's own official site and a Tokyo
+     * government accessibility page -- and the model cited all three. Every one
+     * was rejected as "not retrieved", because extracted URLs were counted for
+     * the budget and never collected as sources. Only the first few search hits
+     * were, so a page we had genuinely fetched was treated as if we had never
+     * seen it.
+     *
+     * That was backwards. A page the extractor actually opened is the most
+     * strongly retrieved thing in the whole operation: we did not merely see it
+     * listed, we fetched it. Putting extracted URLs ahead of search hits means
+     * they survive the source cap, which is what the cap should have been
+     * protecting all along.
+     *
+     * This does NOT loosen the invariant. Both lists come from provider tool
+     * output; neither comes from generated prose. It widens what counts as
+     * retrieved to include the strongest evidence rather than the weakest.
+     */
+    const extractedFirst = read.extractedUrls.map((url) => ({
+      url,
+      providerOperationId: context.requestId,
+    }));
+    const fromSearch = read.sources.map((source) => ({
+      url: source.url,
+      ...(source.title === undefined ? {} : { title: source.title }),
+      ...(source.searchQuery === undefined ? {} : { searchQuery: source.searchQuery }),
+      ...(source.rank === undefined ? {} : { rank: source.rank }),
+      providerOperationId: context.requestId,
+    }));
+
+    const collection = collectSources([...extractedFirst, ...fromSearch], {
+      ingestionOrigin: "WEB_SEARCH",
+      retrievedAt: context.now,
+      /**
+       * Extracted pages are admitted on top of the search budget.
+       *
+       * They are already bounded by `maxExtractedPages`, so the total stays
+       * bounded; capping them again against the search allowance would
+       * reintroduce the bug this ordering exists to fix.
+       */
+      maxSources: maxSources + extractedFirst.length,
+    });
     ledgerBudget.recordSources(collection.sources.length, collection.limitReached);
 
     if (collection.sources.length === 0) {

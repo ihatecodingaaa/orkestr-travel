@@ -11,7 +11,7 @@
  * The documented shape, as of this build:
  *
  *   output: [
- *     { type: "web_search_call",    action: { query, type, sources: [{ type, url }] } },
+ *     { type: "web_search_call",    action: { query, type, sources: [{ type, url }], queries } },
  *     { type: "web_extractor_call", goal, output, urls: [ "https://..." ] },
  *     { type: "message",            content: [{ type: "output_text", text }] },
  *     { type: "reasoning",          summary: [...] }
@@ -74,7 +74,20 @@ function readSearchCall(
   into: ExtractedSourceRef[],
 ): void {
   const action = isRecord(item["action"]) ? item["action"] : undefined;
-  const query = action === undefined ? undefined : asString(action["query"]);
+
+  /**
+   * The live provider sends BOTH `query` and `queries`.
+   *
+   * Observed on a real call: `action: {query, type, sources, queries}` where
+   * `queries` held the two variants the model actually ran. The documentation
+   * described only `query`. Reading both means a source records the query that
+   * surfaced it even when the provider stops sending the singular form, and it
+   * costs one fallback.
+   */
+  const queries = action === undefined ? [] : asArray(action["queries"]);
+  const firstQuery = queries.map(asString).find((q) => q !== undefined);
+  const query = (action === undefined ? undefined : asString(action["query"])) ?? firstQuery;
+
   const rawSources = action === undefined ? [] : asArray(action["sources"]);
 
   rawSources.forEach((entry, index) => {

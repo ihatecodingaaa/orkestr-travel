@@ -36,6 +36,7 @@ const CONFIG: ModelStudioConfig = {
   researchModel: "qwen3.7-plus",
   structuredOutputMode: "json_object",
   timeoutMs: 5000,
+  researchTimeoutMs: 120000,
 };
 
 function capturingTransport(): ModelStudioTransport & {

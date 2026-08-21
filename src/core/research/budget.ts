@@ -31,7 +31,11 @@ export const DEFAULT_RESEARCH_BUDGET: ResearchBudget = {
   maxSourcesPerQuestion: 5,
   maxExtractedPages: 6,
   maxProviderCalls: 8,
-  timeoutMs: 45_000,
+  /**
+   * Measured, not guessed. One bounded four-source question about a single
+   * attraction took 55s live, using one search and two page extractions.
+   */
+  timeoutMs: 120_000,
 };
 
 export type BudgetBreach =

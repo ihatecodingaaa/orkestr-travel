@@ -90,7 +90,10 @@ const KIND_INTENT: Readonly<Record<ResearchQuestion["kind"], string>> = {
  * includes a fifteen-year-old is a fact about who has to be able to enjoy the
  * day, not a licence to assume what they like.
  */
-export function buildResearchInstruction(question: ResearchQuestion): string {
+export function buildResearchInstruction(
+  question: ResearchQuestion,
+  limits: { readonly maxExtractedPages: number } = { maxExtractedPages: 3 },
+): string {
   const context = question.context;
   const lines: string[] = [
     `QUESTION KIND: ${question.kind}`,
@@ -150,6 +153,20 @@ export function buildResearchInstruction(question: ResearchQuestion): string {
           : "Use whatever public sources are relevant, and be accurate about which kind each one is."
     }`,
     `Use at most ${String(question.maxSources)} sources. Stop when you have that many.`,
+    /**
+     * The extraction bound, stated to the model.
+     *
+     * This was previously enforced only in our own accounting, which is to say
+     * not enforced at all: the model was never told, so it read as many pages as
+     * it liked and we counted them afterwards. A bound nobody is told is not a
+     * bound.
+     *
+     * It is also the latency lever. Reading a page means fetching a real website
+     * and waiting for it, and a live run that opened several pages took long
+     * enough to exceed a two-minute ceiling. Searching is comparatively cheap;
+     * reading is not.
+     */
+    `Open at most ${String(limits.maxExtractedPages)} pages with the extraction tool. Reading a page is slow, so open only the most authoritative ones and answer from the search results for the rest. Do not open a page merely to confirm something you already have.`,
     ``,
     `WHY THIS IS BEING ASKED: ${question.purpose}`,
     ``,
