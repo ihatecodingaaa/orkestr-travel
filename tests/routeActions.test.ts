@@ -108,10 +108,12 @@ describe("the extraction action", () => {
 });
 
 describe("the research action", () => {
-  it("answers the demo question from recorded data, labelled as recorded", async () => {
+  it("answers the demo question from fixture data, labelled as a fixture", async () => {
     const state = await runResearchAction(IDLE_RESEARCH, form({}));
     expect(state.status).toBe("SUCCESS");
-    expect(state.mode).toBe("RECORDED_WEB");
+    // Never RECORDED_WEB: no Model Studio call has ever been made, so there is
+    // nothing recorded from it to replay.
+    expect(state.mode).toBe("LOCAL_FIXTURE");
     expect(state.sources?.length).toBeGreaterThan(0);
     expect(state.claims?.length).toBeGreaterThan(0);
   });

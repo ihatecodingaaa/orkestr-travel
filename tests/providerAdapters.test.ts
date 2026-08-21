@@ -19,6 +19,7 @@ const NOW = asIsoDateTime("2026-08-01T09:00:00+08:00");
 
 const CONFIG: ModelStudioConfig = {
   configured: true,
+  mode: "live",
   apiKey: "sk-test-key-not-real-0000000000",
   baseUrl: "https://ws-test.ap-southeast-1.maas.aliyuncs.com/compatible-mode/v1",
   region: "ap-southeast-1",
@@ -74,10 +75,25 @@ const QUESTION: ResearchQuestion = {
 
 describe("configuration", () => {
   it("reports NOT CONFIGURED rather than throwing when there is no key", () => {
-    const result = readModelStudioConfig({});
+    // Live mode set so the reader gets past the kill switch and actually looks
+    // for a credential. Without it the answer is "switched off", which is a
+    // different statement and is covered separately.
+    const result = readModelStudioConfig({
+      MODEL_STUDIO_MODE: "live",
+      MODEL_STUDIO_WORKSPACE_ID: "ws-test",
+    });
     expect(result.configured).toBe(false);
     if (result.configured) throw new Error("expected not configured");
     expect(result.missing).toContain("DASHSCOPE_API_KEY");
+  });
+
+  it("reports switched-off before it reports anything about credentials", () => {
+    const result = readModelStudioConfig({});
+    if (result.configured) throw new Error("expected not configured");
+    expect(result.mode).toBe("disabled");
+    expect(result.reason).toContain("switched off");
+    // Nothing was even looked for, so nothing is reported missing.
+    expect(result.missing).toEqual([]);
   });
 
   it("builds a workspace endpoint from configuration, never from a constant", () => {
@@ -117,6 +133,7 @@ describe("configuration", () => {
 
   it("reads models and timeout from the environment with safe defaults", () => {
     const result = readModelStudioConfig({
+      MODEL_STUDIO_MODE: "live",
       DASHSCOPE_API_KEY: "sk-x",
       MODEL_STUDIO_WORKSPACE_ID: "ws",
       QWEN_EXTRACTION_MODEL: "qwen3.7-max",
@@ -129,6 +146,7 @@ describe("configuration", () => {
 
   it("never puts the key, its length or its prefix into a description", () => {
     const result = readModelStudioConfig({
+      MODEL_STUDIO_MODE: "live",
       DASHSCOPE_API_KEY: "sk-super-secret-value-1234567890",
       MODEL_STUDIO_WORKSPACE_ID: "ws-private-id",
     });

@@ -14,21 +14,22 @@ import { FixtureResearchProvider } from "./fixture/fixtureResearch";
 /**
  * Provider selection.
  *
- * THE ONE RULE: THERE IS NO SILENT FALLBACK.
+ * TWO RULES.
  *
- * If Model Studio is configured, the live provider is used and the interface
- * says LIVE. If it is not, the fixture provider is used and the interface says
- * DEMO FIXTURE. What must never happen is a live call failing and a fixture
- * answer appearing in its place under a live label, because at that point the
- * label is a lie and nobody watching can tell.
+ * 1. EXTERNAL CALLS ARE OFF BY DEFAULT. Selection is driven by
+ *    `MODEL_STUDIO_MODE`, not by whether a credential happens to exist. A key in
+ *    `.env.local` is a capability, not an instruction, and using its presence to
+ *    decide whether to spend money meant an accidental form submission on a
+ *    fresh checkout could do so. See `readModelStudioMode`.
  *
- * So this module returns a provider AND the mode it is in, together, from one
- * place. A screen cannot pick up the provider without also picking up what to
+ * 2. THERE IS NO SILENT FALLBACK. What must never happen is a live call failing
+ *    and a fixture answer appearing in its place under a live label, because at
+ *    that point the label is a lie and nobody watching can tell. When live is
+ *    requested and cannot be delivered, the interface renders a failure.
+ *
+ * This module returns a provider AND the mode it is in, together, from one
+ * place, so a screen cannot pick up the provider without also picking up what to
  * call it.
- *
- * When a live call fails at run time, it fails. It does not become a fixture.
- * The failure states in `docs/FAILURE_MODES.md` exist so that a failure has
- * somewhere honest to land.
  */
 
 export interface ProviderBundle {
@@ -60,10 +61,21 @@ export function resolveProviders(options: RegistryOptions = {}): ProviderBundle 
   if (options.forceFixture === true || !config.configured) {
     return {
       understanding: new FixtureLanguageUnderstandingProvider(),
-      // Fixture research replays a sanitised structured capture, so it is
-      // labelled RECORDED_WEB rather than LOCAL_FIXTURE: the source URLs and
-      // titles are real pages, even though no call was made now.
-      research: new FixtureResearchProvider("RECORDED_WEB"),
+      /**
+       * LOCAL_FIXTURE, not RECORDED_WEB.
+       *
+       * An earlier version labelled this RECORDED_WEB, which the interface
+       * renders as "Recorded Model Studio result". Nothing has ever been
+       * recorded from Model Studio: this data was written by hand in this
+       * repository, and calling it a recording of a service that has never been
+       * called is exactly the kind of small overclaim that makes a demo
+       * untrustworthy under questioning.
+       *
+       * RECORDED_WEB stays in the model as a declared future state. It becomes
+       * reachable when a genuine call has been made and sanitised, and not
+       * before. See docs/PROVIDER_MODES.md.
+       */
+      research: new FixtureResearchProvider("LOCAL_FIXTURE"),
       config,
     };
   }

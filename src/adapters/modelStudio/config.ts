@@ -53,8 +53,53 @@ export const DEFAULT_RESEARCH_MODEL = "qwen3.7-plus";
  */
 export type StructuredOutputMode = "json_object" | "json_schema";
 
+/**
+ * Whether this process may make an external call at all.
+ *
+ * THE KILL SWITCH, and the reason it exists: a credential is a capability, not
+ * an instruction. Before this existed, dropping a key into `.env.local` was
+ * enough to make every page render, every form submission and every accidental
+ * refresh spend real money on a paid API. Nobody chose that; it happened because
+ * "is a key present" was being used to answer "should we call out".
+ *
+ * Those are different questions and they now have different variables.
+ *
+ *   disabled  Never touch the network. The default, and the state a fresh
+ *             checkout is in. Fixture providers serve every screen.
+ *   recorded  Never touch the network. Serve stored artefacts instead.
+ *   live      MAY call Model Studio, and only then if credentials are also
+ *             present and the operation explicitly asks for it.
+ *
+ * `live` requires a deliberate act by somebody who knows what it costs. An
+ * unset, misspelt or unrecognised value is `disabled`, because the safe reading
+ * of an unclear instruction is to do nothing.
+ */
+export type ModelStudioMode = "disabled" | "recorded" | "live";
+
+export const DEFAULT_MODEL_STUDIO_MODE: ModelStudioMode = "disabled";
+
+const MODES: readonly ModelStudioMode[] = ["disabled", "recorded", "live"];
+
+/**
+ * Read the mode, defaulting closed.
+ *
+ * Deliberately NOT forgiving. A typo in `MODEL_STUDIO_MODE` yields `disabled`
+ * rather than a guess, so the failure mode of a configuration mistake is a demo
+ * that runs on fixtures rather than a bill.
+ */
+export function readModelStudioMode(env: EnvSource = process.env): ModelStudioMode {
+  const raw = env["MODEL_STUDIO_MODE"];
+  if (raw === undefined) return DEFAULT_MODEL_STUDIO_MODE;
+  const normalised = raw.trim().toLowerCase();
+  return MODES.includes(normalised as ModelStudioMode)
+    ? (normalised as ModelStudioMode)
+    : DEFAULT_MODEL_STUDIO_MODE;
+}
+
 export interface ModelStudioConfig {
   readonly configured: true;
+  /** Always "live" here. A configured credential is only reachable in live mode. */
+  readonly mode: "live";
   /** Never logged, never displayed, never returned to a client. */
   readonly apiKey: string;
   readonly baseUrl: string;
@@ -68,6 +113,8 @@ export interface ModelStudioConfig {
 
 export interface ModelStudioNotConfigured {
   readonly configured: false;
+  /** The mode that was actually requested, so a screen can say which it is. */
+  readonly mode: ModelStudioMode;
   /** Which variables are missing. Names only; never a value. */
   readonly missing: readonly string[];
   /** One sentence safe to show a user. */
@@ -156,6 +203,31 @@ export function buildBaseUrl(options: {
  * order-dependent or unwritable.
  */
 export function readModelStudioConfig(env: EnvSource = process.env): ModelStudioConfigResult {
+  const mode = readModelStudioMode(env);
+
+  /**
+   * The kill switch, applied before anything else is read.
+   *
+   * In `disabled` or `recorded` mode this function never returns a configured
+   * result, so no caller can obtain a credential, construct a transport or make
+   * a request -- whatever else is in the environment. A key sitting in
+   * `.env.local` is inert until somebody deliberately sets the mode to `live`.
+   *
+   * The key is not even read here. There is nothing to leak from a code path
+   * that never touches it.
+   */
+  if (mode !== "live") {
+    return {
+      configured: false,
+      mode,
+      missing: [],
+      reason:
+        mode === "disabled"
+          ? "External calls are switched off. Set MODEL_STUDIO_MODE=live to enable them."
+          : "Running from stored results. Set MODEL_STUDIO_MODE=live to make real calls.",
+    };
+  }
+
   const apiKey = readEnv(env, "DASHSCOPE_API_KEY");
   const missing: string[] = [];
   if (apiKey === undefined) missing.push("DASHSCOPE_API_KEY");
@@ -176,6 +248,7 @@ export function readModelStudioConfig(env: EnvSource = process.env): ModelStudio
     }
     return {
       configured: false,
+      mode,
       missing,
       reason: url.reason,
     };
@@ -184,8 +257,15 @@ export function readModelStudioConfig(env: EnvSource = process.env): ModelStudio
   if (apiKey === undefined) {
     return {
       configured: false,
+      mode,
       missing,
-      reason: "No Model Studio credential is set, so no call can be made.",
+      /**
+       * Live was asked for and cannot be delivered. This is NOT a quiet
+       * downgrade to fixtures: the caller is told the requested mode failed, and
+       * the interface renders a failure rather than a fixture wearing a live
+       * label.
+       */
+      reason: "Live mode is on, but no Model Studio credential is set, so no call can be made.",
     };
   }
 
@@ -202,6 +282,7 @@ export function readModelStudioConfig(env: EnvSource = process.env): ModelStudio
 
   return {
     configured: true,
+    mode: "live",
     apiKey,
     baseUrl: url.baseUrl,
     region,
@@ -224,12 +305,14 @@ export function describeConfig(config: ModelStudioConfigResult): Record<string, 
   if (!config.configured) {
     return {
       status: "NOT_CONFIGURED",
+      mode: config.mode,
       missing: config.missing.join(", "),
       reason: config.reason,
     };
   }
   return {
     status: "CONFIGURED",
+    mode: config.mode,
     region: config.region,
     // The host, not the workspace id, and only the part that is not a secret.
     endpointHost: new URL(config.baseUrl).host.replace(/^[^.]+\./, "<workspace>."),

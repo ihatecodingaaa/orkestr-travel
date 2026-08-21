@@ -21,25 +21,109 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-describe("provider selection has no silent fallback", () => {
-  it("uses fixture providers, clearly labelled, when nothing is configured", () => {
-    const bundle = resolveProviders({ env: {} });
-    expect(bundle.understanding.mode).toBe("LOCAL_FIXTURE");
-    expect(bundle.research.mode).toBe("RECORDED_WEB");
-    expect(bundle.config.configured).toBe(false);
-    // No transport exists, so nothing can be called by accident.
+describe("external calls are off unless somebody switched them on", () => {
+  /**
+   * The regression that motivated the kill switch.
+   *
+   * Before it existed, these credentials alone produced live providers. Dropping
+   * a key into `.env.local` was therefore enough to make an accidental form
+   * submission spend real money, which nobody had chosen.
+   */
+  const CREDENTIALS = {
+    DASHSCOPE_API_KEY: "sk-test-not-real",
+    MODEL_STUDIO_WORKSPACE_ID: "ws-test",
+  } as const;
+
+  it("does not go live on credentials alone", () => {
+    const bundle = resolveProviders({ env: { ...CREDENTIALS } });
+    expect(bundle.understanding.mode).not.toBe("LIVE_MODEL");
+    expect(bundle.research.mode).not.toBe("LIVE_WEB");
+    // The decisive assertion: with no transport, no request is constructible.
     expect(bundle.transport).toBeUndefined();
   });
 
-  it("uses live providers, labelled live, when credentials exist", () => {
+  it("does not go live in disabled or recorded mode, whatever else is set", () => {
+    for (const mode of ["disabled", "recorded"]) {
+      const bundle = resolveProviders({ env: { ...CREDENTIALS, MODEL_STUDIO_MODE: mode } });
+      expect(bundle.transport, mode).toBeUndefined();
+      expect(bundle.config.configured, mode).toBe(false);
+    }
+  });
+
+  it("treats an unrecognised mode as disabled rather than guessing", () => {
+    for (const mode of ["LIVE!", "on", "true", "enabled", "", "  "]) {
+      const bundle = resolveProviders({ env: { ...CREDENTIALS, MODEL_STUDIO_MODE: mode } });
+      expect(bundle.transport, `mode=${mode}`).toBeUndefined();
+    }
+  });
+
+  it("goes live only when the mode is set AND credentials exist", () => {
     const bundle = resolveProviders({
-      env: { DASHSCOPE_API_KEY: "sk-test", MODEL_STUDIO_WORKSPACE_ID: "ws" },
+      env: { ...CREDENTIALS, MODEL_STUDIO_MODE: "live" },
       now: () => 0,
       fetchImpl: (() => Promise.reject(new Error("no calls in tests"))) as unknown as typeof fetch,
     });
     expect(bundle.understanding.mode).toBe("LIVE_MODEL");
     expect(bundle.research.mode).toBe("LIVE_WEB");
     expect(bundle.transport).toBeDefined();
+  });
+
+  it("accepts the mode case-insensitively, since it is typed by a human", () => {
+    const bundle = resolveProviders({
+      env: { ...CREDENTIALS, MODEL_STUDIO_MODE: "  LIVE  " },
+      now: () => 0,
+      fetchImpl: (() => Promise.reject(new Error("no calls"))) as unknown as typeof fetch,
+    });
+    expect(bundle.transport).toBeDefined();
+  });
+
+  it("reports live-without-a-key as a failure, never as a quiet downgrade", () => {
+    // Workspace supplied so the endpoint is constructible and the missing key is
+    // the only remaining problem.
+    const bundle = resolveProviders({
+      env: { MODEL_STUDIO_MODE: "live", MODEL_STUDIO_WORKSPACE_ID: "ws-test" },
+    });
+    expect(bundle.config.configured).toBe(false);
+    if (bundle.config.configured) throw new Error("expected not configured");
+    expect(bundle.config.mode).toBe("live");
+    expect(bundle.config.reason).toContain("Live mode is on");
+    expect(bundle.config.missing).toContain("DASHSCOPE_API_KEY");
+  });
+
+  it("reports live-without-a-workspace as a failure naming what is missing", () => {
+    const bundle = resolveProviders({
+      env: { MODEL_STUDIO_MODE: "live", DASHSCOPE_API_KEY: "sk-test-not-real" },
+    });
+    if (bundle.config.configured) throw new Error("expected not configured");
+    expect(bundle.config.mode).toBe("live");
+    expect(bundle.config.missing).toContain("MODEL_STUDIO_WORKSPACE_ID");
+  });
+
+  it("carries the requested mode on the not-configured result, so a screen can say which", () => {
+    for (const mode of ["disabled", "recorded", "live"] as const) {
+      const bundle = resolveProviders({ env: { MODEL_STUDIO_MODE: mode } });
+      if (bundle.config.configured) throw new Error(`unexpectedly configured in ${mode}`);
+      expect(bundle.config.mode).toBe(mode);
+    }
+  });
+
+  it("never reads the credential at all while the switch is off", () => {
+    // Nothing to leak from a path that does not touch it.
+    const bundle = resolveProviders({ env: { ...CREDENTIALS } });
+    expect(JSON.stringify(bundle.config)).not.toContain("sk-test-not-real");
+  });
+});
+
+describe("provider selection has no silent fallback", () => {
+  it("uses fixture providers, clearly labelled, when nothing is configured", () => {
+    const bundle = resolveProviders({ env: {} });
+    expect(bundle.understanding.mode).toBe("LOCAL_FIXTURE");
+    // LOCAL_FIXTURE, not RECORDED_WEB: nothing has ever been recorded from
+    // Model Studio, and this data was written by hand in this repository.
+    expect(bundle.research.mode).toBe("LOCAL_FIXTURE");
+    expect(bundle.config.configured).toBe(false);
+    // No transport exists, so nothing can be called by accident.
+    expect(bundle.transport).toBeUndefined();
   });
 
   it("lets a caller force fixtures, but never lets fixtures claim to be live", () => {
@@ -80,7 +164,7 @@ describe("the fixture path works end to end with no credentials", () => {
     expect(answer.outcome).toBe("SUCCESS");
     if (answer.outcome !== "SUCCESS") return;
     expect(answer.ledger.sources.length).toBeGreaterThan(0);
-    expect(answer.diagnostics.mode).toBe("RECORDED_WEB");
+    expect(answer.diagnostics.mode).toBe("LOCAL_FIXTURE");
   });
 
   it("reports a question it has no recorded answer for, rather than inventing one", async () => {
@@ -170,7 +254,9 @@ describe("diagnostics carry counts, never content", () => {
     const { sink, lines } = capture();
     logExtraction(
       {
-        requestId: "sk-abcdefghijklmnop12345678",
+        // Key-shaped on purpose, and carrying a fake-marker so check:secrets
+        // can tell it from a real credential. See scripts/checkSecrets.mjs.
+        requestId: "sk-notreal-abcdefghijklmnop12345678",
         operation: "EXTRACT_INTENT",
         providerName: "test",
         model: "test",

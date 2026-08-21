@@ -27,6 +27,7 @@ const NOW = asIsoDateTime("2026-08-01T09:00:00+08:00");
 
 const CONFIG: ModelStudioConfig = {
   configured: true,
+  mode: "live",
   apiKey: "sk-test-key-not-real-0000000000",
   baseUrl: "https://ws-test.ap-southeast-1.maas.aliyuncs.com/compatible-mode/v1",
   region: "ap-southeast-1",

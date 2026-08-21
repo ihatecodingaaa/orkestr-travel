@@ -134,12 +134,51 @@ export type EvidenceState =
  * and every id in it must resolve to a source actually collected during this
  * research operation. That invariant is enforced in code, not by convention.
  */
+/**
+ * WHAT a claim is about.
+ *
+ * A claim is not a free-floating fact; it is a fact about something. "Step-free
+ * entrance is available" is useless, and dangerous, without knowing which
+ * entrance.
+ *
+ * This exists because of a real defect. An officially-sourced, entirely true
+ * statement that a metro operator publishes step-free route information was
+ * being used to clear a step-free requirement for a garden teahouse. Both halves
+ * were true; the claim was simply about something else. An overclaim assembled
+ * out of true statements is the hardest kind to see, so the subject is now
+ * carried on the claim and compared, rather than left implicit.
+ *
+ * `key` is the identity used for comparison. It is normalised (lower-cased,
+ * trimmed) so that "Hamarikyu Gardens" and "hamarikyu gardens" are one subject,
+ * and never inferred from prose: a claim whose subject cannot be established
+ * gets `UNSPECIFIED`, which matches nothing.
+ */
+export interface ClaimSubject {
+  /** Stable comparison key. `UNSPECIFIED` deliberately matches no other subject. */
+  readonly key: string;
+  /** How to name it on screen. */
+  readonly label: string;
+  readonly kind: "VENUE" | "STATION" | "AIRPORT" | "AREA" | "OPERATOR" | "UNSPECIFIED";
+}
+
+/** The subject of a claim nobody could tie to a specific thing. Matches nothing. */
+export const UNSPECIFIED_SUBJECT: ClaimSubject = {
+  key: "UNSPECIFIED",
+  label: "Not tied to a specific place",
+  kind: "UNSPECIFIED",
+};
+
 export interface EvidenceClaim {
   readonly id: EvidenceId;
   /** The claim, in one sentence. */
   readonly statement: string;
   readonly claimType: ClaimType;
   readonly state: EvidenceState;
+
+  /**
+   * What this claim is about. Never inferred; UNSPECIFIED when not established.
+   */
+  readonly subject: ClaimSubject;
 
   /** Actual collected sources. Never a URL that appeared only in prose. */
   readonly sourceIds: readonly ResearchSourceId[];

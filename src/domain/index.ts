@@ -135,6 +135,7 @@ export type {
 } from "./planRepair";
 
 export type {
+  ClaimSubject,
   ClaimType,
   CommunityEvidenceSummary,
   EvidenceClaim,
@@ -145,6 +146,7 @@ export type {
   ResearchSource,
   SourceAuthority,
 } from "./evidence";
+export { UNSPECIFIED_SUBJECT } from "./evidence";
 export type {
   EvidenceBackedJourneySuggestion,
   GroupContext,

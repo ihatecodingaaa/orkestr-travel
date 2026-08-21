@@ -43,4 +43,18 @@ export default tseslint.config(
     files: ["**/*.mjs", "**/*.js"],
     extends: [tseslint.configs.disableTypeChecked],
   },
+
+  // Node scripts under scripts/. They are plain ESM run directly by node, so
+  // they legitimately use `process`, and they print to stdout because printing
+  // IS their output. Declaring the globals is honest; silencing `no-undef`
+  // repo-wide would hide a real mistake in application code.
+  {
+    files: ["scripts/**/*.mjs"],
+    languageOptions: {
+      globals: { process: "readonly", console: "readonly" },
+    },
+    rules: {
+      "no-console": "off",
+    },
+  },
 );

@@ -27,6 +27,13 @@ import { asIsoDate } from "../../domain/time";
  * would demonstrate none of them.
  */
 
+/** The venue the Tokyo fixture is about. Claims are bound to it explicitly. */
+const HAMARIKYU = {
+  key: "hamarikyu-gardens",
+  label: "Hamarikyu Gardens",
+  kind: "VENUE",
+} as const;
+
 export interface RecordedResearch {
   readonly kind: ResearchQuestionKind;
   readonly destinationLabel: string;
@@ -103,12 +110,16 @@ const TOKYO_MULTIGEN: RecordedResearch = {
         "Tokyo Metro publishes step-free route information for its stations, including which exits have lifts.",
       claimType: "OPERATIONAL_FACT",
       citedUrls: ["https://www.tokyometro.jp/en/tips/barrier_free/index.html"],
+      // The OPERATOR, not the garden. True, official, and about something else:
+      // this is the claim that must never clear the garden's access need.
+      subject: { key: "tokyo-metro", label: "Tokyo Metro", kind: "OPERATOR" },
     },
     {
       statement:
         "Hamarikyu Gardens has paved main paths and a teahouse reachable without steps from the main entrance.",
       claimType: "OPERATIONAL_FACT",
       citedUrls: ["https://www.japan.travel/en/spot/hamarikyu/"],
+      subject: HAMARIKYU,
     },
     {
       // Community sources only. The core downgrades this from OPERATIONAL_FACT
@@ -117,6 +128,7 @@ const TOKYO_MULTIGEN: RecordedResearch = {
       claimType: "OPERATIONAL_FACT",
       citedUrls: ["https://www.reddit.com/r/JapanTravel/comments/example-thread/"],
       contradictsIndexes: [3],
+      subject: HAMARIKYU,
     },
     {
       statement:

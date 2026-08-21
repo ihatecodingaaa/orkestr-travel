@@ -34,16 +34,21 @@ function ledgerFor(claims: readonly ProposedClaim[]) {
   return assembleClaims(claims, collected, { retrievedAt: NOW, idPrefix: "REQ" }).ledger;
 }
 
+const GARDENS = { key: "hamarikyu-gardens", label: "Hamarikyu Gardens", kind: "VENUE" } as const;
+const METRO = { key: "tokyo-metro", label: "Tokyo Metro", kind: "OPERATOR" } as const;
+
 const OFFICIAL_ACCESS_CLAIM: ProposedClaim = {
   statement: "The venue publishes a step-free route from the main entrance.",
   claimType: "OPERATIONAL_FACT",
   citedUrls: [OFFICIAL],
+  subject: GARDENS,
 };
 
 const COMMUNITY_ACCESS_CLAIM: ProposedClaim = {
   statement: "Visitors say they had no trouble with a wheelchair.",
   claimType: "OPERATIONAL_FACT",
   citedUrls: [COMMUNITY],
+  subject: GARDENS,
 };
 
 function suggestion(
@@ -83,6 +88,7 @@ function candidate(overrides: Partial<CandidateSuggestion> = {}): CandidateSugge
     startsAt: asIsoDateTime("2026-08-26T10:00:00+09:00"),
     wholeGroup: true,
     accessClaimIds: [],
+    subject: GARDENS,
     ...overrides,
   };
 }
@@ -211,10 +217,86 @@ describe("evidence must exist", () => {
 });
 
 describe("accessibility is never overclaimed", () => {
-  it("clears a stated access need only on an official source", () => {
+  it("clears a stated access need on an official source about the same place", () => {
     const ctx = context({ accessibilityNeeds: ["STEP_FREE_ACCESS"] });
     const claimId = ctx.ledger.claims[0]?.id as string;
     const verdict = checkSuggestion(candidate({ accessClaimIds: [claimId] }), ctx);
+    if (!verdict.ok) throw new Error("expected acceptance");
+    expect(verdict.suggestion.unknowns).not.toContain("ACCESSIBILITY_UNVERIFIED");
+  });
+
+  /**
+   * The defect this whole mechanism exists for.
+   *
+   * Every ingredient below is genuine: an official source, a true operational
+   * fact, correctly classified. It is simply about the metro operator and not
+   * about the garden, and it must not clear the garden's access requirement.
+   */
+  it("refuses to clear a need with an official claim about a DIFFERENT place", () => {
+    const ledger = ledgerFor([
+      {
+        statement: "The operator publishes step-free route information for its stations.",
+        claimType: "OPERATIONAL_FACT",
+        citedUrls: [OFFICIAL],
+        subject: METRO,
+      },
+    ]);
+    const ctx = context({ accessibilityNeeds: ["STEP_FREE_ACCESS"], ledger });
+    const claimId = ledger.claims[0]?.id as string;
+
+    // The claim is official, operational and unconflicted.
+    expect(ledger.claims[0]?.claimType).toBe("OPERATIONAL_FACT");
+    expect(ledger.claims[0]?.needsConfirmation).toBe(false);
+
+    const verdict = checkSuggestion(
+      candidate({ accessClaimIds: [claimId], subject: GARDENS }),
+      ctx,
+    );
+    if (!verdict.ok) throw new Error("expected acceptance");
+    // Accepted, but the access question is still open.
+    expect(verdict.suggestion.unknowns).toContain("ACCESSIBILITY_UNVERIFIED");
+  });
+
+  it("refuses to clear a need when the claim has no established subject", () => {
+    const ledger = ledgerFor([
+      {
+        statement: "Step-free entrance is available.",
+        claimType: "OPERATIONAL_FACT",
+        citedUrls: [OFFICIAL],
+        // No subject: nobody could tie this to a place.
+      },
+    ]);
+    const ctx = context({ accessibilityNeeds: ["STEP_FREE_ACCESS"], ledger });
+    const claimId = ledger.claims[0]?.id as string;
+    expect(ledger.claims[0]?.subject.key).toBe("UNSPECIFIED");
+
+    const verdict = checkSuggestion(candidate({ accessClaimIds: [claimId] }), ctx);
+    if (!verdict.ok) throw new Error("expected acceptance");
+    expect(verdict.suggestion.unknowns).toContain("ACCESSIBILITY_UNVERIFIED");
+  });
+
+  it("refuses to clear a need when the suggestion has no established subject", () => {
+    // The same rule from the other side. An unplaced suggestion is not a
+    // wildcard that any official claim can satisfy.
+    const ctx = context({ accessibilityNeeds: ["STEP_FREE_ACCESS"] });
+    const claimId = ctx.ledger.claims[0]?.id as string;
+    const { subject: _drop, ...withoutSubject } = candidate({ accessClaimIds: [claimId] });
+
+    const verdict = checkSuggestion(withoutSubject, ctx);
+    if (!verdict.ok) throw new Error("expected acceptance");
+    expect(verdict.suggestion.unknowns).toContain("ACCESSIBILITY_UNVERIFIED");
+  });
+
+  it("matches subjects regardless of casing or padding", () => {
+    const ctx = context({ accessibilityNeeds: ["STEP_FREE_ACCESS"] });
+    const claimId = ctx.ledger.claims[0]?.id as string;
+    const verdict = checkSuggestion(
+      candidate({
+        accessClaimIds: [claimId],
+        subject: { key: "  Hamarikyu-Gardens  ", label: "Hamarikyu", kind: "VENUE" },
+      }),
+      ctx,
+    );
     if (!verdict.ok) throw new Error("expected acceptance");
     expect(verdict.suggestion.unknowns).not.toContain("ACCESSIBILITY_UNVERIFIED");
   });

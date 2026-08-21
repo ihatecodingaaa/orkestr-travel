@@ -1,4 +1,5 @@
 import type {
+  ClaimSubject,
   ClaimType,
   EvidenceClaim,
   EvidenceFreshness,
@@ -10,6 +11,7 @@ import type {
 import type { EvidenceId, ResearchSourceId } from "../../domain/ids";
 import type { IsoDateTime } from "../../domain/time";
 import { asEvidenceId } from "../../domain/ids";
+import { UNSPECIFIED_SUBJECT } from "../../domain/evidence";
 import { resolveCitations } from "./sources";
 
 /**
@@ -43,6 +45,37 @@ export interface ProposedClaim {
   readonly citedUrls: readonly string[];
   /** Statements this one contradicts, by index into the proposed list. */
   readonly contradictsIndexes?: readonly number[];
+  /**
+   * What the claim is about. Omitted means UNSPECIFIED, which matches nothing.
+   *
+   * Defaulting to "unspecified" rather than to "whatever we were researching" is
+   * the whole safety property: a claim that cannot be tied to a subject must not
+   * inherit one by being in the same result set as claims that can.
+   */
+  readonly subject?: ClaimSubject;
+}
+
+/** Normalise a subject key so casing and spacing cannot split one subject in two. */
+export function normaliseSubject(subject: ClaimSubject): ClaimSubject {
+  const key = subject.key.trim().toLowerCase();
+  return {
+    ...subject,
+    key: key.length === 0 ? UNSPECIFIED_SUBJECT.key : key,
+  };
+}
+
+/**
+ * Whether a claim may speak for a subject.
+ *
+ * UNSPECIFIED never matches, in either direction. That is deliberate: an
+ * unplaced claim is not a wildcard, it is a claim nobody could place.
+ */
+export function subjectMatches(claim: ClaimSubject, wanted: ClaimSubject): boolean {
+  const a = normaliseSubject(claim).key;
+  const b = normaliseSubject(wanted).key;
+  if (a === UNSPECIFIED_SUBJECT.key.toLowerCase() || a === UNSPECIFIED_SUBJECT.key) return false;
+  if (b === UNSPECIFIED_SUBJECT.key.toLowerCase() || b === UNSPECIFIED_SUBJECT.key) return false;
+  return a === b;
 }
 
 /** Authorities permitted to establish an operational fact. */
@@ -180,6 +213,8 @@ export function assembleClaims(
       statement: claim.statement,
       claimType,
       state,
+      subject:
+        claim.subject === undefined ? UNSPECIFIED_SUBJECT : normaliseSubject(claim.subject),
       sourceIds,
       needsConfirmation,
       conflictsWithClaimIds: conflictIndexes.map(claimIdAt),

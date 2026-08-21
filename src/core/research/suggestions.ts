@@ -1,4 +1,4 @@
-import type { EvidenceLedger } from "../../domain/evidence";
+import type { ClaimSubject, EvidenceLedger } from "../../domain/evidence";
 import type {
   EvidenceBackedJourneySuggestion,
   SuggestionReason,
@@ -8,7 +8,7 @@ import type { AssistanceNeedType } from "../../domain/assistance";
 import type { TravellerId } from "../../domain/ids";
 import type { IsoDateTime } from "../../domain/time";
 import { compareInstants } from "../time/instant";
-import { canEstablishOperationalFact, sourcesForClaim } from "./claims";
+import { canEstablishOperationalFact, sourcesForClaim, subjectMatches } from "./claims";
 
 /**
  * Deterministic checks on a model-proposed suggestion.
@@ -67,6 +67,14 @@ export interface CandidateSuggestion {
    * an accessibility claim with no official source cannot clear the need.
    */
   readonly accessClaimIds: readonly string[];
+  /**
+   * What this suggestion is about, so an access claim can be checked against it.
+   *
+   * Omitted means the suggestion has no established subject, and no claim can
+   * clear its access needs -- the same rule as an unplaced claim, from the other
+   * side. See ClaimSubject in domain/evidence.ts for the defect this prevents.
+   */
+  readonly subject?: ClaimSubject;
 }
 
 export type SuggestionVerdict =
@@ -176,6 +184,16 @@ export function checkSuggestion(
       if (claim === undefined) return false;
       if (claim.claimType !== "OPERATIONAL_FACT") return false;
       if (claim.needsConfirmation) return false;
+      /**
+       * ENTITY BINDING. The claim must be about THIS suggestion's subject.
+       *
+       * Without this, an officially-sourced true statement about one place
+       * cleared an access requirement for another. `subjectMatches` returns
+       * false whenever either side is unspecified, so the absence of a subject
+       * can never be read as a match.
+       */
+      if (candidate.subject === undefined) return false;
+      if (!subjectMatches(claim.subject, candidate.subject)) return false;
       return canEstablishOperationalFact(sourcesForClaim(context.ledger, claim));
     });
     if (!officiallySupported) {
