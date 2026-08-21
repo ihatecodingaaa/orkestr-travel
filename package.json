@@ -21,7 +21,8 @@
     "smoke:model-studio": "vitest run --config vitest.live.config.ts evals/smoke.live.ts",
     "eval:qwen": "vitest run --config vitest.live.config.ts evals/extraction.live.ts",
     "preflight:model-studio": "node scripts/preflight.mjs",
-    "check:secrets": "node scripts/checkSecrets.mjs"
+    "check:secrets": "node scripts/checkSecrets.mjs",
+    "adversarial:qwen": "vitest run --config vitest.live.config.ts evals/adversarial.live.ts"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.0",
