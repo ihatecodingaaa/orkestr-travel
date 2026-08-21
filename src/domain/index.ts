@@ -135,12 +135,62 @@ export type {
 } from "./planRepair";
 
 export type {
+  ClaimType,
   CommunityEvidenceSummary,
+  EvidenceClaim,
   EvidenceFreshness,
-  EvidenceSourceType,
-  ResearchEvidence,
+  EvidenceIngestionOrigin,
+  EvidenceLedger,
+  EvidenceState,
+  ResearchSource,
+  SourceAuthority,
 } from "./evidence";
-export type { InferredInterest, ResearchProvider, ResearchQuery } from "./research";
+export type {
+  EvidenceBackedJourneySuggestion,
+  GroupContext,
+  InferredInterest,
+  ResearchAnswer,
+  ResearchBudget,
+  ResearchDiagnostics,
+  ResearchFailureCode,
+  ResearchMode,
+  ResearchProvider,
+  ResearchQuestion,
+  ResearchQuestionKind,
+  ResearchSpend,
+  SharedLink,
+  SharedLinkState,
+  SourcePreference,
+  SuggestionReason,
+  SuggestionUnknown,
+} from "./research";
+
+export type {
+  ExtractionCertainty,
+  ProposedAmbiguity,
+  ProposedAssistanceNeed,
+  ProposedConstraint,
+  ProposedConstraintKind,
+  ProposedConstraintValue,
+  ProposedPreference,
+  ProposedRelationship,
+  ProposedTraveller,
+  ProposedTripContext,
+  ProposedTripIntent,
+  PromptVersion,
+  SourceSpan,
+  TempTravellerRef,
+} from "./intent";
+export type {
+  ExtractionDiagnostics,
+  ExtractionFailureCode,
+  ExtractionProblem,
+  ExtractionRequest,
+  ExtractionResult,
+  LanguageUnderstandingProvider,
+  MappedIntent,
+  UnderstandingMode,
+} from "./extraction";
 
 export type {
   DecisionNeeded,

@@ -1,0 +1,113 @@
+import type {
+  ExtractionDiagnostics,
+  ExtractionProblem,
+  ExtractionResult,
+} from "../../domain/extraction";
+import { validateIntentSchema } from "./schema";
+import { validateIntentSemantics } from "./semantic";
+import { mapIntentToDomain } from "./mapping";
+import type { MappingOptions } from "./mapping";
+
+/**
+ * The extraction pipeline.
+ *
+ *     raw response text
+ *        -> JSON parse            MALFORMED_JSON
+ *        -> schema validation     SCHEMA_INVALID / UNSAFE_OUTPUT
+ *        -> semantic validation   SEMANTIC_VALIDATION_FAILED
+ *        -> safe mapping
+ *        -> proposed state        SUCCESS
+ *
+ * Each stage either passes its whole result to the next or fails outright. There
+ * is deliberately no path that keeps the parts that validated: a response where
+ * two constraints are fine and one is impossible is a response we do not
+ * understand, and taking two thirds of it would put an unreviewed reading into
+ * somebody's trip while looking like a success.
+ *
+ * PURE. The caller supplies the raw text, the discussion it was derived from,
+ * the timestamp and the diagnostics. Nothing here calls anything.
+ */
+
+export interface PipelineInput {
+  /** Exactly what the provider returned. Never logged by this module. */
+  readonly rawResponse: string;
+  /** Exactly what was sent, so quotes can be checked against it. */
+  readonly discussion: string;
+  readonly mapping: MappingOptions;
+  readonly diagnostics: Omit<
+    ExtractionDiagnostics,
+    "travellerCount" | "proposalCount" | "ambiguityCount"
+  >;
+}
+
+function fail(
+  code: ExtractionProblem["code"],
+  problems: readonly ExtractionProblem[],
+  base: PipelineInput["diagnostics"],
+): ExtractionResult {
+  return {
+    outcome: "FAILED",
+    code,
+    problems,
+    diagnostics: { ...base, travellerCount: 0, proposalCount: 0, ambiguityCount: 0 },
+  };
+}
+
+/**
+ * Strip a fenced code block if the response arrived wrapped in one.
+ *
+ * Models asked for JSON sometimes return it inside a markdown fence. That is a
+ * formatting habit, not a malformed answer, and refusing it would fail an
+ * extraction that is otherwise perfectly good. Nothing else is repaired: a
+ * response with prose around the JSON, or with trailing commas, still fails.
+ */
+function unwrapFence(raw: string): string {
+  const trimmed = raw.trim();
+  if (!trimmed.startsWith("```")) return trimmed;
+  const withoutOpen = trimmed.replace(/^```[a-zA-Z]*\s*\n?/, "");
+  const closeIndex = withoutOpen.lastIndexOf("```");
+  return (closeIndex === -1 ? withoutOpen : withoutOpen.slice(0, closeIndex)).trim();
+}
+
+export function runExtractionPipeline(input: PipelineInput): ExtractionResult {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(unwrapFence(input.rawResponse));
+  } catch {
+    // The parse error message can quote the response, which may contain the
+    // discussion. It is deliberately not carried through.
+    return fail(
+      "MALFORMED_JSON",
+      [
+        {
+          code: "MALFORMED_JSON",
+          path: "$",
+          detail: "The response was not valid JSON and could not be read.",
+        },
+      ],
+      input.diagnostics,
+    );
+  }
+
+  const schema = validateIntentSchema(parsed);
+  if (!schema.ok) return fail(schema.code, schema.problems, input.diagnostics);
+
+  const semantics = validateIntentSemantics(schema.intent, input.discussion);
+  if (!semantics.ok) {
+    return fail("SEMANTIC_VALIDATION_FAILED", semantics.problems, input.diagnostics);
+  }
+
+  const mapped = mapIntentToDomain(schema.intent, input.mapping);
+
+  return {
+    outcome: "SUCCESS",
+    intent: schema.intent,
+    mapped,
+    diagnostics: {
+      ...input.diagnostics,
+      travellerCount: mapped.travellers.length,
+      proposalCount: mapped.constraints.length,
+      ambiguityCount: schema.intent.ambiguities.length,
+    },
+  };
+}

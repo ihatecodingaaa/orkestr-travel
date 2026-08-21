@@ -29,6 +29,15 @@ export type EvidenceId = Brand<string, "EvidenceId">;
 export type ActivityPodId = Brand<string, "ActivityPodId">;
 export type DecisionId = Brand<string, "DecisionId">;
 
+/** Phase 6. A source actually retrieved by research, identified by its URL. */
+export type ResearchSourceId = Brand<string, "ResearchSourceId">;
+/** Phase 6. One bounded, typed research question. */
+export type ResearchQuestionId = Brand<string, "ResearchQuestionId">;
+/** Phase 6. An evidence-backed journey suggestion, before anything agrees to it. */
+export type SuggestionId = Brand<string, "SuggestionId">;
+/** Phase 6. A link a user handed us. */
+export type SharedLinkId = Brand<string, "SharedLinkId">;
+
 export const asTripId = (value: string): TripId => value as TripId;
 export const asTravellerId = (value: string): TravellerId => value as TravellerId;
 export const asConstraintId = (value: string): ConstraintId => value as ConstraintId;
@@ -51,3 +60,9 @@ export const asJourneyPackageId = (value: string): JourneyPackageId =>
 export const asEvidenceId = (value: string): EvidenceId => value as EvidenceId;
 export const asActivityPodId = (value: string): ActivityPodId => value as ActivityPodId;
 export const asDecisionId = (value: string): DecisionId => value as DecisionId;
+export const asResearchSourceId = (value: string): ResearchSourceId =>
+  value as ResearchSourceId;
+export const asResearchQuestionId = (value: string): ResearchQuestionId =>
+  value as ResearchQuestionId;
+export const asSuggestionId = (value: string): SuggestionId => value as SuggestionId;
+export const asSharedLinkId = (value: string): SharedLinkId => value as SharedLinkId;
