@@ -1,8 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
   assistanceProviderBadge,
-  dataSourceBanner,
-  CURRENT_DATA_SOURCE,
   inFlightRequestBadge,
   itemStatusBadge,
   offerEvidenceBadge,
@@ -83,22 +81,5 @@ describe("assistance is never shown as provider-confirmed", () => {
     expect(inFlightRequestBadge("REQUESTED").tone).toBe("neutral");
     expect(inFlightRequestBadge("REQUESTED").explanation).toContain("Nothing has been sent");
     expect(inFlightRequestBadge("NEEDS_PROVIDER_CONFIRMATION").tone).toBe("pending");
-  });
-});
-
-describe("the data-source banner", () => {
-  it("runs in local fixture mode and says so", () => {
-    expect(CURRENT_DATA_SOURCE).toBe("LOCAL_FIXTURE");
-    const banner = dataSourceBanner(CURRENT_DATA_SOURCE);
-    expect(banner.label.toLowerCase()).toContain("local fixture");
-    expect(banner.detail).toContain("nothing is booked");
-  });
-
-  it("has a home for later provider modes without claiming they exist", () => {
-    // The shape is ready so connecting a provider later changes a constant,
-    // not the layout. None of these is reachable today.
-    expect(dataSourceBanner("LIVE_ATLAS_SANDBOX").label).toContain("Live sandbox");
-    expect(dataSourceBanner("ATLAS_VERIFIED").tone).toBe("verified");
-    expect(CURRENT_DATA_SOURCE).not.toBe("ATLAS_VERIFIED");
   });
 });

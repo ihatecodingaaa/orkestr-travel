@@ -16,19 +16,44 @@ import { itemStatusBadge } from "@/ui/view/truth";
 const GROUP = { kind: "GROUP" } as const;
 
 describe("FixtureBanner", () => {
+  const board = () =>
+    screen.getByRole("region", { name: /where this page's information comes from/i });
+
   it("is always visible, never a tooltip", () => {
     render(<FixtureBanner />);
-    const note = screen.getByRole("note", { name: /data source/i });
-    expect(note).toBeInTheDocument();
-    expect(note).toHaveTextContent(/local fixture data/i);
-    expect(note).toHaveTextContent(/nothing is booked/i);
+    expect(board()).toBeInTheDocument();
+    expect(board()).toHaveTextContent(/local fixture/i);
+    expect(board()).toHaveTextContent(/nothing is booked/i);
   });
 
   it("makes no claim about Atlas or a live provider", () => {
     render(<FixtureBanner />);
-    const note = screen.getByRole("note", { name: /data source/i });
-    expect(note.textContent ?? "").not.toMatch(/atlas/i);
-    expect(note.textContent ?? "").not.toMatch(/\blive\b/i);
+    expect(board().textContent ?? "").not.toMatch(/atlas/i);
+    expect(board().textContent ?? "").not.toMatch(/\blive\b/i);
+  });
+
+  it("names every subsystem, including the ones nothing ran for", () => {
+    // Phase 6 connected a model and a web search. Neither produced anything on
+    // these screens, and the board says so rather than omitting the rows and
+    // letting a reader assume.
+    render(<FixtureBanner />);
+    for (const subsystem of [
+      "Group understanding",
+      "Destination research",
+      "Flight inventory",
+      "Provider capacity",
+      "Assistance",
+    ]) {
+      expect(screen.getByText(subsystem)).toBeInTheDocument();
+    }
+  });
+
+  it("says the demo group itself is fixture data, not something that was read", () => {
+    render(<FixtureBanner />);
+    expect(screen.getByText(/No discussion was read and no model was called/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Nothing was researched and no source was retrieved/i),
+    ).toBeInTheDocument();
   });
 });
 

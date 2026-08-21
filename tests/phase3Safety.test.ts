@@ -281,3 +281,102 @@ describe("Phase 4 provider and journey safety", () => {
     expect(builders).not.toMatch(/evidenceState:\s*options\./);
   });
 });
+
+describe("Phase 6 model and research safety", () => {
+  it("keeps the extraction pipeline free of any provider name", () => {
+    // The pipeline decides whether a response may be trusted. It must be able
+    // to do that identically for any provider, so it cannot know which one
+    // answered.
+    for (const file of coreSources()) {
+      if (!file.includes("intent") && !file.includes("research")) continue;
+      const code = codeOnly(readFileSync(file, "utf8"));
+      expect(code, `${file} names a provider`).not.toMatch(/qwen|dashscope|model.?studio|openai/i);
+    }
+  });
+
+  it("writes the unconfirmed constraint values as literals, not as parameters", () => {
+    // Principle 6 is enforced by construction. A parameterised origin or
+    // confirmation would mean a caller could ask for a confirmed constraint.
+    const mapping = readFileSync(
+      join(process.cwd(), "src", "core", "intent", "mapping.ts"),
+      "utf8",
+    );
+    const code = codeOnly(mapping);
+    expect(code).toContain('origin: "MODEL_PROPOSED"');
+    expect(code).toContain('confirmation: "PROPOSED"');
+
+    /**
+     * Every assignment of these two fields must be the safe literal.
+     *
+     * Counting the assignments rather than pattern-matching the negative case:
+     * a lookahead would pass on a file that assigned `confirmation` twice, once
+     * safely and once from a variable, which is exactly the change this test
+     * exists to catch.
+     */
+    const confirmations = [...code.matchAll(/confirmation:\s*([^,\n]+)/g)].map((m) => m[1]?.trim());
+    expect(confirmations.length).toBeGreaterThan(0);
+    expect(new Set(confirmations)).toEqual(new Set(['"PROPOSED"']));
+
+    const origins = [...code.matchAll(/\borigin:\s*([^,\n]+)/g)].map((m) => m[1]?.trim());
+    expect(origins.length).toBeGreaterThan(0);
+    expect(new Set(origins)).toEqual(new Set(['"MODEL_PROPOSED"']));
+
+    // Nothing was confirmed, so there is no confirmation date to write.
+    expect(code).not.toMatch(/confirmedAt:/);
+  });
+
+  it("refuses every authority field in the schema, by name", () => {
+    const schema = readFileSync(
+      join(process.cwd(), "src", "core", "intent", "schema.ts"),
+      "utf8",
+    );
+    for (const field of ["confirmed", "confirmation", "origin", "consequential"]) {
+      expect(schema, `the schema does not refuse ${field}`).toContain(`"${field}"`);
+    }
+  });
+
+  it("keeps the research core free of any network call", () => {
+    // Already covered by the general purity guards, asserted again here because
+    // research is the one area where a fetch would look plausible.
+    for (const file of coreSources()) {
+      if (!file.includes("research")) continue;
+      const code = codeOnly(readFileSync(file, "utf8"));
+      expect(code, `${file} fetches`).not.toMatch(/\bfetch\(/);
+      expect(code, `${file} reads a clock`).not.toMatch(/Date\.now|new Date\(/);
+    }
+  });
+
+  it("never marks a fixture or a recorded result as live", () => {
+    const fixtures = [
+      join(process.cwd(), "src", "adapters", "fixture", "fixtureResearch.ts"),
+      join(process.cwd(), "src", "adapters", "fixture", "fixtureLanguageUnderstanding.ts"),
+    ];
+    for (const file of fixtures) {
+      const code = codeOnly(readFileSync(file, "utf8"));
+      expect(code, `${file} claims to be live`).not.toMatch(/mode\s*[:=]\s*"LIVE/);
+    }
+  });
+
+  it("stores no scraped page body in the recorded research fixture", () => {
+    // Recorded results carry structure, never somebody else's article text.
+    const recorded = readFileSync(
+      join(process.cwd(), "src", "adapters", "fixture", "researchFixtures.ts"),
+      "utf8",
+    );
+    // Every claim is one sentence. A stored page body would be far longer.
+    for (const match of recorded.matchAll(/statement:\s*"([^"]*)"/g)) {
+      expect((match[1] ?? "").length, `an over-long statement: ${String(match[1]).slice(0, 60)}`).toBeLessThan(200);
+    }
+  });
+
+  it("hard-codes no group size anywhere in the Phase 6 code", () => {
+    const phase6 = [
+      ...coreSources().filter((f) => f.includes("intent") || f.includes("research")),
+    ];
+    for (const file of phase6) {
+      const code = codeOnly(readFileSync(file, "utf8"));
+      expect(code, `${file} assumes a group size`).not.toMatch(/travellers\.length\s*===\s*[0-9]/);
+      expect(code, `${file} assumes a group size`).not.toMatch(/groupSize\s*===\s*[0-9]/);
+    }
+  });
+});
