@@ -28,6 +28,7 @@ const CONFIG: ModelStudioConfig = {
   researchModel: "qwen3.7-plus",
   structuredOutputMode: "json_object",
   timeoutMs: 5000,
+  researchTimeoutMs: 120000,
 };
 
 /** A transport that returns whatever the test hands it. No network involved. */
@@ -625,7 +626,17 @@ describe("user-shared links", () => {
     expect(reading.interest?.status).toBe("INFERRED");
   });
 
-  it("only enables extraction, never a search, for a page we already have", async () => {
+  /**
+   * This test previously asserted `["web_extractor"]` exactly, encoding the
+   * assumption that a page whose address we already hold needs no search. That
+   * assumption was wrong: the live API refuses the request outright with
+   * "The web_extractor tool must be executed with web_search tool."
+   *
+   * The intent it was protecting is still real, so it is now enforced where it
+   * can actually hold -- in the instruction that forbids searching -- and this
+   * test checks the declaration the provider demands.
+   */
+  it("declares the tool pair the provider demands, in the order it expects", async () => {
     const transport = stubTransport({ ok: true, status: 200, durationMs: 1, body: {} });
     await readSharedLink("https://example.com/article", {
       config: CONFIG,
@@ -633,7 +644,7 @@ describe("user-shared links", () => {
       now: NOW,
     });
     const body = transport.calls[0]?.body as { tools?: { type: string }[] };
-    expect(body.tools?.map((t) => t.type)).toEqual(["web_extractor"]);
+    expect(body.tools?.map((t) => t.type)).toEqual(["web_search", "web_extractor"]);
   });
 
   it("refuses to read an interest out of anything that is not the agreed shape", () => {
@@ -739,5 +750,114 @@ describe("fixture providers run the same rules as the live ones", () => {
     });
     expect(result.diagnostics.mode).toBe("RECORDED_WEB");
     expect(provider.mode).not.toBe("LIVE_WEB");
+  });
+});
+
+/**
+ * The two provider contracts governing `web_extractor`.
+ *
+ * Both were discovered by calling the live API, not by reading documentation,
+ * and both are counter-intuitive enough that a future reader would plausibly
+ * "clean them up" and break page reading:
+ *
+ *   1. `web_extractor` cannot be declared without `web_search`, even when the
+ *      URL is already known and searching is pointless.
+ *   2. `web_extractor` cannot run with `enable_thinking: false` -- the exact
+ *      setting that fixes the structured-extraction path's 30s hang.
+ *
+ * These assert the request body, so a regression fails here rather than as a
+ * 400 during a demo.
+ */
+describe("web_extractor provider contracts", () => {
+  /** Any successful body; the assertions are about what we SENT. */
+  const OK_BODY = {
+    output: [
+      {
+        type: "message",
+        role: "assistant",
+        content: [{ type: "output_text", text: '{"interest":"a garden walk","readable":true}' }],
+      },
+    ],
+  };
+
+  it("declares web_search alongside web_extractor, because the provider requires it", async () => {
+    const transport = stubTransport({ ok: true, status: 200, body: OK_BODY, durationMs: 12 });
+
+    await readSharedLink("https://www.tokyo-park.or.jp/teien/en/hama-rikyu/", {
+      config: CONFIG,
+      transport,
+      now: NOW,
+    });
+
+    const sent = transport.calls[0]?.body as { tools?: { type: string }[] } | undefined;
+    const declared = (sent?.tools ?? []).map((tool) => tool.type);
+    expect(declared).toContain("web_extractor");
+    // Live: "The web_extractor tool must be executed with web_search tool."
+    expect(declared).toContain("web_search");
+  });
+
+  it("leaves thinking enabled, because web_extractor is refused without it", async () => {
+    const transport = stubTransport({ ok: true, status: 200, body: OK_BODY, durationMs: 12 });
+
+    await readSharedLink("https://www.tokyo-park.or.jp/teien/en/hama-rikyu/", {
+      config: CONFIG,
+      transport,
+      now: NOW,
+    });
+
+    const sent = transport.calls[0]?.body as { enable_thinking?: boolean } | undefined;
+    // Live: "Normal mode does not support web_extractor. Please set enable_thinking to true."
+    expect(sent?.enable_thinking).toBe(true);
+  });
+
+  it("forbids searching in the prompt, so a blocked page is never answered from elsewhere", async () => {
+    const transport = stubTransport({ ok: true, status: 200, body: OK_BODY, durationMs: 12 });
+
+    await readSharedLink("https://www.tiktok.com/@someone/video/123", {
+      config: CONFIG,
+      transport,
+      now: NOW,
+    });
+
+    const sent = transport.calls[0]?.body as { input?: { role: string; content: string }[] };
+    const system = (sent.input ?? []).find((message) => message.role === "system")?.content ?? "";
+    /**
+     * Declaring web_search to satisfy contract (1) hands the model a way to
+     * answer about a page it could not open. The instruction is the only thing
+     * standing between that capability and a stranger's summary of a different
+     * page being shown as though it were the user's link.
+     */
+    expect(system).toMatch(/do not search the web/i);
+    expect(system).toMatch(/readable/i);
+  });
+
+  it("still refuses to invent an interest when the page could not be read", async () => {
+    const transport = stubTransport({
+      ok: true,
+      status: 200,
+      body: {
+        output: [
+          {
+            type: "message",
+            role: "assistant",
+            content: [{ type: "output_text", text: '{"interest":null,"readable":false}' }],
+          },
+        ],
+      },
+      durationMs: 12,
+    });
+
+    const reading = await readSharedLink("https://www.tiktok.com/@someone/video/123", {
+      config: CONFIG,
+      transport,
+      now: NOW,
+      userNote: "the night market bit",
+    });
+
+    expect(reading.link.state).toBe("EXTRACTION_UNAVAILABLE");
+    // The note mentions a night market. That must NOT become an interest: the
+    // person described a video, they did not ask for a night market.
+    expect(reading.interest).toBeUndefined();
+    expect(reading.link.userNote).toBe("the night market bit");
   });
 });
