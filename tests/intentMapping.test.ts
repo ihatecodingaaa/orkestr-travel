@@ -18,7 +18,7 @@ const DISCUSSION = [
 
 function intent(overrides: Partial<ProposedTripIntent> = {}): ProposedTripIntent {
   return {
-    promptVersion: "orkestr-intent-v1",
+    promptVersion: "orkestr-intent-v2",
     travellers: [
       {
         ref: "P1",
@@ -403,7 +403,7 @@ describe("the pipeline refuses to apply anything partially", () => {
       operation: "EXTRACT_INTENT" as const,
       providerName: "test",
       model: "test",
-      promptVersion: "orkestr-intent-v1" as const,
+      promptVersion: "orkestr-intent-v2" as const,
       durationMs: 5,
       startedAt: NOW,
     },

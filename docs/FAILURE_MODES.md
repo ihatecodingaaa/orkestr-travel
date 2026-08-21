@@ -57,6 +57,26 @@ rather than a tooltip, so the owner can see the basis and correct it. Semantic
 validation rejects a quote that does not appear in the supplied discussion, so
 the explanation is real provenance rather than generated text resembling it.
 
+## 4b. An optional context field is unreadable
+
+**Implemented after a live evaluation found the cost of getting this wrong.**
+
+Not every field deserves the same blast radius. A malformed CONSTRAINT fails
+the whole extraction, because a half-read constraint could veto somebody's
+flights. A malformed DESTINATION LABEL should not, because it binds nothing.
+
+The first live run failed eight of nine cases on a missing
+`tripContext.certainty`, discarding valid travellers, constraints and
+relationships each time. Optional context now degrades field by field:
+unreadable means omitted, with an `ExtractionWarning` recording the path, the
+reason and the effect.
+
+Three properties keep that safe. Degradation only ever REMOVES, so nothing can
+be defaulted or inferred into existence. A missing certainty stays missing
+rather than being upgraded. And an authority field inside trip context is
+still fatal, because a model putting `confirmed` there is attempting authority
+rather than fumbling decoration.
+
 ## 5b. Somebody pastes an instruction into the discussion
 
 **Implemented in Phase 6.** The correct behaviour is NOT to refuse the message.

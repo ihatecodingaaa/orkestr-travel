@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { runExtractionPipeline } from "@/core/intent/pipeline";
 import { validateIntentSchema } from "@/core/intent/schema";
-import { buildIntentUserMessage, INTENT_SYSTEM_PROMPT } from "@/adapters/modelStudio/prompts/intentV1";
+import { buildIntentUserMessage, INTENT_SYSTEM_PROMPT } from "@/adapters/modelStudio/prompts/intentV2";
 import { asIsoDateTime } from "@/domain/index";
 
 /**
@@ -31,7 +31,7 @@ const base = {
     operation: "EXTRACT_INTENT" as const,
     providerName: "test",
     model: "test",
-    promptVersion: "orkestr-intent-v1" as const,
+    promptVersion: "orkestr-intent-v2" as const,
     durationMs: 1,
     startedAt: NOW,
   },

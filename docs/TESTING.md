@@ -4,7 +4,7 @@
 
 ## 1. Current state, honestly
 
-**885 tests across 44 files, all passing. None of them touches a network.**
+**941 tests across 46 files, all passing. None of them touches a network.**
 
 | Suite | Tests | Covers |
 | --- | --- | --- |
@@ -51,6 +51,8 @@
 | `ui/provenance.test.ts` | 16 | No subsystem borrows another's credibility |
 | `ui/phase6Components.test.tsx` | 30 | Quotes, conflicts, sources, unknowns on screen |
 | `routeActions.test.ts` | 17 | The server actions end to end, and what may cross to a client |
+| `jsonMode.test.ts` | 16 | The serialised request contract, including `enable_thinking` |
+| `contextDegradation.test.ts` | 32 | Optional context degrades; the authority boundary does not |
 
 There are no tests against a real provider, because no test may call one. Every
 adapter is tested against recorded response bodies through an injectable
@@ -145,11 +147,29 @@ glob (`evals/**/*.live.ts`), so neither can be picked up by `npm test`,
 **Why that separation is not optional.** A network outage, a rate limit or an
 expired key must not turn the deterministic suite red. If a live failure could
 fail the gate, the reflex becomes to distrust the gate, and at that point the
-other 885 tests stop meaning anything.
+other 941 tests stop meaning anything.
 
 With no credentials both report `NOT CONFIGURED` and **skip**. Skipped is not
 passed: a smoke test that quietly passes without calling anything reports
 success for work that did not happen.
+
+### What the live evaluations actually found
+
+Two runs of the same 17 fictional cases, against `qwen3.7-plus` in Singapore.
+
+| | v1 prompt | v2 prompt |
+| --- | --- | --- |
+| Cases passed | 8/17 | **15/17** |
+| Schema-valid | 8/17 (47%) | **16/17 (94%)** |
+| Authority safety | 100% | 100% |
+| Injection containment | 100% | 100% |
+| Mean latency | 7,552ms | 7,231ms |
+
+The v1 result is kept deliberately. Eight of its nine failures shared one
+cause -- a mandatory `certainty` field on an optional context object -- and
+finding that by running the corpus rather than by reasoning about it is the
+argument for having the corpus. Deleting the poor first result would delete
+the evidence that the evaluation works.
 
 The evaluation cases score **structure**, never prose. A model that words a
 constraint differently has not failed at anything. What is asserted is the

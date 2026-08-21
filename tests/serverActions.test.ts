@@ -198,7 +198,7 @@ describe("diagnostics carry counts, never content", () => {
     const line = lines[0] ?? "";
     expect(line).toContain("op=EXTRACT_INTENT");
     expect(line).toContain("requestId=REQ-1");
-    expect(line).toContain("prompt=orkestr-intent-v1");
+    expect(line).toContain("prompt=orkestr-intent-v2");
     expect(line).toContain("travellers=7");
   });
 
@@ -260,11 +260,12 @@ describe("diagnostics carry counts, never content", () => {
         operation: "EXTRACT_INTENT",
         providerName: "test",
         model: "test",
-        promptVersion: "orkestr-intent-v1",
+        promptVersion: "orkestr-intent-v2",
         durationMs: 1,
         travellerCount: 0,
         proposalCount: 0,
         ambiguityCount: 0,
+        warningCount: 0,
         startedAt: NOW,
       },
       "FAILED",

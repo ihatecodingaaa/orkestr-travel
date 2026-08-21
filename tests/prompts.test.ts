@@ -4,7 +4,7 @@ import {
   INTENT_SYSTEM_PROMPT,
   INTENT_JSON_SCHEMA,
   buildIntentUserMessage,
-} from "@/adapters/modelStudio/prompts/intentV1";
+} from "@/adapters/modelStudio/prompts/intentV2";
 import {
   RESEARCH_PROMPT_VERSION,
   RESEARCH_SYSTEM_PROMPT,
@@ -24,7 +24,7 @@ import { HERO_QUESTION } from "@/ui/demo/researchDemo";
 
 describe("the extraction prompt is versioned and complete", () => {
   it("carries a version that the pipeline stamps on every result", () => {
-    expect(INTENT_PROMPT_VERSION).toBe("orkestr-intent-v1");
+    expect(INTENT_PROMPT_VERSION).toBe("orkestr-intent-v2");
   });
 
   it("states every rule the product depends on", () => {

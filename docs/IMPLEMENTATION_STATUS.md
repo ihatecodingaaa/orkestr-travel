@@ -7,19 +7,21 @@ If a capability is not marked `IMPLEMENTED` here, it does not work, regardless o
 what any other document, comment or UI label suggests. Any disagreement between
 this table and another document is a bug in the other document.
 
-- **Last updated:** 22 August 2026
+- **Last updated:** 22 August 2026 (live extraction verified)
 - **Phases completed:** Phase 0 (foundation), Phase 1 (deterministic core), Phase 2 (travel waves), Phase 3 (compromise and repair), Phase 4 (journey, legs, provider, package), Phase 5 (local interface), Phase 6 (language understanding, evidence layer, bounded research)
 - **Phase in progress:** none. Phase 6.5 (live verification) is BLOCKED on a
   credential the founder has not created. Phase 7 not started.
 
 ### The one thing to read first about Phase 6
 
-**No live call to Alibaba Cloud Model Studio has ever been made from this
-repository.** No credential exists in the development environment, so every
-Model Studio path is implemented, unit-tested against recorded response bodies,
-and **unverified against the live service**. The opt-in commands that would
-verify it (`npm run smoke:model-studio`, `npm run eval:qwen`) report
-`NOT CONFIGURED` and skip.
+**Qwen structured extraction has now been verified against the live service.**
+A credential exists on the founder's machine and 38 real calls have been made:
+one smoke, two adversarial, and two full 17-case evaluations.
+
+Everything else Model Studio can do -- the Responses API, `web_search`,
+`web_extractor`, research as a whole -- remains **`LIVE UNVERIFIED`**. Those
+code paths have never been executed against the real service, and a passing
+mock is not evidence that an integration works.
 
 Everything below distinguishes `IMPLEMENTED OFFLINE` from `LIVE UNVERIFIED` on
 exactly that basis. A passing mock is not evidence that an integration works.
@@ -90,7 +92,7 @@ label.
 
 What Phase 6 did NOT do: call the live service. See the note above.
 
-Verified at the last run: **885 tests across 44 files, all passing.** Lint,
+Verified at the last run: **941 tests across 46 files, all passing.** Lint,
 typecheck and the production build are clean.
 
 ---
@@ -103,7 +105,7 @@ typecheck and the production build are clean.
 | Remote git backup | `IMPLEMENTED` | `origin` = github.com/ihatecodingaaa/orkestr-travel (private) |
 | TypeScript strict configuration | `IMPLEMENTED` | `tsconfig.json`; `npm run typecheck` passes |
 | Lint with type-aware rules | `IMPLEMENTED` | `eslint.config.mjs`; verified with a deliberate failing probe |
-| Test runner | `IMPLEMENTED` | vitest; 885 deterministic tests, none touching a network |
+| Test runner | `IMPLEMENTED` | vitest; 941 deterministic tests, none touching a network |
 | Combined quality gate | `IMPLEMENTED` | `npm run check` |
 | Documentation structure | `IMPLEMENTED` | 22 documents in `docs/`, plus `README.md` |
 | CI pipeline | `NOT IMPLEMENTED` | Not yet configured |
@@ -317,7 +319,8 @@ one offer in isolation:
 | Versioned prompt `orkestr-intent-v1` | `IMPLEMENTED` | `adapters/modelStudio/prompts/intentV1.ts` | 25 (with research) |
 | Fixture extraction provider, same pipeline | `IMPLEMENTED` | `adapters/fixture/` | (in the 52) |
 | Qwen request construction (endpoint, JSON mode, models, timeout) | `IMPLEMENTED OFFLINE` | `adapters/modelStudio/qwenLanguageUnderstanding.ts` | 7 on the serialised body |
-| **Qwen structured extraction against real Model Studio** | **`LIVE UNVERIFIED`** | same | 52 against recorded bodies |
+| **Qwen structured extraction against real Model Studio** | **`LIVE VERIFIED`** | same | 38 live calls; see the evaluation record below |
+| Optional-context degradation with warnings | `IMPLEMENTED` | `core/intent/schema.ts` | 32 |
 | 17 fictional evaluation cases + scorer | `IMPLEMENTED` | `src/eval/cases.ts` | 11 |
 | Live evaluation run | `NOT IMPLEMENTED` | `npm run eval:qwen` | **no credential; skipped** |
 
@@ -404,10 +407,10 @@ one offer in isolation:
 
 | Capability | Status | Blocker |
 | --- | --- | --- |
-| Qwen structured extraction | `LIVE UNVERIFIED` | Client complete and tested offline. No credential exists, so no live call has been made |
+| Qwen structured extraction | `LIVE VERIFIED` | 38 live calls. 15/17 evaluation cases pass; 100% authority safety and injection containment |
 | Qwen web research | `LIVE UNVERIFIED` | Same |
-| Model Studio account / credential | `NOT CONFIGURED` | None created. Required before either of the above can move to `LIVE VERIFIED` |
-| Alibaba Cloud account setup | `NOT CONFIGURED` | No account action has been taken |
+| Model Studio account / credential | `CONFIGURED` | Singapore workspace, on the founder's machine only. Never in this repository |
+| Alibaba Cloud account setup | `CONFIGURED` | Singapore region, Model Studio active |
 | External-call kill switch | `IMPLEMENTED` | `MODEL_STUDIO_MODE`, default `disabled`. See `PROVIDER_MODES.md` |
 | Offline credential pre-flight | `IMPLEMENTED` | `npm run preflight:model-studio`; no network, no secret printed |
 | Secret-safety gate | `IMPLEMENTED` | `npm run check:secrets`, inside `npm run verify` |
@@ -435,8 +438,10 @@ with no parameter that could change it.
 | Domain shape tests | `IMPLEMENTED` | 7 tests |
 | Deterministic core tests | `IMPLEMENTED` | 129 tests |
 | Phase 6 extraction, evidence, adapter and route tests | `IMPLEMENTED` | 362 tests, no network |
-| Live smoke test | `NOT RUN` | `npm run smoke:model-studio` reports NOT CONFIGURED and skips |
-| Live evaluation | `NOT RUN` | `npm run eval:qwen` reports NOT CONFIGURED and skips 17 cases |
+| Live smoke test | `PASSED` | `npm run smoke:model-studio`; SUCCESS in 10,171ms |
+| Live adversarial test | `PASSED` | `npm run adversarial:qwen`; domain safety PASS both runs |
+| Live evaluation, v1 prompt | `RECORDED` | 8/17. Root cause found: over-strict optional context |
+| Live evaluation, v2 prompt | `RECORDED` | **15/17**, 100% authority safety |
 | Boundary-value coverage | `IMPLEMENTED` | Budget, time, stops, bags, dates asserted below, at and above every limit |
 | Qoder review stages | `PLANNED` | Phase 11. Templates only |
 

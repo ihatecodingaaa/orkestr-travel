@@ -18,6 +18,18 @@ adapter or reads `process.env`, and that the built browser bundle contains
 neither the variable name, nor the Model Studio host, nor the extraction system
 prompt.
 
+## 1a. Live calls have now been made
+
+38 real requests have been made to Alibaba Cloud Model Studio from the
+founder's machine, all extraction-only, all with fictional input.
+
+No credential has entered this repository. The key lives in `.env.local`,
+which is gitignored, is never read by any tool here except at run time, and is
+inert unless `MODEL_STUDIO_MODE=live`. `npm run check:secrets` runs inside
+`npm run verify` and fails the build if any of that stops being true.
+
+No real personal data has been sent. Every evaluation discussion is invented.
+
 ## 1b. The secret gate
 
 `npm run check:secrets` runs inside `npm run verify`, so a finding fails the

@@ -1,9 +1,9 @@
 # Qwen and Model Studio Integration
 
-**Status:** code `IMPLEMENTED` and tested against recorded response bodies.
-**No live call to Alibaba Cloud Model Studio has ever been made from this
-repository**, because no credential exists in the development environment. See
-`IMPLEMENTATION_STATUS.md`, which outranks this document.
+**Status:** structured extraction is `LIVE VERIFIED`. Research, `web_search`
+and `web_extractor` remain `LIVE UNVERIFIED` and have never been executed
+against the real service. See `IMPLEMENTATION_STATUS.md`, which outranks this
+document.
 
 This file exists because the Model Studio specifics are numerous enough that
 scattering them through `ARCHITECTURE.md` and `ALIBABA_CLOUD.md` would bury both.
@@ -78,6 +78,27 @@ unambiguously documented, leaves the stricter one available through
 is enabled truncates the JSON mid-object, which arrives as `MALFORMED_JSON` and
 looks like a model failure rather than the configuration error it is.
 
+### `enable_thinking: false`, and the 30-second hang
+
+`qwen3.7-plus` is a hybrid-thinking model. The first credentialled attempt sent
+no `enable_thinking`, so the model used its own default, and under a
+non-streaming request that means the server buffers an entire reasoning phase
+before sending a byte. The request was accepted and then returned nothing until
+our own 30s deadline fired -- a different failure from the 401 that preceded it,
+and a confusing one, because nothing was broken. We were waiting on work we had
+not asked for.
+
+Setting it explicitly took the smoke test from timeout to SUCCESS in 10,171ms.
+
+Non-thinking is also correct on the merits, independently of latency.
+Extraction is a bounded transformation: untrusted conversation in, structured
+proposals out, deterministic validation after. It is not the planning engine,
+so there is no judgement here for a reasoning phase to improve.
+
+On the wire it is a **top-level** body field. The OpenAI SDKs surface it as
+`extra_body` because it is not a standard parameter, and `extra_body` merges
+into the top level of the request JSON.
+
 ---
 
 ## 4. The extraction pipeline
@@ -110,7 +131,22 @@ the dependency would carry nothing the file does not already state explicitly.
 
 ### The prompt is versioned in code
 
-`orkestr-intent-v1`, in `src/adapters/modelStudio/prompts/intentV1.ts`. A prompt
+`orkestr-intent-v2`, in `src/adapters/modelStudio/prompts/intentV2.ts`.
+
+**v1 to v2** changed two instructions after the first live evaluation, and the
+version moved because both changed what the model is asked to DO:
+
+1. **Unknown currency.** Told never to guess a currency, the model obeyed and
+   then emitted the budget anyway with `currency: ""`. Its instinct was right
+   and its action was wrong, because the prompt never said what to do INSTEAD.
+   v2 says: omit the money proposal entirely and raise an ambiguity.
+2. **Date fields.** Given "between four and six nights", it put non-dates in
+   `earliestDate` and `latestDate`. v2 says a calendar-date field takes a
+   calendar date or nothing, and a stated range is an ambiguity rather than a
+   value to choose from.
+
+Results from v1 and v2 are not comparable without saying which produced them,
+which is the whole reason the version is stamped on every result. A prompt
 is the specification of what the model is being asked to do; building it inline
 in a route handler makes it unreviewable and makes an evaluation result
 impossible to explain. When a result changes, the first question is what
@@ -265,7 +301,7 @@ npm run eval:qwen            # 17 fictional evaluation cases
 Neither is part of `npm test`, `npm run check` or `npm run verify`. They use a
 separate vitest config with a separate include glob, so they cannot be picked up
 by the deterministic gate. If a network outage could turn that suite red, the
-reflex becomes to distrust it, and at that point the other 885 tests stop
+reflex becomes to distrust it, and at that point the other 941 tests stop
 meaning anything.
 
 With no credentials both report `NOT CONFIGURED` and **skip**. Skipped is not
@@ -274,11 +310,32 @@ success for work that did not happen.
 
 ---
 
-## 12. What has not been done
+## 12. The live evaluation record
 
-- **No live call has been made.** Every path is tested against recorded
-  response bodies. The adapter is written from the published API shapes and has
-  not been executed against the service.
+Two runs of the same 17 fictional cases, `qwen3.7-plus`, Singapore, 30s
+timeout, `enable_thinking: false`. Nothing but the prompt and the schema
+changed between them.
+
+| | v1 | v2 |
+| --- | --- | --- |
+| Provider success | 17/17 | 17/17 |
+| Schema valid | 8/17 (47%) | **16/17 (94%)** |
+| Cases passed | 8/17 | **15/17** |
+| Authority safety | 100% | **100%** |
+| Injection containment | 100% | **100%** |
+| Mean latency | 7,552ms | 7,231ms |
+| Median latency | 6,681ms | 5,998ms |
+
+The two remaining v2 failures are honest ones. `05-late-join` raised an
+ambiguity about a traveller who had not replied instead of listing him, which
+is defensible and arguably safer than the expectation. `11-mixed-age-family`
+fabricated supporting quotes for family relationships it inferred, and semantic
+validation refused the whole response -- the validator doing precisely its job.
+
+## 13. What has not been done
+
+- **The Responses API has never been called.** `web_search` and `web_extractor`
+  are written from published shapes and have not met the real service.
 - No Alibaba Cloud resource has been provisioned. No AgentRun, no Function
   Compute, no deployment.
 - No Atlas integration. Flights remain a local fixture.

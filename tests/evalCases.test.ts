@@ -25,7 +25,7 @@ function pipeline(discussion: string, rawResponse: string): ExtractionResult {
       operation: "EXTRACT_INTENT",
       providerName: "test",
       model: "test",
-      promptVersion: "orkestr-intent-v1",
+      promptVersion: "orkestr-intent-v2",
       durationMs: 10,
       startedAt: NOW,
     },

@@ -29,6 +29,35 @@ export type ExtractionFailureCode =
   /** The response tried to claim authority it may not have. */
   | "UNSAFE_OUTPUT";
 
+/**
+ * What happened to an optional field that could not be read.
+ *
+ * `OMITTED_FROM_CONTEXT` is currently the only effect, and the union exists so
+ * that a future effect has to be named rather than folded into this one.
+ */
+export type ExtractionWarningEffect = "OMITTED_FROM_CONTEXT";
+
+/**
+ * A non-fatal problem in optional, non-authoritative context.
+ *
+ * WHY THIS TYPE EXISTS RATHER THAN A SILENT `catch`. Dropping a malformed
+ * optional field without a trace would hide model problems: the extraction
+ * would look clean while the model was quietly producing rubbish, and nobody
+ * would find out until it mattered. A warning keeps the extraction alive AND
+ * keeps the evidence.
+ *
+ * A warning can only ever REMOVE information. There is no effect that adds a
+ * value, substitutes a default or upgrades a certainty, so a warning cannot be
+ * a route to authority.
+ */
+export interface ExtractionWarning {
+  /** Dotted path into the response, e.g. "tripContext.certainty". */
+  readonly path: string;
+  /** Plain sentence. Never the pasted text and never a credential. */
+  readonly reason: string;
+  readonly effect: ExtractionWarningEffect;
+}
+
 /** One specific reason an extraction failed, with the path that produced it. */
 export interface ExtractionProblem {
   readonly code: ExtractionFailureCode;
@@ -86,6 +115,8 @@ export interface ExtractionDiagnostics {
   readonly travellerCount: number;
   readonly proposalCount: number;
   readonly ambiguityCount: number;
+  /** How many optional context fields were dropped. Counts only; never content. */
+  readonly warningCount: number;
   readonly startedAt: IsoDateTime;
 }
 
@@ -94,6 +125,13 @@ export type ExtractionResult =
       readonly outcome: "SUCCESS";
       readonly intent: ProposedTripIntent;
       readonly mapped: MappedIntent;
+      /**
+       * Optional context fields that were dropped, and why.
+       *
+       * A successful extraction with warnings is a real success: everything
+       * authority-bearing validated, and some decoration did not.
+       */
+      readonly warnings: readonly ExtractionWarning[];
       readonly diagnostics: ExtractionDiagnostics;
     }
   | {

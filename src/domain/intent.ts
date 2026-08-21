@@ -25,8 +25,15 @@ import type { ConstraintStrength } from "./constraint";
  *      not let anyone check anything.
  */
 
-/** The prompt that produced a response, so results stay comparable over time. */
-export type PromptVersion = "orkestr-intent-v1";
+/**
+ * The prompt that produced a response, so results stay comparable over time.
+ *
+ * v2 corrected two semantic instructions after a live evaluation: never emit an
+ * empty currency, and never put a duration or description in a calendar-date
+ * field. Both changed what the model is asked to DO, not merely how it is
+ * worded, so the version moved. See prompts/intentV2.ts.
+ */
+export type PromptVersion = "orkestr-intent-v1" | "orkestr-intent-v2";
 
 /**
  * A temporary, within-response person reference such as "P1".
@@ -175,7 +182,19 @@ export interface ProposedTripContext {
   readonly earliestDate?: string;
   readonly latestDate?: string;
   readonly nights?: number;
-  readonly certainty: ExtractionCertainty;
+  /**
+   * OPTIONAL, deliberately.
+   *
+   * Every other field on this object is optional, and a live evaluation found
+   * that requiring this one destroyed eight otherwise-good extractions: valid
+   * travellers, constraints and relationships were thrown away because a
+   * decorative context object lacked one metadata field.
+   *
+   * Absent means absent. It is never defaulted to EXPLICIT, LIKELY or anything
+   * else, because a missing certainty must not be upgraded into a claim about
+   * how sure the reading was.
+   */
+  readonly certainty?: ExtractionCertainty;
   readonly source?: SourceSpan;
 }
 

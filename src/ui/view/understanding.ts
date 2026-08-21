@@ -29,7 +29,21 @@ export interface CertaintyModel {
   readonly explanation: string;
 }
 
-export function certaintyModel(certainty: ExtractionCertainty): CertaintyModel {
+export function certaintyModel(certainty: ExtractionCertainty | undefined): CertaintyModel {
+  if (certainty === undefined) {
+    /**
+     * The model did not say how sure it was.
+     *
+     * Rendered as its own state rather than defaulted upward. "Not stated" and
+     * "stated outright" are different things, and quietly promoting the first
+     * into the second would put a confidence on screen that nothing supports.
+     */
+    return {
+      label: "Certainty not stated",
+      tone: "unknown",
+      explanation: "Orkestr did not record how sure this reading was, so treat it as unchecked.",
+    };
+  }
   switch (certainty) {
     case "EXPLICIT":
       return {

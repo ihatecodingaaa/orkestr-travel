@@ -9,7 +9,7 @@ code wins and this document is a bug.
 
 - **Written:** 22 August 2026
 - **At commit:** see `git log -1`; this was written at `214c9c9` or later
-- **Gate at time of writing:** 885 tests / 44 files, lint, typecheck, build clean
+- **Gate at time of writing:** 941 tests / 46 files, lint, typecheck, build clean
 
 ---
 
@@ -73,7 +73,7 @@ The mechanisms, all built and tested:
 | 4 | Journey, legs, mock flight provider, journey package | COMPLETE |
 | 5 | Next.js interface, truth badges, privacy selectors | COMPLETE |
 | 6 | Qwen extraction, evidence layer, bounded research | COMPLETE **as code** |
-| 6.5 | Live Model Studio verification | **BLOCKED — no credential** |
+| 6.5 | Live Model Studio verification | **EXTRACTION VERIFIED.** Research still unverified |
 | Pre-reset sprint | Offline hardening, kill switch, handoff docs | COMPLETE |
 | 7 | Atlas flight provider | NOT STARTED |
 
@@ -85,16 +85,30 @@ the Responses API research adapter with real source capture, URL safety,
 evidence claims with authority, user-shared links, and per-subsystem provenance
 in the UI.
 
-### What Phase 6.5 could not do
+### What Phase 6.5 did
 
-**Make a single live call.** No Model Studio credential has ever existed in this
-environment. Every adapter is written from published API shapes and tested
-against recorded response bodies through an injectable transport. None has met
-the real service.
+**Verified live extraction. 38 real calls.**
 
-Phase 6.5 did verify offline: the JSON-mode requirement is satisfied in both
-request messages, the region and endpoint shape are correct, and the config
-boundary is sound.
+Three findings, in order:
+
+1. **A 30-second hang that was not a bug.** `qwen3.7-plus` is a hybrid-thinking
+   model; sending no `enable_thinking` took its default, and a non-streaming
+   request then buffers an entire reasoning phase. Setting it to `false` took
+   the smoke test from timeout to SUCCESS in 10.2s.
+2. **An over-strict schema.** The first 17-case run passed 8. Eight of the nine
+   failures were a missing `tripContext.certainty` discarding valid travellers,
+   constraints and relationships. Optional context now degrades field by field
+   while the authority boundary is untouched. Second run: **15/17**.
+3. **A prompt that said what not to do without saying what to do instead.**
+   Told never to guess a currency, the model emitted `currency: ""`. v2 says
+   omit the proposal and raise an ambiguity.
+
+**Authority safety and injection containment were 100% in both runs**, including
+when the first run was failing half its cases. The boundary held while the
+quality was poor, which is the property that matters.
+
+**Research is still unverified.** The Responses API, `web_search` and
+`web_extractor` have never been called.
 
 ### What the pre-reset sprint did
 
@@ -128,8 +142,8 @@ Run `git log -15 --oneline` for the current truth. Recent significant commits:
 | Service | State |
 | --- | --- |
 | GitHub | **CONFIGURED.** Pushes to `orkestr-travel` are authorised |
-| Alibaba Cloud | **NOT CONFIGURED.** No account action has been taken |
-| Model Studio | **NOT CONFIGURED.** No key, no workspace, **no call ever made** |
+| Alibaba Cloud | **CONFIGURED.** Singapore, Model Studio active |
+| Model Studio | **CONFIGURED** on the founder's machine. Extraction **LIVE VERIFIED**; research never called |
 | Atlas | **NOT CONFIGURED.** No credential, no code, no endpoint contacted |
 | Vercel | NONE |
 | Neon / Railway / Koyeb | NONE |
@@ -170,8 +184,9 @@ Three things to internalise:
 3. **`live` without credentials is a failure, not a downgrade.** It never
    silently becomes fixtures wearing a live label.
 
-**Only `disabled` is genuinely exercised today**, because no credential exists
-and no recording exists.
+**`disabled` and `live` are both exercised.** `live` has made 38 real extraction
+calls from the founder's machine. `recorded` still has nothing genuine to serve,
+because no live result has yet been sanitised and stored.
 
 ---
 
@@ -249,12 +264,18 @@ per-beat dependency table.
 
 ## I. Known gaps, honestly
 
-**The live path is entirely unexercised.** The largest risk in the project.
-Plausible first-contact surprises: the workspace-domain host form, whether
-`web_search` and `web_extractor` are enabled for a given workspace, the exact
-shape of `web_search_call.action.sources`, and whether `qwen3.7-plus` is
-available in `ap-southeast-1`. The parser is defensive about all of it.
-Defensive is not verified.
+**The RESEARCH live path is entirely unexercised.** Now the largest risk.
+Extraction is verified, which removes the endpoint, credential, region and
+model from the list of unknowns -- but the Responses API is a different
+endpoint with a different response shape. Plausible first-contact surprises:
+whether `web_search` and `web_extractor` are enabled for this workspace, and
+the exact shape of `web_search_call.action.sources`. The parser is defensive
+about all of it. Defensive is not verified.
+
+**Two evaluation cases still fail, both honestly.** `05-late-join` raises an
+ambiguity instead of listing an unreplied traveller; `11-mixed-age-family` had
+its whole response refused because the model fabricated quotes for inferred
+family relationships. Neither is a safety issue and neither has been tuned away.
 
 **No recording exists.** `recorded` mode has nothing genuine to serve. It becomes
 useful after the first successful live call is sanitised and stored.
@@ -284,19 +305,22 @@ support:
 
 ## J. Next actions, in order
 
-1. **Founder sets up Alibaba Cloud / Model Studio** and creates `.env.local`.
-   See `EXTERNAL_SETUP.md`. Nobody else can do this step.
-2. `npm run preflight:model-studio` — confirm it reports ready
-3. `npm run smoke:model-studio` — one tiny fictional request
-4. Adversarial smoke: confirm an injected instruction still cannot gain authority
-5. `npm run eval:qwen` — 17 fictional cases
-6. One Responses API request; **compare the real shape to the parser** and fix
-   the adapter if they differ, adding a sanitised regression fixture
-7. One bounded `web_search`; confirm real source URLs are captured
-8. One `web_extractor` call on a URL that search returned
-9. Fix real discrepancies; re-run the deterministic gate
-10. Update `IMPLEMENTATION_STATUS.md` — **only for paths actually run**
-11. Atlas setup, then Phase 7
+Extraction is done. What remains, in order:
+
+1. One Responses API request; **compare the real shape to the parser** in
+   `responsesShape.ts` and fix the adapter if they differ, adding a sanitised
+   regression fixture from the real shape
+2. One bounded `web_search`; confirm real source URLs are captured from tool
+   output rather than from prose
+3. One `web_extractor` call, on a URL that search actually returned
+4. One user-shared link, including a blocked social page
+5. Fix real discrepancies; re-run the deterministic gate
+6. Update `IMPLEMENTATION_STATUS.md` — **only for paths actually run.** If
+   search works and extraction does not, record that split
+7. Atlas setup, then Phase 7
+
+Note: the next substantial development work is expected to be reassigned to
+Qoder, which is part of the hackathon judging criteria.
 
 ---
 

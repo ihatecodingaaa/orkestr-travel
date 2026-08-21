@@ -5,7 +5,7 @@ import type {
   UnderstandingMode,
 } from "../../domain/extraction";
 import { runExtractionPipeline } from "../../core/intent/pipeline";
-import { INTENT_PROMPT_VERSION } from "../modelStudio/prompts/intentV1";
+import { INTENT_PROMPT_VERSION } from "../modelStudio/prompts/intentV2";
 import { FIXTURE_EXTRACTIONS, FIXTURE_DISCUSSION } from "./extractionFixtures";
 
 /**

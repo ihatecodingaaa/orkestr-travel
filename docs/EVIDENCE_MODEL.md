@@ -155,9 +155,11 @@ publication dates. It does **not** carry copied webpage text: no scraped article
 body is stored in this repository, and a test asserts every recorded claim is a
 single sentence rather than a page body.
 
-**Nothing has ever been recorded from Model Studio**, because no live call has
-ever been made. The fixture research provider therefore reports
-`LOCAL_FIXTURE`, which is what it is: hand-written data in this repository.
+**Nothing has ever been recorded from Model Studio's RESEARCH path**, because
+the Responses API, `web_search` and `web_extractor` have never been called. Live
+extraction has been verified; research has not. The fixture research provider
+therefore reports `LOCAL_FIXTURE`, which is what it is: hand-written data in
+this repository.
 
 An earlier version labelled it `RECORDED_WEB`, which the interface renders as
 "Recorded Model Studio result". Calling hand-written data a recording of a

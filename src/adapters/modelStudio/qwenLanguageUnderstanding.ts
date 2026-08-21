@@ -13,7 +13,7 @@ import {
   INTENT_PROMPT_VERSION,
   INTENT_SYSTEM_PROMPT,
   buildIntentUserMessage,
-} from "./prompts/intentV1";
+} from "./prompts/intentV2";
 
 /**
  * Structured extraction through Alibaba Cloud Model Studio.
@@ -61,7 +61,7 @@ export class QwenLanguageUnderstandingProvider implements LanguageUnderstandingP
   async extractIntent(request: ExtractionRequest): Promise<ExtractionResult> {
     const baseDiagnostics: Omit<
       ExtractionDiagnostics,
-      "travellerCount" | "proposalCount" | "ambiguityCount"
+      "travellerCount" | "proposalCount" | "ambiguityCount" | "warningCount"
     > = {
       requestId: request.requestId,
       operation: "EXTRACT_INTENT",
@@ -131,6 +131,7 @@ export class QwenLanguageUnderstandingProvider implements LanguageUnderstandingP
           travellerCount: 0,
           proposalCount: 0,
           ambiguityCount: 0,
+          warningCount: 0,
         },
       };
     }
@@ -157,7 +158,13 @@ export class QwenLanguageUnderstandingProvider implements LanguageUnderstandingP
             detail: "The provider returned no message content to read.",
           },
         ],
-        diagnostics: { ...diagnostics, travellerCount: 0, proposalCount: 0, ambiguityCount: 0 },
+        diagnostics: {
+          ...diagnostics,
+          travellerCount: 0,
+          proposalCount: 0,
+          ambiguityCount: 0,
+          warningCount: 0,
+        },
       };
     }
 

@@ -1,6 +1,7 @@
 import type {
   ExtractionProblem,
   ExtractionFailureCode,
+  ExtractionWarning,
 } from "../../domain/extraction";
 import type {
   ExtractionCertainty,
@@ -111,6 +112,8 @@ const LIMITS = {
 export interface SchemaSuccess {
   readonly ok: true;
   readonly intent: ProposedTripIntent;
+  /** Optional context fields dropped along the way. Never authority-bearing. */
+  readonly warnings: readonly ExtractionWarning[];
 }
 
 export interface SchemaFailure {
@@ -151,6 +154,29 @@ class Problems {
   }
 
   get all(): readonly ExtractionProblem[] {
+    return this.items;
+  }
+}
+
+/**
+ * A NON-FATAL collector, for optional context only.
+ *
+ * The distinction this class exists to make: `Problems` fails the whole
+ * extraction, `Warnings` drops one field and carries on. Which collector a
+ * validator writes into IS the decision about how consequential its data is,
+ * and keeping them as two types means that decision is made once, visibly, at
+ * the call site rather than implied by a boolean somewhere.
+ *
+ * Nothing authority-bearing may write here. See the comment on readTripContext.
+ */
+class Warnings {
+  private readonly items: ExtractionWarning[] = [];
+
+  omit(path: string, reason: string): void {
+    this.items.push({ path, reason, effect: "OMITTED_FROM_CONTEXT" });
+  }
+
+  get all(): readonly ExtractionWarning[] {
     return this.items;
   }
 }
@@ -617,60 +643,152 @@ function readAmbiguities(raw: unknown, problems: Problems): readonly ProposedAmb
   return out;
 }
 
-function readTripContext(raw: unknown, problems: Problems): ProposedTripContext | undefined {
+/**
+ * Read optional trip context, degrading field by field.
+ *
+ * THE ONE PLACE IN THIS FILE THAT DOES NOT FAIL THE WHOLE EXTRACTION, and the
+ * reason is a distinction worth stating precisely.
+ *
+ * "Nothing is ever partially applied" is the right rule for anything that can
+ * BIND. A half-read constraint could veto somebody's flights, so a malformed one
+ * fails everything and the caller is told. That rule is untouched.
+ *
+ * Trip context binds nothing. It is a destination label, an origin label, some
+ * dates and a night count -- decoration that helps a person read the review
+ * screen. A live evaluation showed the cost of treating it as strictly as a
+ * constraint: eight of nine failures were an absent `tripContext.certainty`, and
+ * each one discarded perfectly good travellers, constraints and relationships
+ * over a metadata field on an optional object. That is a disproportionate blast
+ * radius, and it was my error rather than the model's.
+ *
+ * So each field here degrades on its own: unreadable means omitted, with a
+ * warning recording what went and why. Three properties keep that safe.
+ *
+ *   1. Degradation only ever REMOVES. No field is defaulted, substituted or
+ *      inferred, so nothing here can invent context that the model did not send.
+ *   2. A missing certainty stays missing. It is never upgraded to EXPLICIT or
+ *      LIKELY to satisfy a parser.
+ *   3. Authority fields are still fatal. A model sneaking `confirmed` into
+ *      tripContext is attempting authority, not fumbling decoration, and it
+ *      still fails the whole extraction as UNSAFE_OUTPUT.
+ *
+ * Trip context also remains NON-AUTHORITATIVE downstream: a model-read
+ * destination or date is context for a person to confirm, and surviving
+ * validation does not make it a decision.
+ */
+function readTripContext(
+  raw: unknown,
+  problems: Problems,
+  warnings: Warnings,
+): ProposedTripContext | undefined {
   if (raw === undefined || raw === null) return undefined;
   if (!isRecord(raw)) {
-    problems.add("tripContext", "Expected an object.");
+    warnings.omit("tripContext", "Trip context was not an object, so it was dropped.");
     return undefined;
   }
-  rejectForbiddenFields(raw, "tripContext", problems);
-  const certainty = readCertainty(raw["certainty"], "tripContext.certainty", problems);
-  if (certainty === undefined) return undefined;
 
-  const destinationLabel = readString(raw["destinationLabel"], "tripContext.destinationLabel", problems, {
-    max: 80,
-    required: false,
-  });
-  const originLabel = readString(raw["originLabel"], "tripContext.originLabel", problems, {
-    max: 80,
-    required: false,
-  });
+  // Still fatal. An authority field here is an escalation attempt.
+  rejectForbiddenFields(raw, "tripContext", problems);
+
+  /** A throwaway collector: a field that fails is omitted, not fatal. */
+  const attempt = <T>(
+    path: string,
+    reason: string,
+    read: (probe: Problems) => T | undefined,
+  ): T | undefined => {
+    const probe = new Problems();
+    const value = read(probe);
+    if (value === undefined) {
+      if (raw[path.replace("tripContext.", "")] !== undefined) warnings.omit(path, reason);
+      return undefined;
+    }
+    if (probe.any) {
+      warnings.omit(path, reason);
+      return undefined;
+    }
+    return value;
+  };
+
+  const certainty = attempt<ExtractionCertainty>(
+    "tripContext.certainty",
+    "Certainty was missing or not one of EXPLICIT, LIKELY, AMBIGUOUS. It was dropped rather than assumed.",
+    (probe) => readCertainty(raw["certainty"], "tripContext.certainty", probe),
+  );
+
+  const destinationLabel = attempt<string>(
+    "tripContext.destinationLabel",
+    "The destination label could not be read.",
+    (probe) =>
+      readString(raw["destinationLabel"], "tripContext.destinationLabel", probe, {
+        max: 80,
+        required: false,
+      }),
+  );
+
+  const originLabel = attempt<string>(
+    "tripContext.originLabel",
+    "The origin label could not be read.",
+    (probe) =>
+      readString(raw["originLabel"], "tripContext.originLabel", probe, {
+        max: 80,
+        required: false,
+      }),
+  );
+
   const nights =
     raw["nights"] === undefined || raw["nights"] === null
       ? undefined
-      : readInteger(raw["nights"], "tripContext.nights", problems, { min: 1, max: 365 });
+      : attempt<number>(
+          "tripContext.nights",
+          "The night count was not a whole number between 1 and 365.",
+          (probe) => readInteger(raw["nights"], "tripContext.nights", probe, { min: 1, max: 365 }),
+        );
+
   const source =
     raw["source"] === undefined || raw["source"] === null
       ? undefined
-      : readSource(raw["source"], "tripContext.source", problems);
+      : attempt<SourceSpan>(
+          "tripContext.source",
+          "The supporting quote could not be read.",
+          (probe) => readSource(raw["source"], "tripContext.source", probe),
+        );
 
+  /**
+   * Dates are still validated strictly; only the consequence changed.
+   *
+   * A duration, a month name or a description in a date field is refused, and
+   * refused silently would be wrong -- so it is omitted WITH a warning. Nothing
+   * is ever coerced: "four nights" does not become a calendar date here or
+   * anywhere else.
+   */
   const readDate = (field: "earliestDate" | "latestDate"): string | undefined => {
     const value = raw[field];
     if (value === undefined || value === null) return undefined;
-    const text = readString(value, `tripContext.${field}`, problems, { max: 10, required: false });
-    if (text === undefined) return undefined;
-    if (!isValidIsoDate(text)) {
-      problems.add(`tripContext.${field}`, "Not a valid calendar date in YYYY-MM-DD form.");
+    if (typeof value !== "string" || !isValidIsoDate(value.trim())) {
+      warnings.omit(
+        `tripContext.${field}`,
+        "Not a calendar date in YYYY-MM-DD form, so it was dropped rather than guessed at.",
+      );
       return undefined;
     }
-    return text;
+    return value.trim();
   };
 
-  return {
-    certainty,
+  const earliestDate = readDate("earliestDate");
+  const latestDate = readDate("latestDate");
+
+  const context: ProposedTripContext = {
+    ...(certainty === undefined ? {} : { certainty }),
     ...(destinationLabel === undefined ? {} : { destinationLabel }),
     ...(originLabel === undefined ? {} : { originLabel }),
     ...(nights === undefined ? {} : { nights }),
     ...(source === undefined ? {} : { source }),
-    ...(() => {
-      const earliest = readDate("earliestDate");
-      return earliest === undefined ? {} : { earliestDate: earliest };
-    })(),
-    ...(() => {
-      const latest = readDate("latestDate");
-      return latest === undefined ? {} : { latestDate: latest };
-    })(),
+    ...(earliestDate === undefined ? {} : { earliestDate }),
+    ...(latestDate === undefined ? {} : { latestDate }),
   };
+
+  // An entirely empty context is not context. Drop it rather than carry a shell.
+  return Object.keys(context).length === 0 ? undefined : context;
 }
 
 /**
@@ -705,7 +823,8 @@ export function validateIntentSchema(parsed: unknown): SchemaResult {
   const assistanceNeeds = readAssistanceNeeds(parsed["assistanceNeeds"], problems);
   const preferences = readPreferences(parsed["preferences"], problems);
   const ambiguities = readAmbiguities(parsed["ambiguities"], problems);
-  const tripContext = readTripContext(parsed["tripContext"], problems);
+  const warnings = new Warnings();
+  const tripContext = readTripContext(parsed["tripContext"], problems, warnings);
 
   if (problems.any) {
     return { ok: false, code: problems.code, problems: problems.all };
@@ -713,11 +832,12 @@ export function validateIntentSchema(parsed: unknown): SchemaResult {
 
   return {
     ok: true,
+    warnings: warnings.all,
     intent: {
       // Set by Orkestr, never read from the response. The prompt version records
       // which prompt WE sent; a model claiming a different one would be
       // describing a request that did not happen.
-      promptVersion: "orkestr-intent-v1",
+      promptVersion: "orkestr-intent-v2",
       travellers,
       constraints,
       relationships,

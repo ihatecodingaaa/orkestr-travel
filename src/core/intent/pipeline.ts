@@ -36,7 +36,7 @@ export interface PipelineInput {
   readonly mapping: MappingOptions;
   readonly diagnostics: Omit<
     ExtractionDiagnostics,
-    "travellerCount" | "proposalCount" | "ambiguityCount"
+    "travellerCount" | "proposalCount" | "ambiguityCount" | "warningCount"
   >;
 }
 
@@ -49,7 +49,13 @@ function fail(
     outcome: "FAILED",
     code,
     problems,
-    diagnostics: { ...base, travellerCount: 0, proposalCount: 0, ambiguityCount: 0 },
+    diagnostics: {
+      ...base,
+      travellerCount: 0,
+      proposalCount: 0,
+      ambiguityCount: 0,
+      warningCount: 0,
+    },
   };
 }
 
@@ -103,11 +109,21 @@ export function runExtractionPipeline(input: PipelineInput): ExtractionResult {
     outcome: "SUCCESS",
     intent: schema.intent,
     mapped,
+    /**
+     * Optional context that was dropped on the way through.
+     *
+     * Carried on a SUCCESS deliberately. An extraction where everything
+     * authority-bearing validated and some decoration did not IS a success, and
+     * hiding the dropped fields would turn a known model weakness into an
+     * invisible one.
+     */
+    warnings: schema.warnings,
     diagnostics: {
       ...input.diagnostics,
       travellerCount: mapped.travellers.length,
       proposalCount: mapped.constraints.length,
       ambiguityCount: schema.intent.ambiguities.length,
+      warningCount: schema.warnings.length,
     },
   };
 }

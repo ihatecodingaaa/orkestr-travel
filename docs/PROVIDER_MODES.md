@@ -54,10 +54,11 @@ Every screen is served by fixture providers that label themselves as fixtures.
 Also never touches the network. Intended to serve sanitised structured results
 captured from a real earlier call.
 
-**No such recording exists yet**, because no live call has ever been made. Until
-one does, `recorded` behaves like `disabled` and the honest label is the fixture
-one. A sanitised test fixture is *not* a recorded Model Studio result, and this
-repository does not pretend otherwise.
+**No such recording exists yet.** Live extraction calls have been made, but none
+has been sanitised and stored, and no research call has been made at all. Until
+a recording exists, `recorded` behaves like `disabled` and the honest label is
+the fixture one. A sanitised test fixture is *not* a recorded Model Studio
+result, and this repository does not pretend otherwise.
 
 ### `live`
 

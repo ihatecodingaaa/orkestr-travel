@@ -189,6 +189,8 @@ export type {
   ExtractionProblem,
   ExtractionRequest,
   ExtractionResult,
+  ExtractionWarning,
+  ExtractionWarningEffect,
   LanguageUnderstandingProvider,
   MappedIntent,
   UnderstandingMode,
