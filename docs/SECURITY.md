@@ -1,7 +1,8 @@
 # Security
 
-**Status:** policy in force from Phase 0. No credential exists in this repository
-and no external service is contacted.
+**Status:** policy in force from Phase 0, and enforced by tests from Phase 6.
+No credential exists in this repository. The application is now *capable* of
+contacting Alibaba Cloud Model Studio, and has never done so.
 
 ## 1. Never commit
 
@@ -9,6 +10,13 @@ Atlas credentials. Alibaba Cloud keys. Qoder credentials. Hackathon mailbox
 credentials. Passenger identities. Database credentials. Tokens of any kind.
 
 `.gitignore` excludes `.env`, `.env.local` and `.env.*.local`.
+
+From Phase 6 this is checked rather than trusted. `tests/serverBoundary.test.ts`
+asserts that `DASHSCOPE_API_KEY` is read in exactly one module, that its value
+is dereferenced in exactly one other, that no client component imports an
+adapter or reads `process.env`, and that the built browser bundle contains
+neither the variable name, nor the Model Studio host, nor the extraction system
+prompt.
 
 ## 2. The public-prefix rule
 
@@ -18,13 +26,18 @@ That prefix inlines the value into the browser bundle at build time. Anything
 carrying it is published to every visitor, permanently, and rotating the key is
 the only remedy. Only genuinely public configuration may use it.
 
+A test scans every source file and `.env.example` for a `NEXT_PUBLIC_` variable
+whose name contains KEY, SECRET, TOKEN, DASHSCOPE or WORKSPACE, and fails.
+
 ## 3. Environment template
 
-`.env.example` contains **names and safe placeholders only**. It currently
-documents variables for integrations that do not exist yet, so that the security
-boundary is defined before any credential is created rather than after.
+`.env.example` contains **names and safe placeholders only**. Copy it to
+`.env.local`, which is gitignored, and fill it in there.
 
-Every integration defaults to off. Nothing is required to run the tests.
+Every integration is optional. Nothing in it is required to run the tests, the
+production build or the demo: with the file empty, the application runs in
+fixture mode and says so on every screen. "Not configured" is a state, not an
+error, and the code treats it as one.
 
 ## 4. Personal data
 
@@ -34,6 +47,16 @@ needs. Assistance and dietary information is sensitive.
 Rules:
 
 - **Never log full passenger records.** Log identifiers, not payloads.
+- **Never log a pasted discussion, or a model response.** From Phase 6,
+  `src/adapters/diagnostics.ts` is the only module permitted to write a provider
+  log line. It emits a request id, an operation, a provider, a model, a
+  duration, token counts and item counts. Tests assert that a log line for the
+  demo family contains none of "Tokyo", "Gita", "step-free", "600 SGD",
+  "Ryan", "wheelchair" or "assistance".
+- **Never log a research question's stated needs.** The question KIND is logged;
+  the group's accessibility and dietary requirements are not.
+- Every message that reaches a log passes through `redactSecrets`, in case a
+  provider echoed a credential back inside an error.
 - Private constraints are never attributed publicly. See Principle 8 in
   `PRODUCT_SPEC.md`.
 - Age bands are person-supplied. They are never estimated, and never obtained
@@ -54,10 +77,13 @@ exclusively. Production bookings are prohibited during development.
 
 ## 6b. The local interface
 
-The Phase 5 application makes no network request of any kind. There is no
-analytics SDK, no third-party tracking, no external font or image host, no QR
-service and no telemetry. Everything it renders is fixture data compiled into
-the bundle, so the demo runs with networking switched off.
+The Phase 5 screens make no network request of any kind. There is no analytics
+SDK, no third-party tracking, no external font or image host, no QR service and
+no telemetry, and that has not changed.
+
+The Phase 6 screens make a network request only when a credential is configured
+and only from the server, to Alibaba Cloud Model Studio. With no credential the
+whole application still runs offline from recorded data, and says so.
 
 There is **no authentication and none is implied**. The participant route says
 plainly that it is not a private link. A capability URL that is not actually a
@@ -69,6 +95,24 @@ would imply anybody holding the link had given it.
 
 No real passenger data exists anywhere in the repository. Every identity in
 every fixture is invented.
+
+## 6c. Untrusted input, and server-side request forgery
+
+**A pasted group discussion is untrusted data.** It may contain quoted
+instructions, pasted JSON, fake system prompts, HTML and URLs. The system
+prompt says so and the user message wraps it in a delimited block whose closing
+marker is neutralised, but that is a mitigation and not the control. The control
+is that an injected instruction the model obeys completely still cannot obtain
+authority. See `QWEN_INTEGRATION.md` sections 6 and 7.
+
+**A pasted URL is untrusted data.** A page-reading service pointed at
+`http://127.0.0.1:6379` or `http://169.254.169.254/latest/meta-data/` is a
+request made from inside the trust boundary on behalf of whoever pasted it.
+`src/core/research/url.ts` refuses non-web schemes, loopback, private ranges,
+carrier-grade NAT, link-local including the cloud metadata address, IPv6
+equivalents, internal hostnames, embedded credentials and non-web ports —
+**before any request is made**, because a rejection after the request has gone
+out is not a rejection. 47 tests.
 
 ## 7. Separation from the startup repository
 

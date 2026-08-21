@@ -4,7 +4,7 @@
 
 ## 1. Current state, honestly
 
-**498 tests across 29 files, all passing.**
+**843 tests across 42 files, all passing. None of them touches a network.**
 
 | Suite | Tests | Covers |
 | --- | --- | --- |
@@ -26,21 +26,34 @@
 | `impact.test.ts` | 7 | Every impact radius, and that ACTIVITY_ONLY is never produced |
 | `planRepair.test.ts` | 21 | Late join matrix, leave, reverification |
 | `constraintChange.test.ts` | 6 | All six constraint-change shapes |
-| `phase3Safety.test.ts` | 17 | Core purity guards, behavioural guarantees, provider boundary |
+| `phase3Safety.test.ts` | 24 | Core purity guards, behavioural guarantees, provider boundary |
 | `mockProvider.test.ts` | 16 | Search, verify, capabilities, determinism |
 | `fareShock.test.ts` | 8 | Unchanged, rise within budget, soft breach, hard breach, unavailable |
 | `journeyLeg.test.ts` | 14 | Round trip, per-leg planning sets, reunion semantics, validation |
 | `journeyPackage.test.ts` | 27 | Days, items, honesty, reunion enforcement, decisions needed |
 | `journeyRyan.test.ts` | 12 | Late join into an existing package, preservation separation |
-
 | `truth.test.ts` | 12 | No badge may look stronger than the state behind it |
 | `privacy.test.ts` | 9 | Group surfaces carry no private figure, name or id |
 | `viewModels.test.ts` | 23 | Group board, waves, journey, decisions, URL state |
 | `ryanAndFare.test.ts` | 17 | Late join and all five fare scenarios, deterministic |
-| `components.test.tsx` | 16 | Rendered DOM, including accessible text |
+| `components.test.tsx` | 18 | Rendered DOM, including accessible text |
+| `intentSchema.test.ts` | 35 | Valid JSON that must still be refused |
+| `intentMapping.test.ts` | 31 | Semantic validation, safe mapping, exact money |
+| `promptInjection.test.ts` | 13 | An obeyed injection that still cannot confirm |
+| `urlSafety.test.ts` | 47 | SSRF refusals and normalisation |
+| `evidenceLayer.test.ts` | 35 | Authority, downgrade, citations, conflicts |
+| `suggestionChecks.test.ts` | 20 | Reunion, presence, evidence, accessibility |
+| `providerAdapters.test.ts` | 52 | Config, transport, both adapters, shared links |
+| `serverActions.test.ts` | 12 | Provider selection and what may be logged |
+| `serverBoundary.test.ts` | 11 | No credential or adapter in the client bundle |
+| `prompts.test.ts` | 25 | The rules the prompts must state, and age neutrality |
+| `evalCases.test.ts` | 11 | The evaluation set and its scorer |
+| `ui/provenance.test.ts` | 16 | No subsystem borrows another's credibility |
+| `ui/phase6Components.test.tsx` | 30 | Quotes, conflicts, sources, unknowns on screen |
 
-There are no tests for a real provider, AI extraction or web research, because
-none of those exist.
+There are no tests against a real provider, because no test may call one. Every
+adapter is tested against recorded response bodies through an injectable
+transport, which is why the whole suite runs offline.
 
 ### Purity is enforced by the suite, not by review
 
@@ -113,3 +126,38 @@ absolute instant without stating a zone is a defect.
 
 No test may call Atlas, Model Studio, or any paid API. Provider behaviour is
 tested against fixtures and recorded responses.
+
+## 8. Live evaluation is separate, and opt-in
+
+```bash
+npm run smoke:model-studio   # one tiny fictional discussion
+npm run eval:qwen            # 17 fictional evaluation cases
+```
+
+Both use `vitest.live.config.ts`, a separate config with a separate include
+glob (`evals/**/*.live.ts`), so neither can be picked up by `npm test`,
+`npm run check` or `npm run verify`.
+
+**Why that separation is not optional.** A network outage, a rate limit or an
+expired key must not turn the deterministic suite red. If a live failure could
+fail the gate, the reflex becomes to distrust the gate, and at that point the
+other 843 tests stop meaning anything.
+
+With no credentials both report `NOT CONFIGURED` and **skip**. Skipped is not
+passed: a smoke test that quietly passes without calling anything reports
+success for work that did not happen.
+
+The evaluation cases score **structure**, never prose. A model that words a
+constraint differently has not failed at anything. What is asserted is the
+traveller count, whether an explicit requirement was captured, whether one was
+invented, whether ownership is right, whether an ambiguity was noticed, and two
+safety properties that run on every case regardless of what it declares.
+
+## 9. Purity and boundary guards
+
+`phase3Safety.test.ts` reads every file under `src/core` and asserts it names no
+model provider, reads no clock, uses no randomness, makes no request and does no
+floating-point arithmetic on money. Phase 6 added: the mapper assigns only the
+safe literals to `origin` and `confirmation`; the schema refuses every authority
+field by name; no fixture claims to be live; and no recorded research claim is
+long enough to be a stored page body.

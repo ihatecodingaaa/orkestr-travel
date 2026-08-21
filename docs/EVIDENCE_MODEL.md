@@ -1,25 +1,45 @@
 # Evidence Model
 
-**Status:** types `IMPLEMENTED` (`src/domain/evidence.ts`); no research
-implementation exists.
+**Status:** `IMPLEMENTED` (`src/domain/evidence.ts`, `src/core/research/`).
+The rules below are enforced by code and asserted by 35 tests in
+`tests/evidenceLayer.test.ts`.
 
 ## 1. Purpose
 
 Record where every claim came from, and enforce what each kind of source is
 allowed to establish.
 
-## 2. Source types
+## 2. Two axes, deliberately kept apart
 
-| Source type | May establish |
+Phase 6 splits what used to be one field, because collapsing them is how an
+arbitrary webpage becomes "official".
+
+**Authority** is what a source IS, and therefore what it may establish:
+
+| `SourceAuthority` | May establish |
 | --- | --- |
-| `ATLAS_PROVIDER_FACT` | Flight facts from the provider response |
-| `OFFICIAL_FACT` | Operational facts from an operator, venue or government source |
-| `COMMUNITY_SIGNAL` | Experience only. Never an operational fact |
-| `EDITORIAL_SOURCE` | Published editorial context |
-| `USER_SHARED` | What the user showed us, as their input, not as truth |
-| `INFERRED` | A reading between the lines. Never authoritative alone |
-| `CONFLICTING` | Sources disagree. Shown as a disagreement |
-| `UNKNOWN` | Nothing established this |
+| `OFFICIAL_WEB` | Operational facts: access, opening times, capacity, policy |
+| `PROVIDER` | Facts from a booking or travel provider's own system |
+| `COMMUNITY` | Experience only. Never an operational fact |
+| `EDITORIAL` | Published context |
+| `UNKNOWN` | Nothing. Not recognised, and not upgraded by anything the page says about itself |
+
+**Ingestion origin** is how it reached us, which is a different question:
+
+| `EvidenceIngestionOrigin` | Meaning |
+| --- | --- |
+| `WEB_SEARCH` | Returned by a live provider web search |
+| `USER_SHARED` | A public link a person handed us themselves |
+| `RECORDED_WEB` | A sanitised structured result, replayed. Never live |
+| `LOCAL_FIXTURE` | Hand-written in this repository. Never real research |
+
+Neither is derived from the other. Authority comes from deterministic known-host
+configuration in `src/core/research/sources.ts`; a host that is not in it stays
+`UNKNOWN`, which is a real answer and not a soft yes.
+
+Suffix matching is on a label boundary, so `notreddit.com` cannot inherit
+`reddit.com`'s classification and `fake-tokyometro.jp` cannot inherit an
+operator's.
 
 ## 3. The rule that matters most
 
@@ -34,48 +54,113 @@ operational fact.**
 | Noise, service consistency | Certified dietary status |
 | Recommended dishes, local tips | Booking availability, flight availability |
 
-Ten reviews saying "step-free, no problem" do not make a venue accessible. That
-requires an official source, and until one exists the status is
-`NEEDS_CONFIRMATION`.
+Ten reviews saying "step-free, no problem" do not make a venue accessible. They
+are ten people's experience, which is worth reading and worth showing, and they
+are not a statement from the operator.
 
-## 4. Freshness
+**This is code, not prompt wording.** `assembleClaims` downgrades any
+`OPERATIONAL_FACT` with no official or provider source behind it to a
+`COMMUNITY_SIGNAL` that needs confirmation. The model does not choose the claim
+type; the authorities of the supporting sources do. A model marking a Reddit
+thread `OPERATIONAL_FACT` changes nothing.
 
-Every piece of evidence records when it was retrieved, and where discoverable,
-when the source itself was published. Freshness is **computed** from those
-timestamps, not asserted. `UNDATED` is a real value for sources with no
-discoverable date.
+## 4. Claims and sources are separate objects
 
-## 5. Confidence
+A `ResearchSource` is a page that was actually retrieved. An `EvidenceClaim` is
+a statement, with the ids of the sources behind it.
 
-`inferenceConfidence` exists only for `INFERRED` evidence. A published opening
-time does not have a confidence score; it has a source. Attaching confidence
-numbers to facts is false precision.
+Identity of a source **is** its normalised URL, so the same page found twice is
+one source. Two results differing only by `utm_source` counting as two would let
+"several sources agree" mean one source cited twice, which is exactly the false
+corroboration this layer exists to prevent.
 
-## 6. Community summaries
+## 5. A citation to a page nobody retrieved is rejected
 
-A summary states the real number of sources actually read. If two sources exist,
-it says two. Fabricating "based on 47 reviews" would be the easiest and most
-damaging lie this product could tell, so the count is carried as data rather than
-written as copy.
+A model asked to cite its sources will sometimes produce a plausible URL it
+never visited. There is no way to tell a real citation from an invented one by
+looking at it, so the only safe test is membership: was this page actually
+returned by a search or an extraction during THIS operation?
 
-Disagreements between sources are shown, not averaged away.
+If not, the citation is recorded in `rejectedCitations` and the claim becomes
+`UNVERIFIED` with no sources. It is not silently dropped: the fact that the
+model asserted something with nothing behind it belongs in the record, and the
+research screen prints the rejected URLs.
 
-## 6b. What Phase 4 can actually produce
+## 6. Evidence states
 
-Exactly one source kind: **`LOCAL_FIXTURE`**.
+Qualitative on purpose. The system knows how many distinct sources said
+something and whether they agreed, and that is genuinely all it knows.
 
-Every flight offer, every suggested activity and every timing assumption in the
-current system traces to a fixture in this repository. The other source kinds
-exist in the model so the shape is right when a provider or a research layer
-arrives, but **nothing can produce them yet and nothing claims those sources
-exist**.
+| `EvidenceState` | Meaning |
+| --- | --- |
+| `MULTI_SOURCE_SUPPORTED` | Two or more independent sources agree |
+| `SINGLE_SOURCE` | Exactly one source. Real, but thin |
+| `MIXED` | Broad agreement, differing detail |
+| `CONFLICTING` | Sources genuinely disagree |
+| `STALE` | Supported, but every supporting source is past the freshness window |
+| `UNVERIFIED` | Stated with no source we could verify |
+| `EXTRACTION_FAILED` | A page was selected but could not be read |
+
+A percentage here would be invented precision, so there is not one.
+
+## 7. Conflicts are kept as conflicts
+
+Two sources disagreeing is information. Averaging them, or picking the more
+convenient one, destroys the only signal the user had that the answer is
+uncertain.
+
+Conflicts are stored **symmetrically**, whether or not the model reported them
+in both directions, so neither side of a disagreement can be displayed alone.
+The interface renders it as "Sources disagree", shows both statements, and says
+that Orkestr has not picked one. Anything conflicting needs confirmation before
+it can be relied on.
+
+## 8. Freshness
+
+Computed from real dates, never asserted. `UNDATED` is a real value for a source
+with no discoverable publication date: it means we do not know, which on a page
+about opening hours is different from fresh and different from stale.
+
+A claim takes the **weakest** freshness across its supporting sources, not the
+average. A claim supported by one fresh page and one eight-year-old page is only
+as current as the evidence you would have to fall back on.
+
+## 9. Community summaries
+
+`sourcesConsidered` is counted from the ledger, never taken from the model. If
+two community sources exist, it says two. "Based on 47 reviews" when four pages
+were read would be the easiest and most damaging lie this product could tell, so
+the number is not the model's to report.
+
+Disagreements are shown, not averaged away.
+
+## 10. What each part of the system can actually produce
+
+| Source | What it produces |
+| --- | --- |
+| Flight offers | `LOCAL_FIXTURE`, always. The builder hard-codes it with no override |
+| Journey activities in `/demo` | `LOCAL_FIXTURE`, cited to the fixture |
+| Research with no credential | `RECORDED_WEB`, from a sanitised structured capture |
+| Research with a credential | `WEB_SEARCH`, from live Model Studio search and extraction |
+| A link a user pastes | `USER_SHARED` |
 
 The journey package validator refuses an evidence reference that does not
 resolve, and refuses a `VERIFIED` item that cites no evidence at all.
 Verified-on-nothing is the exact shape of an honest-looking lie.
 
-## 7. Traceability
+## 11. Recorded results are never shown as live
 
-Every factual reason shown to a user in a "why this fits your group" explanation
-must carry either an evidence id or a flag saying it was checked
-deterministically by code. A claim with neither may not be displayed.
+A recorded structured result carries real source URLs, real titles and real
+publication dates. It does **not** carry copied webpage text: no scraped article
+body is stored in this repository, and a test asserts every recorded claim is a
+single sentence rather than a page body.
+
+It reports `RECORDED_WEB`, the subsystem board renders that distinctly from
+live, and the label says the search did not run now.
+
+## 12. Traceability
+
+Every factual reason shown in a "why Orkestr suggested this" explanation carries
+either a real claim id or the name of a deterministic check that produced it.
+`SuggestionReason` is a union of exactly those two shapes, so a third kind of
+reason cannot be constructed and therefore cannot be displayed.

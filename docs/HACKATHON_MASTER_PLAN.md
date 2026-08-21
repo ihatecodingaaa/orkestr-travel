@@ -1,7 +1,11 @@
 # Hackathon Master Plan
 
 **Event:** Alibaba Cloud x Atlas Agentic AI Hackathon 2026
-**Status:** Phases 0 through 5 complete. Phase 6 not started.
+**Status:** Phases 0 through 6 complete. Phase 7 not started.
+
+**Caveat that outranks the status line:** no live Alibaba Cloud Model Studio
+call has been made. Phase 6 built and tested the client; no credential exists
+in the development environment. See `IMPLEMENTATION_STATUS.md`.
 
 ## 1. The thesis
 
@@ -26,7 +30,9 @@ questions that make the trip possible.
 | Its honesty is structural | Evidence state, item status and capability state are types, not copy |
 | Travel waves are a real algorithm | Deterministic, ranked, documented, 112 tests. Lexicographic, not a weighted score |
 | "Decisions preserved" is a real number | Inventory defined in `PLAN_REPAIR.md`; old-only denominator; two kinds deliberately EXCLUDED to avoid inflating it |
-| Alibaba does genuine work | Extraction, research and orchestration, not a token endpoint |
+| Alibaba does genuine work | Structured extraction with a versioned prompt and a real validation boundary; bounded research whose source URLs come from provider tool calls rather than generated prose. Not a token endpoint |
+| The AI cannot overreach | A model may propose and may never confirm, enforced in three independent places. 13 tests assume an injection succeeded and assert it changed nothing |
+| Evidence is checked, not asserted | Community sources cannot establish an operational fact; a citation to a page no tool returned is rejected; conflicts are kept as conflicts |
 
 ## 3. Phase plan
 
@@ -41,7 +47,7 @@ automatically. Each begins on founder instruction.**
 | 3 | Compromise, impact radius, plan repair, late join and leave | **COMPLETE** |
 | 4 | Mock provider, journey package, meals, local fixture demo | **COMPLETE** |
 | 5 | Local UI, mobile first, wave visualisation | **COMPLETE** |
-| 6 | Qwen extraction and web research, evidence | Needs approval |
+| 6 | Qwen extraction and web research, evidence | **COMPLETE** (client unverified against the live service) |
 | 7 | Atlas provider | Needs approval, documentation and credentials |
 | 8 | Persistence, private multi-user | Needs an infrastructure decision |
 | 9 | Alibaba Cloud deployment | Needs explicit infrastructure approval |
@@ -56,8 +62,15 @@ the judging weight. Phases 1 to 5 deliberately produce a complete, demonstrable
 product using a mock flight provider and no AI, so that a credential delay
 degrades the demo rather than destroying it.
 
-Stated plainly: **if Atlas access never arrives, there is still a working product
-to show, honestly labelled as running on local fixtures.**
+Phase 6 was built to the same standard, and the risk has already materialised:
+no Model Studio credential exists, so the client is written and unit-tested but
+has never been run against the service. The application still runs, still
+builds, still passes 843 tests, and still demonstrates the whole understanding
+and research flow from recorded data that is **labelled as recorded**. Adding a
+key switches it to live and changes the labels; it changes no other code.
+
+Stated plainly: **if Atlas access or a Model Studio key never arrives, there is
+still a working product to show, honestly labelled.**
 
 ## 5. Closing checklist for every phase
 

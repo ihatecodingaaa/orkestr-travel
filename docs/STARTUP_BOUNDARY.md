@@ -1,5 +1,10 @@
 # Startup Boundary
 
+**Phase 6 note:** unchanged. Phase 6 added a Model Studio client to
+`orkestr-travel` only. No credential is shared with the startup environment, no
+code was copied in either direction, and `orkestr_luc` was neither read nor
+modified.
+
 **Status:** decision record. Binding on both repositories.
 
 This document defines the separation between the **Orkestr startup** and the

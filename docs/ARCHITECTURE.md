@@ -1,7 +1,8 @@
 # Architecture
 
-**Status:** the domain layer and the deterministic core exist. The AI layer, the
-provider adapters and the UI are still plans.
+**Status:** the domain layer, the deterministic core, the interface, the AI
+layer and the research boundary all exist. The flight provider is still a local
+mock, and nothing is persisted.
 
 ## 1. The shape
 
@@ -10,9 +11,13 @@ provider adapters and the UI are still plans.
                          |
                          v
         +--------------------------------+
-        |  AI layer  (Phase 6)           |   Qwen / Alibaba Model Studio
+        |  AI layer  (Phase 6, built)    |   Qwen / Alibaba Model Studio
         |  extraction, research, wording |   PROPOSES. Never decides.
         +--------------------------------+
+                         |
+                 validation boundary
+        parse -> schema -> semantic -> safe mapping
+        one failure fails the whole extraction
                          |
                  structured proposals
                          |
@@ -54,7 +59,7 @@ because a model was sampled at a different temperature.
 | --- | --- | --- |
 | AI | Extract, classify candidates, research, explain, generate questions | Decide feasibility, budget comparisons, wave membership, commitment validity, impact radius |
 | Deterministic core | All business rules, all comparisons | Call a network service, read the clock implicitly, call a model |
-| Provider adapters | Talk to Atlas, Model Studio, search | Leak vendor-specific field names upward |
+| Provider adapters | Talk to Atlas, Model Studio, search | Leak vendor-specific field names upward, or import from the core |
 | UI | Render state, collect input | Contain business rules |
 
 ## 4. Purity in the core
@@ -66,7 +71,7 @@ clock. That is what makes the engines testable at boundary values, which
 
 ## 5. Domain layer (built)
 
-`src/domain/` holds 23 modules including the barrel export, with no runtime logic
+`src/domain/` holds 25 modules including the barrel export, with no runtime logic
 beyond identifier casts. Notable deliberate choices:
 
 - **Branded identifiers.** A `TravellerId` cannot be passed where a `TripId` is
@@ -157,13 +162,75 @@ into indivisible travel units, and the search assigns units rather than
 individuals. Splitting a must-travel-with group is therefore unrepresentable
 rather than merely rejected.
 
+## 5d. AI and research layer (built, Phase 6)
+
+`src/adapters/` holds everything that touches a network. It is deliberately
+OUTSIDE `src/core/`, which the purity guard forbids from naming a model
+provider, reading a clock, using randomness or making a request.
+
+| Module | Responsibility |
+| --- | --- |
+| `modelStudio/config.ts` | Environment, endpoint construction, NOT CONFIGURED as a state |
+| `modelStudio/transport.ts` | One injectable HTTP method with a real deadline |
+| `modelStudio/prompts/` | Versioned prompts, reviewable and diffable |
+| `modelStudio/qwenLanguageUnderstanding.ts` | Chat Completions, structured output |
+| `modelStudio/qwenWebResearch.ts` | Responses API, `web_search` + `web_extractor` |
+| `modelStudio/responsesShape.ts` | Reads REAL source URLs out of tool-call output |
+| `modelStudio/sharedLinkReader.ts` | Reads one public link a user pasted |
+| `fixture/` | The same pipelines over recorded data, always labelled |
+| `registry.ts` | Provider selection. Returns the provider AND its mode, together |
+| `diagnostics.ts` | The only module permitted to write a provider log line |
+
+Two decisions worth naming.
+
+**Plain fetch, not the OpenAI SDK.** The transport is a one-method interface, so
+every adapter above it is testable against recorded response bodies with no
+network and no SDK internals. Phase 6 needs a great many of those tests, and an
+SDK type in a signature is a vendor detail that has already escaped the
+boundary.
+
+**Hand-written validation, not a schema library.** The failure taxonomy is the
+product: "the shape is wrong", "the shape is right but the content is
+impossible" and "the response tried to grant itself authority" are three
+different things to tell a person, and a generic validator collapses the last
+two into the first.
+
 ## 6. Persistence
 
 **Not chosen.** Phase 8. The domain model is deliberately serialisable and free
 of persistence concerns so that this decision stays open.
+
+This is why the Phase 6 understanding and research screens are SEPARATE routes
+from the fixture-backed demo trip. A live extraction produces real proposed
+travellers and real proposed constraints, and there is nowhere to keep them.
+Wiring them into the hero trip would mean inventing a session store, which
+would be fake persistence pretending to be real state. Two honest things,
+clearly separated, beat one dishonest one. The boundary closes in Phase 8.
 
 ## 7. Deployment
 
 **None.** The planned direction is a Next.js frontend with an Alibaba Cloud agent
 runtime, but no infrastructure exists and none may be provisioned without
 explicit founder approval. See `ALIBABA_CLOUD.md`.
+
+Phase 6 wrote a Model Studio client. It provisioned nothing, and has never
+contacted the service.
+
+## 8. Provenance is per subsystem
+
+Phase 5 had one banner for the whole application, which was correct while
+everything came from one place. Phase 6 removed it, along with the function
+that produced it.
+
+```
+GROUP UNDERSTANDING    Qwen - live            (or demo fixture extraction)
+DESTINATION RESEARCH   Model Studio web       (or recorded result)
+FLIGHT INVENTORY       Local fixture          (always. no parameter changes it)
+PROVIDER CAPACITY      Not connected
+ASSISTANCE             Traveller confirmed, provider pending
+```
+
+One global "live" label would now be true of the part somebody is looking at
+and false of the part they are about to trust. The old global banner was
+deleted rather than left unused, because a ready-made one sitting in the
+codebase is an invitation to reintroduce exactly that claim.

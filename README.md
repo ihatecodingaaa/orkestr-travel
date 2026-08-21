@@ -37,7 +37,7 @@ fewest questions that still make the trip work.
 
 ## Current status
 
-**Phases 0 through 5 complete.**
+**Phases 0 through 6 complete.**
 
 The deterministic core decides which flight offers are feasible for whom, what
 preferences they miss, and what it does not know. On top of that, the travel wave
@@ -53,7 +53,8 @@ it, reports honestly how much of the existing plan survived, and asks only the
 people whose own decisions moved. Where a plan misses somebody's preference it
 proposes an explicit compromise to that person rather than deciding for them.
 
-498 tests pass across 29 files. Lint and typecheck are clean.
+843 tests pass across 42 files, none of them touching a network. Lint,
+typecheck and the production build are clean.
 
 Phase 4 closes the outbound-only gap. A journey is now an ordered list of legs,
 each planned independently, so a group can get home again and a future multi-city
@@ -67,9 +68,23 @@ styled like a booking, a traveller confirming they need assistance is not styled
 like an airline confirming it can provide it, and no group surface carries a
 private figure.
 
-**There is still no real provider, no AI, no persistence and no deployment.** The
-app runs entirely offline from fixture data, makes no network request, has no
-sign-in, and never claims a seat is available.
+Phase 6 adds language understanding and evidence. A pasted group discussion
+becomes structured proposals, each showing the words it came from, and none of
+which can bind until the person it belongs to agrees. A bounded research question
+produces real, citable sources with each source's authority recorded, and
+community evidence is prevented **in code** from establishing an operational
+fact: reviews can tell you what a visit felt like, and cannot tell you a lift
+exists.
+
+**What Phase 6 did not do: call the live service.** No Alibaba Cloud Model
+Studio credential exists in this environment, so the client is written and
+unit-tested against recorded response bodies and has never been executed against
+Model Studio. With no key the application runs entirely offline, replays
+recorded data, and labels it as recorded on every screen. Adding a key switches
+it to live and changes the labels; it changes no other code.
+
+**There is still no flight provider, no persistence and no deployment.** Nothing
+here has a sign-in, and nothing ever claims a seat is available.
 
 `docs/IMPLEMENTATION_STATUS.md` is the authoritative status table and is kept
 brutally accurate. If a feature is not marked IMPLEMENTED there, it does not
@@ -88,6 +103,13 @@ declaring the trip impossible. See `docs/TRAVEL_WAVES.md`.
 research. They never decide whether a flight satisfies a confirmed hard
 requirement. That comparison is pure deterministic code, so it is testable,
 repeatable and explainable. See `docs/CONSTRAINT_ENGINE.md`.
+
+From Phase 6 that rule is enforced rather than intended. A model may propose a
+constraint and may never confirm one: the validator refuses the fields that
+carry authority, the schema sent to the provider does not offer them, and the
+mapper writes `origin: "MODEL_PROPOSED"` and `confirmation: "PROPOSED"` as
+literals. Thirteen tests assume a prompt injection succeeded completely and
+assert it changed nothing that matters.
 
 ---
 
@@ -108,6 +130,13 @@ src/core/       the deterministic engines
   repair/         impact radius and local-first plan repair
   providers/      MockFlightProvider, a local development adapter
   journey/        per-leg planning, package composition, validation
+  intent/         model output -> validated -> safely mapped proposals
+  research/       URL safety, source authority, claims, bounds, checks
+src/adapters/     everything that touches a network. server-only
+  modelStudio/      Qwen extraction, web research, shared links, prompts
+  fixture/          the same pipelines over recorded data, always labelled
+src/eval/       fictional evaluation cases and their scorer
+evals/          opt-in live scripts. never part of the quality gate
 src/ui/
   view/           view models: turn domain output into safe presentation state
   components/     presentational React, containing no business rules
@@ -133,6 +162,11 @@ Then open `/` and choose **Load the family demo**. The app needs no network,
 no keys and no configuration; everything it shows is fixture data compiled into
 the bundle. `docs/DEMO_SCRIPT.md` walks through the three-minute sequence.
 
+`/understand` reads a pasted group discussion. `/research` runs one bounded
+research question and shows every source behind it. Both work with no key,
+labelled as recorded; both go live if you copy `.env.example` to `.env.local`
+and add a Model Studio credential.
+
 Quality gates:
 
 ```bash
@@ -148,8 +182,20 @@ npm run typecheck
 npm test
 ```
 
-There is no application to run yet, only the checks. No environment variables
-are required; `.env.example` documents names for integrations that do not exist.
+Optional, and never part of the gate above, because they call a paid external
+service:
+
+```bash
+npm run smoke:model-studio   # one tiny fictional discussion
+npm run eval:qwen            # 17 fictional evaluation cases
+```
+
+With no credential both report NOT CONFIGURED and **skip**, which vitest reports
+as skipped rather than passed. A smoke test that quietly passes without calling
+anything reports success for work that did not happen.
+
+No environment variable is required for anything else. `.env.example` documents
+every name, and "not configured" is a supported state rather than an error.
 
 ---
 
@@ -166,6 +212,11 @@ never overstating what it knows.
 | Sandbox stays SANDBOX | Test-environment results are always visibly marked |
 | Stale stays STALE | Old data is flagged, not quietly presented as current |
 | A suggestion is never a booking | `SUGGESTED` and `BOOKED` are different states and always look different |
+| A model may propose, never confirm | Enforced in three independent places, not by prompt wording |
+| A citation must name a page we actually retrieved | A URL that appears only in generated prose is rejected |
+| Conflicting sources stay conflicting | Both statements are shown; neither is treated as the answer |
+| Provenance is per subsystem | A live model and a fixture flight list never share one label |
+| Recorded is never shown as live | And there is no automatic fallback from live to recorded |
 
 ---
 
@@ -191,6 +242,7 @@ Start with `docs/PRODUCT_SPEC.md` for what the product does, and
 | `ACCESSIBILITY.md` | Assistance needs and the age-inference ban |
 | `ATLAS_INTEGRATION.md` | Flight provider boundary and Atlas plan |
 | `ALIBABA_CLOUD.md` | Qwen, Model Studio and agent runtime plan |
+| `QWEN_INTEGRATION.md` | The Model Studio specifics: endpoints, prompts, validation, bounds |
 | `QODER_USAGE.md` | Recorded Qoder review stages |
 | `DEMO_SCRIPT.md` | The demo scenario and narrative |
 | `FAILURE_MODES.md` | What can go wrong and the intended behaviour |

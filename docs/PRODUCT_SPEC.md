@@ -1,8 +1,8 @@
 # Product Specification
 
-**Status:** specification. Principles 5 to 12 are now enforced by working code in
-the deterministic core and the travel wave engine; the rest remain design intent.
-See `IMPLEMENTATION_STATUS.md` for exactly what runs.
+**Status:** specification. All twelve principles are now enforced by working
+code. See `IMPLEMENTATION_STATUS.md` for exactly what runs, and for the one
+thing Phase 6 did not do.
 
 ## 1. What the product is
 
@@ -23,17 +23,17 @@ convention, the module is named.
 
 | # | Principle | How it is enforced |
 | --- | --- | --- |
-| 1 | **Extract first, ask second.** Use what has already been said before asking anything | Design rule for Phase 6 extraction |
+| 1 | **Extract first, ask second.** Use what has already been said before asking anything | `core/intent/`: free text becomes proposals with quotes, and only decision-changing ambiguities become questions. In research, user-shared links are read before any search runs |
 | 2 | **Minimum questioning.** Fewest people, fewest questions | `RepairQuestion` names exactly one traveller; compromise ranking puts fewest-travellers first |
 | 3 | **Preserve decisions.** Change the fewest existing decisions necessary | `ImpactAnalysis`, `DecisionsPreserved`, local-first repair (Phase 3) |
 | 4 | **Orkestr absorbs complexity.** Users see decisions, not research | `JourneyPackage.decisionsNeeded` (Phase 4) |
 | 5 | **Constraint ownership.** Every constraint belongs to one traveller | `Constraint.ownerTravellerId` is required |
-| 6 | **Consequential confirmation.** A proposed constraint is not authoritative until its owner confirms it | `origin` + `confirmation` + `consequential` |
+| 6 | **Consequential confirmation.** A proposed constraint is not authoritative until its owner confirms it | `origin` + `confirmation` + `consequential`, plus three independent guards in Phase 6: the schema refuses those fields, the provider schema does not offer them, and the mapper writes them as literals |
 | 7 | **Hard vs soft.** Hard is never silently violated; soft relaxes only through explicit compromise; unknown is a real third state | `ConstraintStrength`; wave states `FEASIBLE`/`INFEASIBLE`/`UNRESOLVED` |
 | 8 | **Privacy.** Private constraints are not attributed publicly | `ConstraintVisibility` |
-| 9 | **Deterministic feasibility.** Models never decide whether a flight satisfies a hard constraint | `FeasibilityReport` is produced by pure code only |
+| 9 | **Deterministic feasibility.** Models never decide whether a flight satisfies a hard constraint | `FeasibilityReport` is produced by pure code only, and `phase3Safety.test.ts` fails the build if any file under `src/core` so much as names a model provider |
 | 10 | **Model proposes, code decides.** | `EvaluableConstraintKind` vs `NarrativeConstraintKind` |
-| 11 | **Honest evidence.** Unknown stays unknown; community stays community; fixture stays fixture; sandbox stays sandbox; stale stays stale | `OfferEvidenceState`, `EvidenceSourceType`, `JourneyItemStatus`, and the truth-badge system that renders them |
+| 11 | **Honest evidence.** Unknown stays unknown; community stays community; fixture stays fixture; sandbox stays sandbox; stale stays stale | `OfferEvidenceState`, `SourceAuthority` separated from `EvidenceIngestionOrigin`, `EvidenceState`, `JourneyItemStatus`, the operational-fact downgrade in `core/research/claims.ts`, and per-subsystem provenance |
 | 12 | **Existing execution rails win.** Use Atlas for flights rather than pretending to be an airline | `FlightProvider` boundary, with `MockFlightProvider` behind it and no vendor name in core logic |
 
 ## 4. Privacy wording
@@ -56,6 +56,10 @@ The group is told the **effect**. Only the owner is told the **detail**.
 result always stays user-adjustable. **Age alone must never determine pace.**
 
 ## 6. Trip creation
+
+**Built in Phase 6.** `/understand` accepts a pasted group discussion and
+returns structured proposals, each showing the words it came from, with only
+the decision-changing ambiguities raised as questions.
 
 The entry point stays simple and accepts natural language. The full field set
 (multiple origins, destination alternatives, duration flexibility, age mix,

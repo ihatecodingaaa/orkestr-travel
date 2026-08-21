@@ -1,6 +1,6 @@
 # Constraint Engine
 
-**Status:** `IMPLEMENTED` (Phase 1).
+**Status:** `IMPLEMENTED` (Phase 1; model-proposed constraints added in Phase 6).
 
 Code: `src/core/feasibility/engine.ts`, `src/core/feasibility/rules.ts`,
 `src/core/constraint/authority.ts`. Types: `src/domain/constraint.ts`,
@@ -11,6 +11,29 @@ Code: `src/core/feasibility/engine.ts`, `src/core/feasibility/rules.ts`,
 Decide, for each flight offer and each traveller, whether the offer is possible.
 This engine is the reason the product can be trusted, so it contains no model
 call, no randomness and no network access.
+
+Phase 6 changed nothing here, deliberately. It added a way for constraints to
+ARRIVE from free text; it added no way for a model to decide anything about
+them. `tests/phase3Safety.test.ts` fails the build if any file under `src/core`
+so much as names a model provider.
+
+## 1b. A model-proposed constraint
+
+A constraint read from free text enters as:
+
+```
+origin:        MODEL_PROPOSED
+confirmation:  PROPOSED
+consequential: true      (for everything but a narrative note)
+visibility:    PRIVATE   (SENSITIVE for assistance; never PUBLIC)
+provenance:    the traveller's own words
+```
+
+`constraintAuthority` therefore returns `NEEDS_CONFIRMATION` for it: real,
+visible, owned, and evaluated against nothing until its owner agrees. That is
+the whole of Principle 6, and it is reached by construction rather than by
+checking — the mapper writes those first two values as literals, with no
+parameter or branch that could produce anything else.
 
 ## 2. The three strengths
 

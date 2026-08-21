@@ -1,6 +1,15 @@
 # Journey Package
 
-**Status:** `IMPLEMENTED` (Phase 4).
+**Status:** `IMPLEMENTED` (Phase 4; evidence-backed suggestions added in Phase 6).
+
+**Phase 6 note.** A researched suggestion is NOT a journey item. It becomes a
+candidate only after the deterministic checks in `core/research/suggestions.ts`
+pass — whole group after the reunion, every named traveller actually on the
+trip, inside the journey window, every cited claim present in the ledger — and
+even then it enters as `SUGGESTED`. There is no path that promotes anything to
+`VERIFIED` because a model liked it, and every suggestion carries
+`TRAVEL_TIME_UNVERIFIED` because no route provider exists and an invented
+duration would be relied on.
 
 Code: `src/core/journey/` (legPlanner, composer, assumptions, validate),
 `src/core/providers/mockFlightProvider.ts`.

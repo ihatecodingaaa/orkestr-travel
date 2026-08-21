@@ -3,8 +3,15 @@
 **Status:** `IMPLEMENTED` for the local build. Every screen below exists and
 runs offline with `npm run dev`.
 
-**Everything is LOCAL FIXTURE data.** No airline, no web search, no AI. The
-banner at the top of every screen says so, permanently, and is not a tooltip.
+**The `/demo` trip is entirely LOCAL FIXTURE data.** No airline, no web search,
+no model. The provenance board at the top of every screen says so per subsystem,
+permanently, and is not a tooltip.
+
+Phase 6 adds two screens that are NOT part of the fixture trip: `/understand`
+and `/research`. With no Model Studio credential they replay recorded data and
+label it as recorded. With a credential they call the live service, and the
+flight row on the board still reads `Local fixture`, because Phase 6 connected
+no airline.
 
 ---
 
@@ -25,6 +32,8 @@ button works as undo. Any point can be reached directly if something goes wrong:
 | Fare rise past a preference | `/demo/journey?stage=RYAN_JOINED&fare=SOFT_BREACH` |
 | Fare rise past a hard limit | `/demo/journey?stage=RYAN_JOINED&fare=HARD_BREACH` |
 | A private view | `/demo/participant/T-006?stage=RYAN_JOINED&fare=SOFT_BREACH` |
+| Reading a group chat | `/understand` |
+| The evidence layer | `/research` |
 
 The same address always produces the same screen. Nothing is random and nothing
 reads a clock.
@@ -147,6 +156,67 @@ Open the private view.
 
 ---
 
+## Two more minutes: what Phase 6 added
+
+Both screens below stand apart from the fixture trip on purpose. There is no
+persistence in this build, so a live extraction has nowhere to be kept, and
+wiring it into the demo trip would mean inventing a session store. Fake
+persistence pretending to be real state is exactly the kind of thing this
+product is built not to do. Say so out loud; it lands better than hiding it.
+
+### Reading a group chat
+
+`/understand`
+
+The box is pre-filled with a fictional family discussion. Press **Read this**.
+
+> "Seven people and six requirements, out of a conversation nobody filled a form
+> for. Every line shows the words it came from, because a machine's reading of
+> your own words is not something you should have to take on trust."
+
+Point at the two ambiguities:
+
+> "It noticed that 'direct is better' could be a requirement or a preference,
+> and that Ryan hasn't replied. It asks about those two things and nothing else,
+> because those are the only two where the answer changes the plan."
+
+Then the most important sentence in the demo:
+
+> "Nothing here is confirmed. A model may propose a requirement; only the person
+> it belongs to can make it binding. That is not a prompt asking nicely — the
+> validator refuses a response that even contains a confirmation field."
+
+If the build has no credential, the board says **Demo fixture extraction** and
+the screen says the reading is recorded. Do not describe it as live. It is a
+recorded reading, replayed through the same validation pipeline a live one goes
+through, and saying so is more impressive than the alternative.
+
+### The evidence layer
+
+`/research`
+
+Press **Run the research**.
+
+> "One bounded question: something a group of seven with a stated step-free
+> requirement can do together. Not 'research Tokyo' — a typed question with a
+> source limit and a deadline, so the spend and the claim are both bounded."
+
+Scroll to the sources, then to the claims:
+
+> "Two sources disagree about whether the pier can be reached without steps. We
+> show both and say we have not picked one. And this claim" — the lift one —
+> "came only from a forum post, so it is labelled as what visitors said and not
+> as an operational fact. Ten reviews saying step-free are ten people's
+> experience. They are not the operator."
+
+Then the rejected citation:
+
+> "The model cited a page no search returned. We rejected it. There is no way to
+> tell a real citation from an invented one by looking at it, so the only safe
+> test is whether we actually retrieved that page."
+
+---
+
 ## What a judge should take away
 
 1. **It doesn't give up.** No single flight works, so it finds the smallest split
@@ -157,16 +227,30 @@ Open the private view.
    claimed, and assistance is not confirmed just because somebody asked for it.
 4. **Privacy is structural.** The group learns the effect; only the owner learns
    the detail.
-5. **Nothing here is AI.** Every decision is deterministic and tested. Qwen
-   arrives in Phase 6 to read language and gather evidence, not to make these
-   judgements.
+5. **No feasibility decision is made by AI.** Qwen reads language and gathers
+   evidence. Whether 08:40 satisfies "not before 09:00" is a pure function with
+   unit tests, and a test fails the build if any file in the core so much as
+   names a model provider.
+6. **The provenance is per subsystem.** Understanding can be live while the
+   flights are still a fixture, and the board says exactly that. One global
+   "live" badge would be the easiest lie available, so the single banner was
+   deleted rather than left lying around.
 
 ---
 
 ## What is NOT in this demo
 
-Real flights. Real prices. Real availability. Any airline. Any web search. Any
-language model. Any account or login. Any saved data. Any booking or payment.
+Real flights. Real prices. Real availability. Any airline. Any account or login.
+Any saved data. Any booking or payment.
 
-Later phases replace the fixture provider with Atlas and add Qwen for extraction
-and research. Until then, the banner tells the truth on every screen.
+**And, unless a credential has been added:** any live model call and any live web
+search. The understanding and research screens replay recorded data and label it
+as recorded. Adding a Model Studio key to `.env.local` switches them to live and
+changes the labels; it changes no other code.
+
+**Never say "live" about a screen showing a recorded label.** If somebody asks
+whether it is really calling Qwen, the honest answer is worth more than the
+impressive one, and the labels on screen will contradict you anyway.
+
+A later phase replaces the fixture flight provider with Atlas. Until then, the
+board tells the truth on every screen.

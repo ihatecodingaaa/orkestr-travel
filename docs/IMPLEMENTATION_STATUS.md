@@ -7,9 +7,21 @@ If a capability is not marked `IMPLEMENTED` here, it does not work, regardless o
 what any other document, comment or UI label suggests. Any disagreement between
 this table and another document is a bug in the other document.
 
-- **Last updated:** 20 August 2026
-- **Phases completed:** Phase 0 (foundation), Phase 1 (deterministic core), Phase 2 (travel waves), Phase 3 (compromise and repair), Phase 4 (journey, legs, provider, package), Phase 5 (local interface)
-- **Phase in progress:** none. Awaiting founder approval to begin Phase 6.
+- **Last updated:** 21 August 2026
+- **Phases completed:** Phase 0 (foundation), Phase 1 (deterministic core), Phase 2 (travel waves), Phase 3 (compromise and repair), Phase 4 (journey, legs, provider, package), Phase 5 (local interface), Phase 6 (language understanding, evidence layer, bounded research)
+- **Phase in progress:** none. Awaiting founder approval to begin Phase 7.
+
+### The one thing to read first about Phase 6
+
+**No live call to Alibaba Cloud Model Studio has ever been made from this
+repository.** No credential exists in the development environment, so every
+Model Studio path is implemented, unit-tested against recorded response bodies,
+and **unverified against the live service**. The opt-in commands that would
+verify it (`npm run smoke:model-studio`, `npm run eval:qwen`) report
+`NOT CONFIGURED` and skip.
+
+Everything below distinguishes `IMPLEMENTED` from `UNVERIFIED` on exactly that
+basis.
 
 ## Legend
 
@@ -21,6 +33,7 @@ this table and another document is a bug in the other document.
 | `BLOCKED` | Cannot start until a named dependency is resolved |
 | `NOT IMPLEMENTED` | No design, no code |
 | `TYPES ONLY` | The shape is defined; **none of the behaviour exists** |
+| `UNVERIFIED` | Code exists and is tested against recorded data; **never executed against the live service** |
 
 ---
 
@@ -31,8 +44,8 @@ constraints and a set of flight offers, the system decides which offers are
 feasible, which preferences are missed, and what it does not know, with no model
 involvement and no network access.
 
-**There is still no application.** Nothing accepts user input, no UI exists, no
-flight provider is integrated, and no infrastructure has been provisioned.
+**There is an application, and it accepts user input.** What there is not is a
+flight provider, a persistence layer, or any provisioned infrastructure.
 
 Travel waves group travellers into the smallest sensible set of flights, honour
 must-travel-with relationships, and derive the temporal reunion boundary.
@@ -53,7 +66,18 @@ documented: a suggestion is not styled like a booking, a traveller confirming
 they need assistance is not styled like an airline confirming it can provide it,
 and no group surface carries a private figure.
 
-Verified at the last run: **498 tests across 29 files, all passing.** Lint,
+Phase 6 adds language understanding and evidence. Free text can now be read into
+proposed travellers and proposed constraints, each carrying the words it came
+from, and none of which can bind until its owner agrees. A bounded research
+question produces real, citable sources with each one's authority recorded, and
+community evidence is prevented **in code** from establishing an operational
+fact. The single fixture banner is gone, replaced by per-subsystem provenance,
+because a live language model and a fixture flight list can no longer share one
+label.
+
+What Phase 6 did NOT do: call the live service. See the note above.
+
+Verified at the last run: **843 tests across 42 files, all passing.** Lint,
 typecheck and the production build are clean.
 
 ---
@@ -66,17 +90,18 @@ typecheck and the production build are clean.
 | Remote git backup | `IMPLEMENTED` | `origin` = github.com/ihatecodingaaa/orkestr-travel (private) |
 | TypeScript strict configuration | `IMPLEMENTED` | `tsconfig.json`; `npm run typecheck` passes |
 | Lint with type-aware rules | `IMPLEMENTED` | `eslint.config.mjs`; verified with a deliberate failing probe |
-| Test runner | `IMPLEMENTED` | vitest; 498 tests |
+| Test runner | `IMPLEMENTED` | vitest; 843 deterministic tests, none touching a network |
 | Combined quality gate | `IMPLEMENTED` | `npm run check` |
-| Documentation structure | `IMPLEMENTED` | 21 documents in `docs/`, plus `README.md` |
+| Documentation structure | `IMPLEMENTED` | 22 documents in `docs/`, plus `README.md` |
 | CI pipeline | `NOT IMPLEMENTED` | Not yet configured |
-| Production build | `IMPLEMENTED` | `npm run build`; 7 routes. `npm run verify` runs the full gate |
+| Production build | `IMPLEMENTED` | `npm run build`; 9 routes. `npm run verify` runs the full gate |
+| Opt-in live commands, excluded from the gate | `IMPLEMENTED` | `npm run smoke:model-studio`, `npm run eval:qwen`; separate vitest config |
 
 ---
 
 ## Domain model
 
-Types and interfaces. 23 modules in `src/domain/`. Defining a type is **not** the
+Types and interfaces. 25 modules in `src/domain/`. Defining a type is **not** the
 same as implementing the behaviour it describes.
 
 | Type group | Status |
@@ -89,8 +114,10 @@ same as implementing the behaviour it describes.
 | Flight offers, provider interface, capability tri-state | `IMPLEMENTED` |
 | Feasibility result shapes | `IMPLEMENTED` |
 | Travel waves, travel units, reunion anchors | `IMPLEMENTED` - engine built, see below |
-| Compromise, commitment, trip events, impact, plan repair | `TYPES ONLY` - no engine |
-| Evidence model, research provider interface | `TYPES ONLY` - no provider |
+| Compromise, commitment, trip events, impact, plan repair | `IMPLEMENTED` - engines built in Phase 3 |
+| Proposed intent, extraction results, provider contracts | `IMPLEMENTED` - see Phase 6 below |
+| Evidence: sources, claims, authority, ingestion origin, states | `IMPLEMENTED` - see Phase 6 below |
+| Research questions, budget, shared links, suggestions | `IMPLEMENTED` - see Phase 6 below |
 | Journey, legs, days, items, package | `IMPLEMENTED` - see below |
 
 ---
@@ -264,12 +291,105 @@ one offer in isolation:
 
 ---
 
+## Language understanding (Phase 6)
+
+| Capability | Status | Module | Tests |
+| --- | --- | --- | --- |
+| Proposed-intent model, separate from domain types | `IMPLEMENTED` | `domain/intent.ts` | (throughout) |
+| Runtime schema validation of model output | `IMPLEMENTED` | `core/intent/schema.ts` | 35 |
+| Semantic validation, incl. quote-in-source | `IMPLEMENTED` | `core/intent/semantic.ts` | (in the 31) |
+| Safe mapping to domain, unconfirmed by construction | `IMPLEMENTED` | `core/intent/mapping.ts` | 31 |
+| Extraction pipeline with the full failure taxonomy | `IMPLEMENTED` | `core/intent/pipeline.ts` | (in the 31) |
+| Prompt-injection resistance | `IMPLEMENTED` | schema + mapper | 13 |
+| Versioned prompt `orkestr-intent-v1` | `IMPLEMENTED` | `adapters/modelStudio/prompts/intentV1.ts` | 25 (with research) |
+| Fixture extraction provider, same pipeline | `IMPLEMENTED` | `adapters/fixture/` | (in the 52) |
+| **Qwen extraction adapter (Model Studio)** | **`UNVERIFIED`** | `adapters/modelStudio/qwenLanguageUnderstanding.ts` | 52 against recorded bodies |
+| 17 fictional evaluation cases + scorer | `IMPLEMENTED` | `src/eval/cases.ts` | 11 |
+| Live evaluation run | `NOT IMPLEMENTED` | `npm run eval:qwen` | **no credential; skipped** |
+
+### What the extraction layer guarantees
+
+* No response can produce a confirmed constraint. Refused by the schema, absent
+  from the JSON Schema sent to the provider, and written as a literal by the
+  mapper.
+* No response is ever partially applied. One problem fails the whole extraction.
+* No proposal exists without the words it came from, and a quote that does not
+  appear in the supplied text fails semantic validation.
+* No traveller acquires an age band from text written about them.
+* No assistance need is inferred from an age, a family role, or a companion.
+
+---
+
+## Evidence layer and research (Phase 6)
+
+| Capability | Status | Module | Tests |
+| --- | --- | --- | --- |
+| Source authority from known-host configuration | `IMPLEMENTED` | `core/research/sources.ts` | 35 |
+| Ingestion origin, separate from authority | `IMPLEMENTED` | `domain/evidence.ts` | (in the 35) |
+| URL safety and SSRF refusal | `IMPLEMENTED` | `core/research/url.ts` | 47 |
+| URL normalisation and deduplication | `IMPLEMENTED` | `core/research/url.ts` | (in the 47) |
+| Citation resolution against retrieved sources | `IMPLEMENTED` | `core/research/sources.ts` | (in the 35) |
+| Operational-fact downgrade | `IMPLEMENTED` | `core/research/claims.ts` | (in the 35) |
+| Symmetric conflict recording | `IMPLEMENTED` | `core/research/claims.ts` | (in the 35) |
+| Computed freshness | `IMPLEMENTED` | `core/research/sources.ts` | (in the 35) |
+| Research budget and limit reporting | `IMPLEMENTED` | `core/research/budget.ts` | (in the 52) |
+| Deterministic suggestion checks | `IMPLEMENTED` | `core/research/suggestions.ts` | 20 |
+| Responses API output reader | `IMPLEMENTED` | `adapters/modelStudio/responsesShape.ts` | (in the 52) |
+| Recorded research provider, same pipeline | `IMPLEMENTED` | `adapters/fixture/fixtureResearch.ts` | (in the 52) |
+| **Qwen web research adapter (Model Studio)** | **`UNVERIFIED`** | `adapters/modelStudio/qwenWebResearch.ts` | 52 against recorded bodies |
+| **User-shared link reading** | **`UNVERIFIED`** | `adapters/modelStudio/sharedLinkReader.ts` | (in the 52) |
+| Direct TikTok / Instagram / Reddit APIs | `NOT IMPLEMENTED` | none, deliberately | n/a |
+| Scraping or browser automation | `NOT IMPLEMENTED` | none, deliberately | n/a |
+
+### What the evidence layer explicitly does NOT do
+
+| Not done | Why |
+| --- | --- |
+| Let a community source establish an operational fact | Downgraded in code. Ten reviews are ten experiences, not a statement from the operator |
+| Accept a citation to a page no tool returned | There is no way to tell a real one from an invented one by inspection, so membership is the only safe test |
+| Resolve a conflict | Both sides are kept and shown. Averaging destroys the only signal that the answer is uncertain |
+| Invent a travel time | No route provider exists. Every suggestion carries `TRAVEL_TIME_UNVERIFIED` |
+| Store scraped page text | Recorded results carry structure, source URLs, titles and dates. Never an article body |
+| Crawl, or follow links recursively | Bounded question, bounded sources, bounded calls, explicit limit reporting |
+| Infer anything from anybody age band | Age is passed as a count with an explicit instruction not to reason from it |
+| Assume a reservation is available | No reservation provider. Stays `RESERVATION_AVAILABILITY_UNKNOWN` |
+
+---
+
+## Interface (Phase 6 additions)
+
+| Capability | Status | Where | Tests |
+| --- | --- | --- | --- |
+| Per-subsystem provenance board | `IMPLEMENTED` | `src/ui/view/provenance.ts` | 16 |
+| Understanding review, quotes visible | `IMPLEMENTED` | `app/understand` | 30 (with evidence) |
+| Evidence and source rendering | `IMPLEMENTED` | `app/research` | (in the 30) |
+| Conflict rendering, both sides | `IMPLEMENTED` | `EvidencePanel.tsx` | (in the 30) |
+| Shared-link states, incl. blocked | `IMPLEMENTED` | `EvidencePanel.tsx` | (in the 30) |
+| Every extraction failure state | `IMPLEMENTED` | `understanding.ts` | (in the 30) |
+| Every research failure state | `IMPLEMENTED` | `research.ts` | (in the 30) |
+| Server-only boundary enforcement | `IMPLEMENTED` | `server-only` + build-output test | 11 |
+| Single global fixture banner | **REMOVED** | was `truth.ts` | n/a |
+
+### What the interface explicitly does NOT do in Phase 6
+
+| Not done | Why |
+| --- | --- |
+| Carry a live extraction into the demo trip | No persistence. A session store would be fake persistence pretending to be real state |
+| Show one global "live" label | Different subsystems have different provenance. One label would be false about whichever part somebody is about to trust |
+| Show a confidence percentage | A number invites a threshold nobody reviewed. The quote is the explanation |
+| Render raw extracted page text | Not useful, and not ours to republish |
+| Offer a refused URL as a clickable link | It was refused, so it is not offered |
+| Style anything researched as verified | A suggestion is a suggestion however good its sources are |
+
+---
+
 ## External integrations
 
 | Capability | Status | Blocker |
 | --- | --- | --- |
-| Qwen structured extraction | `BLOCKED` | Phase 6. Needs approval and Model Studio credentials |
-| Qwen web research | `BLOCKED` | Phase 6. Same |
+| Qwen structured extraction | `UNVERIFIED` | Client code complete and tested. No credential exists, so no live call has been made |
+| Qwen web research | `UNVERIFIED` | Same |
+| Model Studio account / credential | `NOT IMPLEMENTED` | None created. Required before either of the above can move to `IMPLEMENTED` |
 | Atlas flight search | `BLOCKED` | Phase 7. Needs real documentation and sandbox credentials |
 | Atlas offer verification | `BLOCKED` | Phase 7. Same |
 | Atlas sandbox order | `BLOCKED` | Phase 10. Explicit approval required |
@@ -280,7 +400,9 @@ one offer in isolation:
 
 **Every flight offer in this repository is a `LOCAL_FIXTURE`.** The fixture
 builder hard-codes that value with no override, so a test object cannot claim to
-have come from Atlas.
+have come from Atlas. Phase 6 connected a language model and a web search; it
+connected no airline, and the provenance board flight row reads `Local fixture`
+with no parameter that could change it.
 
 ---
 
@@ -290,6 +412,9 @@ have come from Atlas.
 | --- | --- | --- |
 | Domain shape tests | `IMPLEMENTED` | 7 tests |
 | Deterministic core tests | `IMPLEMENTED` | 129 tests |
+| Phase 6 extraction, evidence and adapter tests | `IMPLEMENTED` | 345 tests, no network |
+| Live smoke test | `NOT RUN` | `npm run smoke:model-studio` reports NOT CONFIGURED and skips |
+| Live evaluation | `NOT RUN` | `npm run eval:qwen` reports NOT CONFIGURED and skips 17 cases |
 | Boundary-value coverage | `IMPLEMENTED` | Budget, time, stops, bags, dates asserted below, at and above every limit |
 | Qoder review stages | `PLANNED` | Phase 11. Templates only |
 
@@ -306,5 +431,10 @@ resource, no AgentRun, no Function Compute, no Model Studio credential, no Atlas
 credential, no ATRIP credential, no DNS, no production environment variable, no
 database provisioning.
 
-The only outward-facing actions taken have been git pushes to the existing
-`orkestr_luc` GitHub repository, which the founder explicitly authorised.
+Phase 6 wrote a Model Studio client. It did not create a Model Studio account, a
+credential, or any other resource, and it has never contacted the service.
+
+The only outward-facing actions taken have been git pushes to the
+`orkestr-travel` GitHub repository, which the founder explicitly authorised. The
+separate `orkestr_luc` startup repository is out of scope and untouched; see
+`STARTUP_BOUNDARY.md`.

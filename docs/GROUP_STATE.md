@@ -1,9 +1,21 @@
 # Group State
 
-**Status:** `IMPLEMENTED` (Phase 1).
+**Status:** `IMPLEMENTED` (Phase 1; extraction entry point added in Phase 6).
 
 Code: `src/core/membership/membership.ts` (state machine),
 `src/core/trip/trip.ts` (derived views and validation). Covered by 26 tests.
+
+## 0. Where a group can now come from
+
+Phase 6 added a second entry point. Alongside a fixture group, a group can be
+read from a pasted discussion at `/understand`.
+
+Every traveller produced that way starts `INVITED`, not `JOINED`. Extraction
+discovers that somebody was **mentioned**; it does not discover that they agreed
+to come, and reading a name in a group chat is not consent to be on a flight.
+
+No extracted traveller receives an age band. Age is person-supplied, and text
+written *about* somebody is not that person supplying it.
 
 ## 1. Group size is never hard-coded
 

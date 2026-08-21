@@ -1,7 +1,7 @@
 # Failure Modes
 
-**Status:** analysis. No handling is implemented, because no behaviour is
-implemented.
+**Status:** `IMPLEMENTED` for every mode a built subsystem can reach. Each row
+below names where it is handled.
 
 The rule behind every row: **fail honestly**. A polished screen showing a plan
 that is not real is worse than a clear statement that something went wrong.
@@ -29,16 +29,68 @@ commitment stands, one traveller is asked, or the commitment is invalidated.
 
 ## 4. Model returns malformed or invalid output
 
-Extraction fails validation.
+**Implemented in Phase 6.** Six distinct outcomes, each with its own sentence on
+screen, because they are different things to tell a person:
 
-Correct behaviour: treat it as a failure, not a partial result. Fall back to
-asking the person directly. Never let unvalidated model output enter the domain.
+| Outcome | What happened |
+| --- | --- |
+| `MODEL_NOT_CONFIGURED` | No credential, so nothing was sent anywhere |
+| `MODEL_UNAVAILABLE` | The provider could not be reached |
+| `MODEL_TIMEOUT` | The deadline passed and the request was aborted |
+| `MALFORMED_JSON` | Not JSON at all |
+| `SCHEMA_INVALID` | Valid JSON of the wrong shape |
+| `SEMANTIC_VALIDATION_FAILED` | Right shape, impossible content |
+| `UNSAFE_OUTPUT` | The response tried to confirm something |
+
+**Nothing is ever partially applied.** A response where two constraints are fine
+and one is impossible fails entirely, because the valid half could be the wrong
+half. The screen says so in those words.
+
+The failure detail never carries the response text, which may contain the
+pasted discussion. A test asserts it.
 
 ## 5. Model proposes a wrong constraint
 
-Correct behaviour: this is why consequential constraints require owner
-confirmation. The proposal is shown with the quote it came from, so the owner can
-see the basis and correct it.
+**Implemented in Phase 6.** This is why consequential constraints require owner
+confirmation. The proposal is shown with the quote it came from, as visible text
+rather than a tooltip, so the owner can see the basis and correct it. Semantic
+validation rejects a quote that does not appear in the supplied discussion, so
+the explanation is real provenance rather than generated text resembling it.
+
+## 5b. Somebody pastes an instruction into the discussion
+
+**Implemented in Phase 6.** The correct behaviour is NOT to refuse the message.
+It is to carry on reading it as what it is, which is words somebody typed.
+
+The prompt says the discussion is data, and the block delimiter is neutralised
+against early closure. Both are mitigations. The control is that an injected
+instruction the model obeys completely still cannot obtain authority: the schema
+refuses the fields that carry it, and the mapper writes the safe values as
+literals. 13 tests assume the attack succeeded and assert nothing changed.
+
+## 5c. A model cites a source it never visited
+
+**Implemented in Phase 6.** There is no way to tell a real citation from an
+invented one by inspection, so citations are resolved against the sources the
+provider's tools actually returned. A URL that appears only in generated prose
+is rejected by name, the claim becomes `UNVERIFIED`, and the research screen
+lists what was rejected rather than hiding it.
+
+## 5d. A page a user shared cannot be read
+
+**Implemented in Phase 6.** A normal outcome, not an error. The state is
+`EXTRACTION_UNAVAILABLE`, the screen says "we could not read this page
+automatically" and that nothing about its contents has been guessed, and then
+asks the person why they saved it. There is deliberately no fallback that
+derives an interest from the hostname: a guess would be indistinguishable, on
+screen, from something the page actually said.
+
+## 5e. Research is unbounded, or hits its bound
+
+**Implemented in Phase 6.** Four questions, five sources each, six extracted
+pages, eight provider calls, 45 seconds. Hitting a bound produces
+`RESEARCH_LIMIT_REACHED` and the screen says the result is partial rather than
+presenting it as a complete answer.
 
 ## 6. Traveller never responds
 
@@ -98,10 +150,11 @@ upgraded to verified on the strength of community evidence.
 
 ## 9. Evidence conflicts
 
-Two sources disagree.
-
-Correct behaviour: `CONFLICTING`, shown as a disagreement with both sources. Not
-averaged, not silently resolved in favour of the more convenient one.
+**Implemented in Phase 6.** `CONFLICTING`, recorded symmetrically so neither side
+can be displayed alone, and rendered as "Sources disagree" with both statements
+and an explicit line saying Orkestr has not picked one. Not averaged, not
+silently resolved in favour of the more convenient one, and never relied on
+without confirmation.
 
 ## 10. Stale data
 
@@ -115,6 +168,24 @@ receive timestamps as inputs rather than reading the clock.
 
 ## 12. Demo-specific risk
 
-The highest-risk moment is a live provider call during a presentation. Mitigation
-is a recorded fallback that is clearly labelled as recorded, plus a rehearsed
-narration of what the label means. See `DEMO_SCRIPT.md`.
+The highest-risk moment is a live provider call during a presentation.
+
+Mitigation is a recorded structured result that is **labelled as recorded**,
+plus a rehearsed narration of what the label means. See `DEMO_SCRIPT.md`.
+
+**There is no automatic fallback from live to recorded.** If a live call fails,
+it fails, and the screen says which failure it was. A fixture answer appearing
+under a live label would be the single most damaging thing this product could
+do in front of an audience, because nobody watching could tell.
+
+## 13. One label covering subsystems with different provenance
+
+**The most likely honest-looking lie in the Phase 6 build.** A live language
+model and a fixture flight list under one "live" badge would be true of the
+part somebody is looking at and false of the part they are about to trust.
+
+Mitigation is structural: provenance is per subsystem, the flight row is fixed
+at `Local fixture` with no parameter that could change it, every row is rendered
+every time including the unflattering ones, and the Phase 5 global banner was
+**deleted** rather than left available. Twelve tests iterate every combination
+of subsystem modes and assert the flight and capacity rows never move.

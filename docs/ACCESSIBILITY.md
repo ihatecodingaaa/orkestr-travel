@@ -1,8 +1,9 @@
 # Accessibility and Assistance
 
-**Status:** types `IMPLEMENTED` (`src/domain/assistance.ts`). No provider
-integration exists, and the feasibility engine deliberately reports every
-assistance constraint as `DEFERRED_TO_LATER_PHASE` rather than assessing it.
+**Status:** `IMPLEMENTED` across the domain, the extraction layer and the
+evidence layer. **No provider integration exists**, so the feasibility engine
+still reports every assistance constraint as `DEFERRED_TO_LATER_PHASE` rather
+than assessing it, and no operator has confirmed anything.
 
 **In wave planning (Phase 2):** an assistance requirement makes its wave
 `UNRESOLVED`, and therefore its whole plan `UNRESOLVED`. It is never dropped and
@@ -41,6 +42,24 @@ removed. Colour never carries meaning alone: every truth badge pairs a colour
 with a word and a shape glyph. Motion is decoration only and is removed entirely
 under `prefers-reduced-motion`. The preservation percentage is `aria-hidden`
 because on its own it reads as "nothing happened"; the counts carry the meaning.
+
+**In extraction (Phase 6):** a need exists only where the text states it. The
+extraction prompt forbids inferring one from an age, a family role or a
+companion; the evaluation set contains a case that fails if a model reads "my
+mother who is 78" as a mobility requirement; and the mapper never assigns an
+age band at all, because age is person-supplied and text written *about*
+somebody is not that person supplying it.
+
+An extracted need arrives `SENSITIVE`, `confirmedByOwner: false` and
+`operationalStatus: UNKNOWN`. Three separate facts, none of them assumed.
+
+**In research (Phase 6):** an accessibility claim with no official or provider
+source behind it is downgraded **in code** to a community signal that needs
+confirmation. A suggestion for a group with a stated movement need is not
+refused when no official page exists, because refusing every venue without one
+would quietly exclude the person with the need from the trip. It is allowed
+through carrying `ACCESSIBILITY_UNVERIFIED` and an explicit task to check with
+the venue. What never happens is the claim being shown as settled.
 
 **In the journey package (Phase 4):** the need appears as an `ASSISTANCE_TASK`
 item with status `NEEDS_CONFIRMATION`, and as a
@@ -116,6 +135,14 @@ create an assistance requirement, never set the trip pace on its own, and never
 become a hard constraint. Explicit assistance requirements always take
 precedence over any age-derived assumption.
 
+In Phase 6 this is concrete. A research question carries volunteered age bands
+as a **count** ("1 older adult, 4 adults, 1 teen, 1 child"), immediately
+followed by: *use this only to check that everybody could take part, do not
+infer anybody's interests from it*. Stated interests appear BEFORE the age mix
+and are labelled "these matter most". The prompt separately forbids guessing
+the age of the people who wrote the sources. `tests/prompts.test.ts` asserts
+all of it, including the ordering.
+
 Language matters here. Bands are used to shape research queries such as
 "multigenerational family itinerary Tokyo", not to make assumptions about what a
 person can do.
@@ -133,3 +160,11 @@ provider that must display `NEEDS_CONFIRMATION`; community evidence that must
 fail to satisfy an accessibility requirement; an older traveller with no stated
 need who gets no inferred requirement; and a `mustTravelWith` caregiver pair that
 the wave engine must not separate.
+
+**All discharged.** `tests/evidenceLayer.test.ts` asserts a community-sourced
+accessibility claim is downgraded and needs confirmation;
+`tests/suggestionChecks.test.ts` asserts a community claim cannot clear a stated
+movement need while an official one can; `tests/evalCases.test.ts` asserts the
+scorer fails a reading that infers a need from somebody being 78; and
+`tests/intentMapping.test.ts` asserts an extracted need arrives SENSITIVE,
+unconfirmed by its owner and UNKNOWN to any provider.
