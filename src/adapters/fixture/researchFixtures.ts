@@ -192,7 +192,163 @@ const TOKYO_MULTIGEN: RecordedResearch = {
   ],
 };
 
-export const RECORDED_RESEARCH: readonly RecordedResearch[] = [TOKYO_MULTIGEN];
+
+/**
+ * RECORDED FROM A REAL LIVE CALL.
+ *
+ * Unlike the fixture above, which was written by hand to exercise the evidence
+ * rules, every URL and every statement below was returned by Alibaba Cloud Model
+ * Studio during a live `web_search` + `web_extractor` run on 2026-08-22. It
+ * completed in 54.2s, collected 6 sources and produced 12 claims, all of which
+ * resolved to a retrieved source and none of which were rejected as fabricated.
+ *
+ * WHY IT EXISTS: live research is slow by mandate, not by accident. The provider
+ * refuses to run `web_extractor` unless thinking mode is on, and thinking mode is
+ * what makes the call take a minute. Measured live: 54s, 57s, and three runs that
+ * exceeded 120s. A demo that depends on winning that coin flip in front of an
+ * audience is a demo that fails in front of an audience.
+ *
+ * WHAT WAS SANITISED: no page text is stored. Only URLs, the structured claims,
+ * and the relationships between them -- the same rule as every other fixture.
+ *
+ * WHAT IT MUST NEVER DO: claim to be live. The provider replaying it reports
+ * RECORDED_WEB, and the interface renders that differently from LIVE_WEB.
+ *
+ * The conflict in it is REAL and was not manufactured. The official Tokyo
+ * metropolitan accessibility page states four wheelchair-accessible restrooms;
+ * a community accessibility review counts five. Nobody arranged that. It is what
+ * the web actually said, and it is exactly the situation the evidence layer
+ * exists to surface rather than average away.
+ */
+const HAMARIKYU_ACCESS_LIVE: RecordedResearch = {
+  kind: "OFFICIAL_ACCESSIBILITY",
+  destinationLabel: "Hamarikyu Gardens",
+  label: "Hamarikyu Gardens, step-free access, recorded from a live run",
+  sources: [
+    // The two pages the extractor actually opened, in the order it opened them.
+    {
+      url: "https://www.daredemo-tokyo.metro.tokyo.lg.jp/en/facility/park/60089/",
+      title: "Tokyo Metropolitan accessibility record for the gardens",
+    },
+    {
+      url: "https://www.tokyo-park.or.jp/teien/en/hama-rikyu/",
+      title: "Hamarikyu Gardens, official park site",
+    },
+    // Community pages the search returned.
+    {
+      url: "https://www.accessible-japan.com/places/japan/tokyo/chuo/attractions/hama-rikyu-gardens/",
+      title: "Accessible Japan, venue page",
+    },
+    {
+      url: "https://www.accessible-japan.com/hama-rikyu-gardens-accessibility-review/",
+      title: "Accessible Japan, accessibility review",
+      rank: 1,
+      searchQuery: "Hamarikyu Gardens official accessibility step-free access wheelchair",
+    },
+    {
+      url: "https://www.j-g-a.org/hamarikyugardens-bf.html",
+      title: "Barrier-free notes for the gardens",
+      rank: 2,
+      searchQuery: "Hamarikyu Gardens official accessibility step-free access wheelchair",
+    },
+  ],
+  claims: [
+    {
+      statement: "Hamarikyu Gardens has 10 designated parking spaces for wheelchairs.",
+      claimType: "OPERATIONAL_FACT",
+      citedUrls: ["https://www.daredemo-tokyo.metro.tokyo.lg.jp/en/facility/park/60089/"],
+      subject: HAMARIKYU,
+    },
+    {
+      statement: "Hamarikyu Gardens offers 4 wheelchairs available for rental.",
+      claimType: "OPERATIONAL_FACT",
+      citedUrls: ["https://www.daredemo-tokyo.metro.tokyo.lg.jp/en/facility/park/60089/"],
+      subject: HAMARIKYU,
+    },
+    {
+      // Index 2. Contradicted by index 6 below, and says so.
+      statement: "Hamarikyu Gardens has 4 wheelchair-accessible restrooms.",
+      claimType: "OPERATIONAL_FACT",
+      citedUrls: ["https://www.daredemo-tokyo.metro.tokyo.lg.jp/en/facility/park/60089/"],
+      contradictsIndexes: [6],
+      subject: HAMARIKYU,
+    },
+    {
+      statement:
+        "The facility entrance at Hamarikyu Gardens has steps of less than 2cm, making it essentially step-free.",
+      claimType: "OPERATIONAL_FACT",
+      citedUrls: ["https://www.daredemo-tokyo.metro.tokyo.lg.jp/en/facility/park/60089/"],
+      subject: HAMARIKYU,
+    },
+    {
+      statement:
+        "A barrier-free route is marked around Hamarikyu Gardens with signs in Japanese and English.",
+      claimType: "COMMUNITY_SIGNAL",
+      citedUrls: ["https://www.accessible-japan.com/hama-rikyu-gardens-accessibility-review/"],
+      subject: HAMARIKYU,
+    },
+    {
+      statement:
+        "The pathways are not paved but padded dirt and gravel, which can become muddy after rain.",
+      claimType: "COMMUNITY_SIGNAL",
+      citedUrls: ["https://www.accessible-japan.com/hama-rikyu-gardens-accessibility-review/"],
+      subject: HAMARIKYU,
+    },
+    {
+      // Index 6. The community count that disagrees with the official one.
+      statement:
+        "There are 5 accessible toilets in the gardens, by the boat dock, near the Nakanogomon and Otemon gates, near Fujimi-yama hill, and near the tea house.",
+      claimType: "COMMUNITY_SIGNAL",
+      citedUrls: ["https://www.j-g-a.org/hamarikyugardens-bf.html"],
+      contradictsIndexes: [2],
+      subject: HAMARIKYU,
+    },
+    {
+      statement:
+        "The tea house on the island is not wheelchair accessible, and only one of the three bridges reaching it is, with some bumps.",
+      claimType: "COMMUNITY_SIGNAL",
+      citedUrls: ["https://www.accessible-japan.com/hama-rikyu-gardens-accessibility-review/"],
+      subject: HAMARIKYU,
+    },
+  ],
+  communitySummary: {
+    commonPositives: [
+      "a marked barrier-free route exists",
+      "map boards grade paths by width and slope",
+    ],
+    commonNegatives: [
+      "unpaved gravel paths get muddy after rain",
+      "the island tea house cannot be reached by wheelchair",
+    ],
+    disagreements: ["how many accessible toilets there are: the official record says 4, a community review counts 5"],
+  },
+  suggestions: [
+    {
+      title: "Hamarikyu Gardens, following the marked barrier-free route",
+      what: "A flat riverside garden with a signed step-free route and wheelchairs available to borrow.",
+      candidateSlot: "Day 2 morning",
+      reasons: [
+        {
+          text: "The entrance has steps under 2cm, which the city's own accessibility record states.",
+          claimIndex: 3,
+        },
+        {
+          text: "Four wheelchairs can be borrowed on site, so nobody has to bring one.",
+          claimIndex: 1,
+        },
+        {
+          text: "Visitors report the paths are gravel and get muddy, which is worth knowing before booking.",
+          claimIndex: 5,
+        },
+      ],
+    },
+  ],
+};
+
+export const RECORDED_RESEARCH: readonly RecordedResearch[] = [
+  TOKYO_MULTIGEN,
+  HAMARIKYU_ACCESS_LIVE,
+];
 
 export function findRecordedResearch(
   kind: ResearchQuestionKind,

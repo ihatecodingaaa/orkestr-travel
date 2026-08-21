@@ -123,3 +123,30 @@ One "live" badge covering that set would be true of whichever part somebody is
 looking at and false of the part they are about to trust. The Phase 5 global
 banner was deleted rather than left available, because a ready-made one in the
 codebase is an invitation to reintroduce the claim.
+
+## The recorded fallback is now a real recording (22 Aug 2026)
+
+`RECORDED_RESEARCH` previously held one hand-written scenario. It now also holds
+`HAMARIKYU_ACCESS_LIVE`, transcribed from an actual Model Studio run: 54.2s, 6
+sources, 12 claims, 0 rejected citations.
+
+**Why it exists.** Live research succeeded in three of six live attempts (see
+`QWEN_INTEGRATION.md` for the latency table). The failure is not recoverable by
+waiting longer, and it is not a defect we can fix -- `web_extractor` requires
+thinking mode, and thinking mode is the cost. A demo that needs to win a coin
+flip on stage needs a fallback that does not.
+
+**What was sanitised.** URLs, structured claims, and the relationships between
+them. No page text, exactly as with every other fixture.
+
+**What it may never do.** Claim to be live. The replaying provider reports
+`RECORDED_WEB`, the UI renders that distinctly from `LIVE_WEB`, and
+`tests/liveShapes.test.ts` asserts it explicitly. A recorded answer presented as
+a live one would be the single most effective lie available to a demo, which is
+why the assertion is written as a negative as well as a positive.
+
+**The conflict in it is real.** The Tokyo metropolitan accessibility record
+states four wheelchair-accessible restrooms; a community accessibility review
+counts five. That disagreement was not manufactured for the fixture -- it is
+what the web said on the day, and it is precisely the case the evidence layer
+exists to surface rather than average away.

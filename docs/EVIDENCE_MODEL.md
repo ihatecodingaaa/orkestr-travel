@@ -176,3 +176,61 @@ Every factual reason shown in a "why Orkestr suggested this" explanation carries
 either a real claim id or the name of a deterministic check that produced it.
 `SuggestionReason` is a union of exactly those two shapes, so a third kind of
 reason cannot be constructed and therefore cannot be displayed.
+
+## What a live run actually produced (22 Aug 2026)
+
+One question -- step-free access at Hamarikyu Gardens, for a group of seven with
+a stated requirement -- run against real `web_search` and `web_extractor`.
+
+```
+outcome: SUCCESS          durationMs: 54210
+searchOperations: 1       pagesExtracted: 3
+sourcesCollected: 6       rejectedCitations: 0
+claims: 12                invariants: PASS
+```
+
+Of the 12 claims: 5 `OPERATIONAL_FACT`, 7 `COMMUNITY_SIGNAL`, 2 `CONFLICTING`,
+and **every one resolved to a source the provider had actually returned**. Every
+operational fact had an `OFFICIAL_WEB` source behind it; no community page was
+allowed to state one.
+
+### The defect this run exposed, and the run before it hid
+
+An earlier live run reported the same `SUCCESS` and looked fine. It was not:
+every claim carried **zero** sources, and three citations were rejected --
+including two genuinely official pages the extractor had just read.
+
+The cause was that extracted pages were counted in the spend ledger but never
+passed to `collectSources`. Only search *hits* became sources. So when the model
+cited the page it had actually opened and read, that citation resolved against a
+set that did not contain it, and was rejected as fabricated. **The invariant was
+working perfectly and rejecting the truth.**
+
+The fix collects extracted URLs first, ahead of search hits, so the pages the
+extractor opened are in the set before anything cites them. The ordering is
+deliberate and visible in the output: extracted sources carry no `rank` and no
+`searchQuery`, because they did not come from a search.
+
+Two lessons worth keeping:
+
+* A green `SUCCESS` line is not evidence that the evidence layer worked. The
+  count of claims with zero sources is the number that would have caught this,
+  and it is now printed by the harness.
+* An integrity check that rejects real provenance is worse than useless, because
+  it looks like diligence. The rejection log is the place that defect surfaced,
+  and rejected-citation counts should be read as a signal about *our* pipeline
+  before they are read as a signal about the model.
+
+### Entity binding, live
+
+Claims returned by the live model arrive with **no subject**, so they are stored
+as `UNSPECIFIED`. `UNSPECIFIED` matches nothing, which means none of them can
+clear a stated accessibility requirement.
+
+That is the fail-safe behaving exactly as designed, and it is also a real
+limitation: the research prompt does not yet ask the model to name what each
+claim is about, so useful official facts cannot currently be bound to the venue
+they describe. The recorded fixture binds subjects explicitly, which is why the
+replay path can demonstrate the matching that the live path cannot yet reach.
+Closing this means adding a subject field to the research payload -- a change to
+the prompt and the schema, not to the safety rule.

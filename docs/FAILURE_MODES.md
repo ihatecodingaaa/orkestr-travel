@@ -209,3 +209,17 @@ at `Local fixture` with no parameter that could change it, every row is rendered
 every time including the unflattering ones, and the Phase 5 global banner was
 **deleted** rather than left available. Twelve tests iterate every combination
 of subsystem modes and assert the flight and capacity rows never move.
+
+## Live failures observed in Phase 6.6
+
+| Symptom | Real cause | How to tell |
+|---|---|---|
+| Research times out at 120s | Provider returned nothing at all | `searchOperations: 0` in diagnostics. A slow run still reports operations. |
+| Shared link "unavailable" in ~130ms | Our request was malformed; a 400 came back | Duration. A real failed extraction takes 10-20s. Check `rejectionReason`. |
+| Claims have 0 sources but outcome is SUCCESS | Extracted pages were never collected as sources | `rejectedCitations` names pages the extractor definitely read. |
+| `web_extractor` 400s | Declared without `web_search`, or with `enable_thinking: false` | The 400 message states which. Both are documented in `QWEN_INTEGRATION.md`. |
+
+**The general rule this phase established: check the duration before believing
+the failure.** Three separate defects in this phase produced honest-looking
+failure states that were actually our own bugs, and in every case the wall-clock
+time gave it away before the error message did.

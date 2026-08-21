@@ -152,3 +152,37 @@ disagreements, and the source links. The count comes from the ledger, never from
 the model.
 
 See `EVIDENCE_MODEL.md` for what community evidence may and may not establish.
+
+## Verified live (22 Aug 2026)
+
+Two pasted URLs, two opposite outcomes, both genuine:
+
+| URL | Result | Duration | Interest proposed |
+|---|---|---|---|
+| `tokyo-park.or.jp/teien/en/hama-rikyu/` | `EXTRACTED` | 17.2s | "visiting a traditional Japanese garden" (`INFERRED`) |
+| `tiktok.com/@tokyo/video/7200000000000000000` | `EXTRACTION_UNAVAILABLE` | 14.8s | none |
+
+The TikTok video ID was **deliberately fabricated**, so there was no page to
+read. What makes this the useful test is that the request also carried the user
+note *"the night market bit"*. The model therefore had a plausible hint sitting
+in its context and could easily have produced "night market food" as an interest
+-- which would have looked entirely reasonable on screen and been entirely
+invented. It returned `readable: false` instead, and the adapter proposed no
+interest at all.
+
+The 14.8s duration matters: it confirms a real extraction attempt was made and
+failed, rather than the request being rejected locally. An earlier run of this
+same check returned `EXTRACTION_UNAVAILABLE` in 127ms, which looked like the same
+result and was not -- it was a 400 caused by our own malformed request. **A fast
+unavailable is a bug; a slow unavailable is an answer.** That distinction is now
+the first thing to check if this path regresses.
+
+The user's own note survives either way, and is better evidence of what they want
+than anything read off a page.
+
+### What this does and does not establish
+
+It does not establish that TikTok is unsupported. One fabricated URL failing is
+not a platform verdict, and no conclusion about platform support should be drawn
+from it. It establishes the property that matters: when a page cannot be read,
+nothing is invented to fill the gap.

@@ -7,24 +7,32 @@ If a capability is not marked `IMPLEMENTED` here, it does not work, regardless o
 what any other document, comment or UI label suggests. Any disagreement between
 this table and another document is a bug in the other document.
 
-- **Last updated:** 22 August 2026 (live extraction verified)
-- **Phases completed:** Phase 0 (foundation), Phase 1 (deterministic core), Phase 2 (travel waves), Phase 3 (compromise and repair), Phase 4 (journey, legs, provider, package), Phase 5 (local interface), Phase 6 (language understanding, evidence layer, bounded research)
-- **Phase in progress:** none. Phase 6.5 (live verification) is BLOCKED on a
-  credential the founder has not created. Phase 7 not started.
+- **Last updated:** 22 August 2026 (live research and shared links verified)
+- **Phases completed:** Phase 0 (foundation), Phase 1 (deterministic core), Phase 2 (travel waves), Phase 3 (compromise and repair), Phase 4 (journey, legs, provider, package), Phase 5 (local interface), Phase 6 (language understanding, evidence layer, bounded research), Phase 6.5 (live extraction), Phase 6.6 (live Responses API, web research, evidence, shared links)
+- **Phase in progress:** none. Phase 7 not started.
 
-### The one thing to read first about Phase 6
+### The one thing to read first about Phase 6.6
 
-**Qwen structured extraction has now been verified against the live service.**
-A credential exists on the founder's machine and 38 real calls have been made:
-one smoke, two adversarial, and two full 17-case evaluations.
+**The research side is now live-verified too.** `web_search`, `web_extractor`,
+the Responses API, the evidence layer and the user-shared-link path have all been
+executed against the real service and produced real, checked results.
 
-Everything else Model Studio can do -- the Responses API, `web_search`,
-`web_extractor`, research as a whole -- remains **`LIVE UNVERIFIED`**. Those
-code paths have never been executed against the real service, and a passing
-mock is not evidence that an integration works.
+What that verification actually found matters more than the fact of it:
+
+* **Three separate defects were caught only because the calls were real.** All
+  three passed every offline test. One of them -- extracted pages never being
+  collected as sources -- made a run report `SUCCESS` while producing 12 claims
+  with zero sources and rejecting two genuinely official pages as fabricated.
+* **Research succeeds roughly half the time.** Three of six live attempts
+  completed, at 54-57s; the other three exceeded the ceiling with zero search
+  operations. This is not tunable: `web_extractor` requires thinking mode, and
+  thinking mode is the latency. A recorded fallback exists for this reason.
+* **Live claims arrive with no subject**, so they are `UNSPECIFIED` and can clear
+  no accessibility requirement. The fail-safe works; the capability is limited.
 
 Everything below distinguishes `IMPLEMENTED OFFLINE` from `LIVE UNVERIFIED` on
-exactly that basis. A passing mock is not evidence that an integration works.
+exactly that basis. A passing mock is not evidence that an integration works, and
+this phase produced three separate proofs of it.
 
 Check the current state yourself, offline, in one second:
 
@@ -353,11 +361,13 @@ one offer in isolation:
 | Deterministic suggestion checks | `IMPLEMENTED` | `core/research/suggestions.ts` | 20 |
 | Responses API output reader | `IMPLEMENTED` | `adapters/modelStudio/responsesShape.ts` | (in the 52) |
 | Recorded research provider, same pipeline | `IMPLEMENTED` | `adapters/fixture/fixtureResearch.ts` | (in the 52) |
+| Recorded fallback transcribed from a real live run | `IMPLEMENTED` | `adapters/fixture/researchFixtures.ts` | 4, incl. "never reports itself as live" |
+| Claim subject binding on **live** claims | **`NOT IMPLEMENTED`** | the research prompt never asks for a subject | Live claims are `UNSPECIFIED`, so they clear no stated requirement. Fail-safe holds; capability is limited |
 | Responses API parser | `IMPLEMENTED OFFLINE` | `adapters/modelStudio/responsesShape.ts` | (in the 52) |
-| **Real `web_search`** | **`LIVE UNVERIFIED`** | `adapters/modelStudio/qwenWebResearch.ts` | 52 against recorded bodies |
-| **Real `web_extractor`** | **`LIVE UNVERIFIED`** | same | (in the 52) |
+| **Real `web_search`** | **`LIVE VERIFIED`** | `adapters/modelStudio/qwenWebResearch.ts` | Real sources captured; 6 live runs, 3 succeeded |
+| **Real `web_extractor`** | **`LIVE VERIFIED`** | same | 3 pages opened in one run. Requires `web_search` + thinking mode |
 | User-shared link logic (safety, states, interest) | `IMPLEMENTED OFFLINE` | `adapters/modelStudio/sharedLinkReader.ts` | (in the 52) |
-| **Real user-shared page extraction** | **`LIVE UNVERIFIED`** | same | (in the 52) |
+| **Real user-shared page extraction** | **`LIVE VERIFIED`** | same | Readable page extracted (17.2s); unreadable page invented nothing (14.8s) |
 | Direct TikTok / Instagram / Reddit APIs | `NOT IMPLEMENTED` | none, deliberately | n/a |
 | Scraping or browser automation | `NOT IMPLEMENTED` | none, deliberately | n/a |
 
@@ -408,7 +418,7 @@ one offer in isolation:
 | Capability | Status | Blocker |
 | --- | --- | --- |
 | Qwen structured extraction | `LIVE VERIFIED` | 38 live calls. 15/17 evaluation cases pass; 100% authority safety and injection containment |
-| Qwen web research | `LIVE UNVERIFIED` | Same |
+| Qwen web research | `LIVE VERIFIED`, but **unreliable** | Succeeds in ~half of runs at 54-57s; the rest exceed 120s with zero search operations. Not tunable -- see `QWEN_INTEGRATION.md`. Recorded fallback exists |
 | Model Studio account / credential | `CONFIGURED` | Singapore workspace, on the founder's machine only. Never in this repository |
 | Alibaba Cloud account setup | `CONFIGURED` | Singapore region, Model Studio active |
 | External-call kill switch | `IMPLEMENTED` | `MODEL_STUDIO_MODE`, default `disabled`. See `PROVIDER_MODES.md` |

@@ -341,3 +341,75 @@ validation refused the whole response -- the validator doing precisely its job.
 - No Atlas integration. Flights remain a local fixture.
 - No persistence, so live extraction is demonstrated on its own route rather
   than carried into the fixture-backed trip. See `ARCHITECTURE.md` section 6.
+
+## Two provider constraints on `web_extractor` (verified live, 22 Aug 2026)
+
+Both were found by calling the API. Neither is the shape a reasonable person
+would guess, and both are the kind of thing a later cleanup would "simplify"
+straight back into a 400.
+
+### 1. `web_extractor` may not be declared alone
+
+```
+400 InternalError.Algo.InvalidParameter:
+The web_extractor tool must be executed with web_search tool.
+```
+
+Even when the URL is already known and searching is pointless -- reading a link
+a user pasted -- `web_search` must be declared alongside it.
+
+This has a safety consequence. Declaring search gives the model a way to answer
+about a page it could not open, by finding a different page on the same subject.
+For a pasted link that would put a stranger's summary on screen as though we had
+read the user's own page. The capability cannot be withdrawn, so the shared-link
+system prompt forbids searching explicitly, and `readable: false` remains the
+required answer for a page that would not open. `tests/providerAdapters.test.ts`
+asserts both the tool pair and the instruction.
+
+### 2. `web_extractor` may not run with thinking disabled
+
+```
+400 InternalError.Algo.InvalidParameter:
+Normal mode does not support web_extractor.
+Please set enable_thinking to true.
+```
+
+This is the exact opposite of what the structured-extraction path needs. Both
+settings are mandatory, and they disagree:
+
+| Path | Endpoint | `enable_thinking` | Why |
+|---|---|---|---|
+| Structured intent extraction | `/chat/completions` | **`false`** | Leaving it on buffers a reasoning phase and hangs past 30s. Setting it false took the call to ~10s. |
+| Web research, shared links | `/responses` | **`true`** | `web_extractor` is refused without it. |
+
+**This is the real explanation for research latency**, and it closes the question
+of whether the timeouts were a bug worth chasing. Reading pages requires thinking
+mode; thinking mode is what makes the call take a minute. The cost is imposed by
+the tool, not by our configuration, and no timeout change recovers it.
+
+## Measured live latency
+
+Every figure below is an observed wall-clock duration from this project, not an
+estimate.
+
+| Call | Duration | Outcome |
+|---|---|---|
+| Responses API smoke (no tools) | 4.9s | success |
+| Structured extraction, `enable_thinking: false` | ~10.2s | success |
+| Shared link, one page | 14.8s - 17.2s | success |
+| Web research | 54.2s | success |
+| Web research | 55.1s | success |
+| Web research | 57.1s | success |
+| Web research | >120s | timeout |
+| Web research | >120s | timeout |
+| Web research | >30s | timeout (against the old 30s ceiling) |
+
+Research succeeded in three of six attempts at a 120s ceiling. **That is a coin
+flip, and it is why a recorded fallback exists** -- see `PROVIDER_MODES.md`. The
+successful runs cluster tightly at 54-57s, so the failures are not merely slow
+runs: the 120s failures reported *zero* search operations, meaning nothing came
+back at all rather than something coming back late.
+
+Raising the ceiling further was considered and rejected. A minute is already past
+what a person will wait, and nothing in the evidence suggests a longer wait would
+have helped.

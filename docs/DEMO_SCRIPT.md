@@ -291,3 +291,41 @@ impressive one, and the labels on screen will contradict you anyway.
 
 A later phase replaces the fixture flight provider with Atlas. Until then, the
 board tells the truth on every screen.
+
+## Which mode to demo in (decide before you start, not on stage)
+
+`MODEL_STUDIO_MODE` controls this. It defaults to `disabled`, and a credential
+alone cannot switch it on.
+
+| Segment | Mode to use | Why |
+|---|---|---|
+| Understanding what a group said | `live` | ~10s, reliable across 38 live calls. Show it live. |
+| Reading a link someone pasted | `live` | 15-17s, reliable. The refusal case is the better demo. |
+| Web research with evidence | **`recorded`** | Live succeeds in about half of runs and takes ~55s when it does. |
+
+**Do not demo live research on stage.** Three of six live attempts exceeded 120s,
+and the cause is not fixable by waiting: `web_extractor` requires thinking mode,
+and thinking mode is the latency. The recorded fallback in
+`adapters/fixture/researchFixtures.ts` is transcribed from a real successful run,
+so it shows genuine sources and a genuine conflict -- it is a recording of the
+truth, not a mock-up of it.
+
+Say so out loud when you switch. The interface labels recorded results as
+`RECORDED_WEB` and never as live; claiming otherwise would be the one thing this
+whole architecture is built to prevent, and an audience that catches it stops
+believing everything else.
+
+### The strongest 90 seconds
+
+1. **Paste a TikTok link that cannot be read**, with a note like "the night
+   market bit". It returns nothing. No interest is proposed, and the note is
+   kept. Point out that the system had a plausible hint available and declined
+   to use it -- most systems would have shown "night market food" here.
+2. **Show the accessibility conflict** in the recorded research: the city's
+   official record says four accessible restrooms, a community review counts
+   five. Both are shown, both flagged for confirmation, neither averaged away.
+3. **Point at a community source claiming an operational fact.** It is
+   downgraded to a community signal automatically. A forum post cannot tell you
+   a venue is step-free.
+
+All three are refusals. That is the product.

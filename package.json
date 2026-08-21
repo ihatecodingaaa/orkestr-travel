@@ -22,7 +22,11 @@
     "eval:qwen": "vitest run --config vitest.live.config.ts evals/extraction.live.ts",
     "preflight:model-studio": "node scripts/preflight.mjs",
     "check:secrets": "node scripts/checkSecrets.mjs",
-    "adversarial:qwen": "vitest run --config vitest.live.config.ts evals/adversarial.live.ts"
+    "adversarial:qwen": "vitest run --config vitest.live.config.ts evals/adversarial.live.ts",
+    "smoke:responses": "vitest run --config vitest.live.config.ts evals/responsesSmoke.live.ts",
+    "research:live": "vitest run --config vitest.live.config.ts evals/research.live.ts",
+    "research:diagnose": "vitest run --config vitest.live.config.ts evals/researchDiagnostic.live.ts",
+    "shared:live": "vitest run --config vitest.live.config.ts evals/sharedLinks.live.ts"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.0",
