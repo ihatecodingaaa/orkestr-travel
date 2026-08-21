@@ -65,7 +65,7 @@ degrades the demo rather than destroying it.
 Phase 6 was built to the same standard, and the risk has already materialised:
 no Model Studio credential exists, so the client is written and unit-tested but
 has never been run against the service. The application still runs, still
-builds, still passes 843 tests, and still demonstrates the whole understanding
+builds, still passes 860 tests, and still demonstrates the whole understanding
 and research flow from recorded data that is **labelled as recorded**. Adding a
 key switches it to live and changes the labels; it changes no other code.
 

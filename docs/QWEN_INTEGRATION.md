@@ -265,7 +265,7 @@ npm run eval:qwen            # 17 fictional evaluation cases
 Neither is part of `npm test`, `npm run check` or `npm run verify`. They use a
 separate vitest config with a separate include glob, so they cannot be picked up
 by the deterministic gate. If a network outage could turn that suite red, the
-reflex becomes to distrust it, and at that point the other 843 tests stop
+reflex becomes to distrust it, and at that point the other 860 tests stop
 meaning anything.
 
 With no credentials both report `NOT CONFIGURED` and **skip**. Skipped is not

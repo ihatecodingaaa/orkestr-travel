@@ -77,7 +77,7 @@ label.
 
 What Phase 6 did NOT do: call the live service. See the note above.
 
-Verified at the last run: **843 tests across 42 files, all passing.** Lint,
+Verified at the last run: **860 tests across 43 files, all passing.** Lint,
 typecheck and the production build are clean.
 
 ---
@@ -90,7 +90,7 @@ typecheck and the production build are clean.
 | Remote git backup | `IMPLEMENTED` | `origin` = github.com/ihatecodingaaa/orkestr-travel (private) |
 | TypeScript strict configuration | `IMPLEMENTED` | `tsconfig.json`; `npm run typecheck` passes |
 | Lint with type-aware rules | `IMPLEMENTED` | `eslint.config.mjs`; verified with a deliberate failing probe |
-| Test runner | `IMPLEMENTED` | vitest; 843 deterministic tests, none touching a network |
+| Test runner | `IMPLEMENTED` | vitest; 860 deterministic tests, none touching a network |
 | Combined quality gate | `IMPLEMENTED` | `npm run check` |
 | Documentation structure | `IMPLEMENTED` | 22 documents in `docs/`, plus `README.md` |
 | CI pipeline | `NOT IMPLEMENTED` | Not yet configured |
@@ -412,7 +412,7 @@ with no parameter that could change it.
 | --- | --- | --- |
 | Domain shape tests | `IMPLEMENTED` | 7 tests |
 | Deterministic core tests | `IMPLEMENTED` | 129 tests |
-| Phase 6 extraction, evidence and adapter tests | `IMPLEMENTED` | 345 tests, no network |
+| Phase 6 extraction, evidence, adapter and route tests | `IMPLEMENTED` | 362 tests, no network |
 | Live smoke test | `NOT RUN` | `npm run smoke:model-studio` reports NOT CONFIGURED and skips |
 | Live evaluation | `NOT RUN` | `npm run eval:qwen` reports NOT CONFIGURED and skips 17 cases |
 | Boundary-value coverage | `IMPLEMENTED` | Budget, time, stops, bags, dates asserted below, at and above every limit |

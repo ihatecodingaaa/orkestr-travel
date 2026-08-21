@@ -53,7 +53,7 @@ it, reports honestly how much of the existing plan survived, and asks only the
 people whose own decisions moved. Where a plan misses somebody's preference it
 proposes an explicit compromise to that person rather than deciding for them.
 
-843 tests pass across 42 files, none of them touching a network. Lint,
+860 tests pass across 43 files, none of them touching a network. Lint,
 typecheck and the production build are clean.
 
 Phase 4 closes the outbound-only gap. A journey is now an ordered list of legs,

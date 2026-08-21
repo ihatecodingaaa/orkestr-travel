@@ -122,9 +122,27 @@ export async function runResearchAction(
   const supportedClaims = ledger.claims.filter(
     (c) => c.state !== "UNVERIFIED" && c.state !== "CONFLICTING",
   );
-  const accessClaimIds = ledger.claims
-    .filter((c) => c.claimType === "OPERATIONAL_FACT" && !c.needsConfirmation)
-    .map((c) => c.id as string);
+
+  /**
+   * No claim is offered as clearing an accessibility need.
+   *
+   * `accessClaimIds` means "claims asserting THIS venue meets THIS need", and
+   * nothing in the current pipeline can identify one. An earlier version passed
+   * every official operational fact, which was wrong in a way worth naming: an
+   * official transport page saying the metro publishes step-free route
+   * information is a real, officially-sourced fact, and it says nothing about
+   * whether a garden's teahouse is reachable without steps. Treating it as
+   * clearance would have removed the ACCESSIBILITY_UNVERIFIED flag from a
+   * suggestion nobody had checked.
+   *
+   * So the safe default is an empty list. Every suggestion for a group with a
+   * stated movement need carries the unknown and an explicit task to check with
+   * the venue. `checkSuggestion` keeps the ability to clear a need when a caller
+   * can genuinely identify an official, access-specific claim; the research
+   * pipeline cannot yet, and pretending otherwise is exactly the overclaim the
+   * evidence layer exists to prevent.
+   */
+  const accessClaimIds: readonly string[] = [];
 
   const candidates: readonly CandidateSuggestion[] =
     supportedClaims.length === 0

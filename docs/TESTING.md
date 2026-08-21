@@ -4,7 +4,7 @@
 
 ## 1. Current state, honestly
 
-**843 tests across 42 files, all passing. None of them touches a network.**
+**860 tests across 43 files, all passing. None of them touches a network.**
 
 | Suite | Tests | Covers |
 | --- | --- | --- |
@@ -50,6 +50,7 @@
 | `evalCases.test.ts` | 11 | The evaluation set and its scorer |
 | `ui/provenance.test.ts` | 16 | No subsystem borrows another's credibility |
 | `ui/phase6Components.test.tsx` | 30 | Quotes, conflicts, sources, unknowns on screen |
+| `routeActions.test.ts` | 17 | The server actions end to end, and what may cross to a client |
 
 There are no tests against a real provider, because no test may call one. Every
 adapter is tested against recorded response bodies through an injectable
@@ -141,7 +142,7 @@ glob (`evals/**/*.live.ts`), so neither can be picked up by `npm test`,
 **Why that separation is not optional.** A network outage, a rate limit or an
 expired key must not turn the deterministic suite red. If a live failure could
 fail the gate, the reflex becomes to distrust the gate, and at that point the
-other 843 tests stop meaning anything.
+other 860 tests stop meaning anything.
 
 With no credentials both report `NOT CONFIGURED` and **skip**. Skipped is not
 passed: a smoke test that quietly passes without calling anything reports
