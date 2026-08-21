@@ -4,7 +4,7 @@
 
 ## 1. Current state, honestly
 
-**860 tests across 43 files, all passing. None of them touches a network.**
+**885 tests across 44 files, all passing. None of them touches a network.**
 
 | Suite | Tests | Covers |
 | --- | --- | --- |
@@ -74,11 +74,14 @@ plans directly so every criterion is asserted in isolation.
 ## 2. Commands
 
 ```bash
-npm run check      # lint + typecheck + tests
+npm run check         # secrets + lint + typecheck + tests
+npm run verify        # the above, plus the production build
 npm run lint
 npm run typecheck
 npm test
 npm run test:watch
+npm run check:secrets            # static secret gate, offline
+npm run preflight:model-studio   # external readiness, offline, no secret printed
 ```
 
 ## 3. Why the engines are testable
@@ -142,7 +145,7 @@ glob (`evals/**/*.live.ts`), so neither can be picked up by `npm test`,
 **Why that separation is not optional.** A network outage, a rate limit or an
 expired key must not turn the deterministic suite red. If a live failure could
 fail the gate, the reflex becomes to distrust the gate, and at that point the
-other 860 tests stop meaning anything.
+other 885 tests stop meaning anything.
 
 With no credentials both report `NOT CONFIGURED` and **skip**. Skipped is not
 passed: a smoke test that quietly passes without calling anything reports

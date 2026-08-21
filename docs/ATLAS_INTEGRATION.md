@@ -97,3 +97,84 @@ reliability is legitimate; presenting it as a live search is not.
 
 Production bookings during development. Real passenger identities in fixtures.
 Credentials in the repository.
+
+---
+
+## 8. Phase 7 readiness checklist
+
+**Everything in this section is a QUESTION, not a specification.** No Atlas
+documentation has been read from this repository, no endpoint has been called,
+and no payload shape is known. Nothing below may be turned into code until it
+has been answered from real documentation or a real response.
+
+A guessed answer here is worse than an open question, because a guess gets
+implemented and then defended.
+
+### Authentication and access
+
+- [ ] How is a request authenticated? Header, scheme, token lifetime?
+- [ ] Is there a separate sandbox credential, and a separate sandbox host?
+- [ ] What identifies the environment in a response, so a sandbox result can
+      never be rendered as production?
+- [ ] Rate limits: what are they, and what does exceeding one return?
+
+### Flight search
+
+- [ ] Endpoint, method, and request shape
+- [ ] How are origin and destination expressed? IATA city, IATA airport, both?
+- [ ] How is a date expressed, and in whose time zone?
+- [ ] Are one-way and return searched separately, or as one request?
+- [ ] **Passenger count behaviour.** Does a search for seven return offers that
+      can seat seven, or offers priced per passenger with availability
+      unstated? This one materially changes the wave engine's meaning of a
+      "fitting" traveller
+- [ ] Is availability returned at all, or only price?
+- [ ] What is returned when nothing matches: empty list, error, or partial?
+
+### Offer verification
+
+- [ ] Endpoint and request shape for re-checking a specific offer
+- [ ] How long is an offer valid? Is there an explicit expiry?
+- [ ] **Price-change semantics.** Does verification return a new price, an
+      error, or a new offer with a new identifier?
+- [ ] What distinguishes "price changed" from "no longer available"?
+- [ ] Is a verified offer reservable, or still only a quote?
+
+### Data completeness
+
+- [ ] Baggage: is the allowance returned? Distinguishable from "not stated"?
+      The domain models `unknown: true` separately from zero, and needs to keep
+      doing so
+- [ ] Seat information and seat selection capability
+- [ ] Meal ancillary: supported, and how represented?
+- [ ] **Special assistance: supported, and how represented?** Currently
+      `UNKNOWN` everywhere. Nothing may claim an operator can meet an
+      accessibility need until Atlas actually says so
+- [ ] Fare rules and change/cancel terms
+- [ ] Which fields can legitimately be absent?
+
+### Sandbox and ordering
+
+- [ ] Is there a known-good sandbox route and date pair for smoke testing?
+- [ ] Sandbox order creation: endpoint, shape, and what state it leaves behind
+- [ ] Ticketing states, and how they are polled or notified
+- [ ] Is any part of the sandbox capable of a real charge? (Assume yes until
+      documented otherwise.)
+
+### Verification before implementation
+
+1. Read the real documentation.
+2. Run one real search. Record the actual response shape.
+3. Verify one real offer. Record what changes between the two.
+4. Only then write `AtlasFlightProvider`, behind the existing boundary.
+5. Add sanitised fixtures from the real shapes, and test against those.
+
+### What Phase 7 must not do
+
+- Invent an endpoint, a field name or a status value
+- Add a method to `FlightProvider` that the real API does not need. The
+  contract already shrank once for exactly this reason; see section 2
+- Let an Atlas field name past the adapter
+- Mark assistance as supported before Atlas states it
+- Call a live or paid endpoint from any test
+- Create a production order

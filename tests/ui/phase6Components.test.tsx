@@ -388,3 +388,62 @@ describe("the pipeline and the screen agree about authority", () => {
     expect(model.detail.toLowerCase()).not.toContain("fixture");
   });
 });
+
+describe("the exact mixed state a demo will actually be in", () => {
+  /**
+   * The scenario that matters most, rendered end to end.
+   *
+   * Group understanding live, destination research live, flights still a
+   * fixture, no provider connected, assistance confirmed by its owner and by
+   * nobody else. Every one of those is true at the same time, and the screen has
+   * to hold all five without simplifying.
+   */
+  function renderMixed() {
+    return render(
+      <SubsystemStatusBoard
+        rows={buildProvenanceBoard({
+          understanding: "LIVE_MODEL",
+          research: "LIVE_WEB",
+          assistanceTravellerConfirmed: true,
+        })}
+      />,
+    );
+  }
+
+  it("shows live understanding and live research beside a fixture flight list", () => {
+    renderMixed();
+    expect(screen.getByText("Qwen - live")).toBeInTheDocument();
+    expect(screen.getByText("Model Studio web - live")).toBeInTheDocument();
+    expect(screen.getByText("Local fixture")).toBeInTheDocument();
+    expect(screen.getByText("Not connected")).toBeInTheDocument();
+    expect(screen.getByText("Traveller confirmed, provider pending")).toBeInTheDocument();
+  });
+
+  it("never collapses the page into one live claim", () => {
+    const { container } = renderMixed();
+    const text = (container.textContent ?? "").toLowerCase();
+    for (const banned of ["live trip", "live data", "verified journey", "all live"]) {
+      expect(text, `the board said "${banned}"`).not.toContain(banned);
+    }
+  });
+
+  it("still says nothing is booked while two subsystems are live", () => {
+    renderMixed();
+    expect(screen.getByText(/nothing is booked/i)).toBeInTheDocument();
+  });
+
+  it("gives the flight row no verified tone even at maximum liveness", () => {
+    const { container } = renderMixed();
+    const rows = [...container.querySelectorAll(".provenance-row")];
+    const flightRow = rows.find((r) => (r.textContent ?? "").includes("Flight inventory"));
+    expect(flightRow).toBeDefined();
+    expect(flightRow?.querySelector(".badge-verified")).toBeNull();
+  });
+
+  it("keeps assistance out of the verified tone, because no operator confirmed it", () => {
+    const { container } = renderMixed();
+    const rows = [...container.querySelectorAll(".provenance-row")];
+    const assistanceRow = rows.find((r) => (r.textContent ?? "").includes("Assistance"));
+    expect(assistanceRow?.querySelector(".badge-verified")).toBeNull();
+  });
+});

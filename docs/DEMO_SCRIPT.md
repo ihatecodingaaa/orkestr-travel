@@ -217,6 +217,43 @@ Then the rejected citation:
 
 ---
 
+## Demo resilience
+
+What each beat actually depends on. The point of the table is that the
+credential-dependent beats are the last two, and both degrade to a labelled
+fixture rather than to a broken screen.
+
+| Beat | Domain only | Needs Qwen | Needs web | Needs Atlas | If the dependency is missing |
+| --- | --- | --- | --- | --- | --- |
+| The problem (`/`) | yes | no | no | no | n/a |
+| The group (`/demo`) | yes | no | no | no | n/a |
+| Travel waves | yes | no | no | no | n/a |
+| Reunion boundary | yes | no | no | no | n/a |
+| Ryan joins | yes | no | no | no | n/a |
+| Decisions preserved | yes | no | no | no | n/a |
+| Fare shock | yes | no | no | no | n/a |
+| Journey package | yes | no | no | no | n/a |
+| Needs attention | yes | no | no | no | n/a |
+| Understanding (`/understand`) | no | optional | no | no | Replays a fixture reading, labelled as one |
+| Research (`/research`) | no | optional | optional | no | Replays fixture evidence, labelled as one |
+| Real flight availability | no | no | no | **yes** | Not built. Flights are a local fixture and say so |
+
+**Nine of the eleven built beats need nothing external.** They run with the
+network switched off, and they are the beats carrying the product argument: the
+split, the reunion, the late join, the preserved decisions, the fare shock.
+
+The two Phase 6 screens are additive. With no credential they demonstrate the
+same shapes from fixture data and label it accurately; with one they go live and
+the flight row still reads `Local fixture`.
+
+**There is no automatic fallback from live to fixture.** If a live call fails
+mid-demo it fails visibly, with its own message. Substituting a fixture under a
+live label would be the one failure nobody in the room could detect, which is
+precisely why it does not happen. Rehearse saying "that call failed, here is the
+fixture path" — it is a better moment than pretending.
+
+---
+
 ## What a judge should take away
 
 1. **It doesn't give up.** No single flight works, so it finds the smallest split

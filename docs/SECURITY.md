@@ -18,6 +18,39 @@ adapter or reads `process.env`, and that the built browser bundle contains
 neither the variable name, nor the Model Studio host, nor the extraction system
 prompt.
 
+## 1b. The secret gate
+
+`npm run check:secrets` runs inside `npm run verify`, so a finding fails the
+build before a push can happen. It is deliberately small and project-specific:
+a generic scanner is either noisy enough to be ignored or quiet enough to miss
+the one thing that matters.
+
+It refuses: a tracked environment file; a `.gitignore` that has stopped
+excluding `.env*`; a key-shaped literal with no marker proving it fake; a
+`NEXT_PUBLIC_` secret; a hard-coded `Authorization: Bearer`; a populated
+credential in a tracked file; and the credential being named in more than one
+module.
+
+It scans **tracked files only**. That is the correct scope, and it is also the
+point: a safety tool that opens `.env.local` to check whether it is safe has
+become the leak it was guarding against.
+
+The repository convention it enforces: **any key-shaped string committed here
+must contain a marker word proving it is fake** (`test`, `not-real`, `example`,
+`never`, `redact`, and so on), so "is this real?" is answerable by reading the
+string rather than by trusting whoever wrote it.
+
+## 1c. External calls are off by default
+
+`MODEL_STUDIO_MODE` decides whether anything external may be called, and
+defaults to `disabled`. A credential is a capability, not an instruction.
+
+Before this existed, a key in `.env.local` was enough to make every page render
+and every accidental form submission spend real money. In `disabled` and
+`recorded` the config reader returns before it reads the key at all, so there
+is no transport and no request is constructible. An unrecognised value fails
+closed. See `PROVIDER_MODES.md`.
+
 ## 2. The public-prefix rule
 
 **A secret must never use the `NEXT_PUBLIC_` prefix.**

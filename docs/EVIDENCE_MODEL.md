@@ -30,7 +30,7 @@ arbitrary webpage becomes "official".
 | --- | --- |
 | `WEB_SEARCH` | Returned by a live provider web search |
 | `USER_SHARED` | A public link a person handed us themselves |
-| `RECORDED_WEB` | A sanitised structured result, replayed. Never live |
+| `RECORDED_WEB` | A sanitised structured result from a real earlier call, replayed. Never live. **None exists yet** |
 | `LOCAL_FIXTURE` | Hand-written in this repository. Never real research |
 
 Neither is derived from the other. Authority comes from deterministic known-host
@@ -140,7 +140,7 @@ Disagreements are shown, not averaged away.
 | --- | --- |
 | Flight offers | `LOCAL_FIXTURE`, always. The builder hard-codes it with no override |
 | Journey activities in `/demo` | `LOCAL_FIXTURE`, cited to the fixture |
-| Research with no credential | `RECORDED_WEB`, from a sanitised structured capture |
+| Research with no credential | `LOCAL_FIXTURE`, written by hand in this repository |
 | Research with a credential | `WEB_SEARCH`, from live Model Studio search and extraction |
 | A link a user pastes | `USER_SHARED` |
 
@@ -155,8 +155,18 @@ publication dates. It does **not** carry copied webpage text: no scraped article
 body is stored in this repository, and a test asserts every recorded claim is a
 single sentence rather than a page body.
 
-It reports `RECORDED_WEB`, the subsystem board renders that distinctly from
-live, and the label says the search did not run now.
+**Nothing has ever been recorded from Model Studio**, because no live call has
+ever been made. The fixture research provider therefore reports
+`LOCAL_FIXTURE`, which is what it is: hand-written data in this repository.
+
+An earlier version labelled it `RECORDED_WEB`, which the interface renders as
+"Recorded Model Studio result". Calling hand-written data a recording of a
+service that has never been called is exactly the kind of small overclaim that
+collapses under one question from a judge.
+
+`RECORDED_WEB` remains in the model as a declared future state. It becomes
+reachable when a genuine call has been made and sanitised, and not before. See
+`PROVIDER_MODES.md`.
 
 ## 12. Traceability
 

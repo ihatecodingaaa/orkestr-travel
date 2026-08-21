@@ -7,9 +7,10 @@ If a capability is not marked `IMPLEMENTED` here, it does not work, regardless o
 what any other document, comment or UI label suggests. Any disagreement between
 this table and another document is a bug in the other document.
 
-- **Last updated:** 21 August 2026
+- **Last updated:** 22 August 2026
 - **Phases completed:** Phase 0 (foundation), Phase 1 (deterministic core), Phase 2 (travel waves), Phase 3 (compromise and repair), Phase 4 (journey, legs, provider, package), Phase 5 (local interface), Phase 6 (language understanding, evidence layer, bounded research)
-- **Phase in progress:** none. Awaiting founder approval to begin Phase 7.
+- **Phase in progress:** none. Phase 6.5 (live verification) is BLOCKED on a
+  credential the founder has not created. Phase 7 not started.
 
 ### The one thing to read first about Phase 6
 
@@ -20,8 +21,17 @@ and **unverified against the live service**. The opt-in commands that would
 verify it (`npm run smoke:model-studio`, `npm run eval:qwen`) report
 `NOT CONFIGURED` and skip.
 
-Everything below distinguishes `IMPLEMENTED` from `UNVERIFIED` on exactly that
-basis.
+Everything below distinguishes `IMPLEMENTED OFFLINE` from `LIVE UNVERIFIED` on
+exactly that basis. A passing mock is not evidence that an integration works.
+
+Check the current state yourself, offline, in one second:
+
+```bash
+npm run preflight:model-studio
+```
+
+**External calls are off by default.** `MODEL_STUDIO_MODE` defaults to
+`disabled`, and a credential alone cannot enable them. See `PROVIDER_MODES.md`.
 
 ## Legend
 
@@ -33,7 +43,10 @@ basis.
 | `BLOCKED` | Cannot start until a named dependency is resolved |
 | `NOT IMPLEMENTED` | No design, no code |
 | `TYPES ONLY` | The shape is defined; **none of the behaviour exists** |
-| `UNVERIFIED` | Code exists and is tested against recorded data; **never executed against the live service** |
+| `IMPLEMENTED OFFLINE` | Built and tested against recorded data. Correct as far as anything without a network can show |
+| `LIVE UNVERIFIED` | The code path exists and **has never been executed against the real service** |
+| `LIVE VERIFIED` | Actually run against the real service, successfully, and the result recorded |
+| `NOT CONFIGURED` | An external account or credential that nobody has created |
 
 ---
 
@@ -77,7 +90,7 @@ label.
 
 What Phase 6 did NOT do: call the live service. See the note above.
 
-Verified at the last run: **860 tests across 43 files, all passing.** Lint,
+Verified at the last run: **885 tests across 44 files, all passing.** Lint,
 typecheck and the production build are clean.
 
 ---
@@ -90,7 +103,7 @@ typecheck and the production build are clean.
 | Remote git backup | `IMPLEMENTED` | `origin` = github.com/ihatecodingaaa/orkestr-travel (private) |
 | TypeScript strict configuration | `IMPLEMENTED` | `tsconfig.json`; `npm run typecheck` passes |
 | Lint with type-aware rules | `IMPLEMENTED` | `eslint.config.mjs`; verified with a deliberate failing probe |
-| Test runner | `IMPLEMENTED` | vitest; 860 deterministic tests, none touching a network |
+| Test runner | `IMPLEMENTED` | vitest; 885 deterministic tests, none touching a network |
 | Combined quality gate | `IMPLEMENTED` | `npm run check` |
 | Documentation structure | `IMPLEMENTED` | 22 documents in `docs/`, plus `README.md` |
 | CI pipeline | `NOT IMPLEMENTED` | Not yet configured |
@@ -303,7 +316,8 @@ one offer in isolation:
 | Prompt-injection resistance | `IMPLEMENTED` | schema + mapper | 13 |
 | Versioned prompt `orkestr-intent-v1` | `IMPLEMENTED` | `adapters/modelStudio/prompts/intentV1.ts` | 25 (with research) |
 | Fixture extraction provider, same pipeline | `IMPLEMENTED` | `adapters/fixture/` | (in the 52) |
-| **Qwen extraction adapter (Model Studio)** | **`UNVERIFIED`** | `adapters/modelStudio/qwenLanguageUnderstanding.ts` | 52 against recorded bodies |
+| Qwen request construction (endpoint, JSON mode, models, timeout) | `IMPLEMENTED OFFLINE` | `adapters/modelStudio/qwenLanguageUnderstanding.ts` | 7 on the serialised body |
+| **Qwen structured extraction against real Model Studio** | **`LIVE UNVERIFIED`** | same | 52 against recorded bodies |
 | 17 fictional evaluation cases + scorer | `IMPLEMENTED` | `src/eval/cases.ts` | 11 |
 | Live evaluation run | `NOT IMPLEMENTED` | `npm run eval:qwen` | **no credential; skipped** |
 
@@ -336,8 +350,11 @@ one offer in isolation:
 | Deterministic suggestion checks | `IMPLEMENTED` | `core/research/suggestions.ts` | 20 |
 | Responses API output reader | `IMPLEMENTED` | `adapters/modelStudio/responsesShape.ts` | (in the 52) |
 | Recorded research provider, same pipeline | `IMPLEMENTED` | `adapters/fixture/fixtureResearch.ts` | (in the 52) |
-| **Qwen web research adapter (Model Studio)** | **`UNVERIFIED`** | `adapters/modelStudio/qwenWebResearch.ts` | 52 against recorded bodies |
-| **User-shared link reading** | **`UNVERIFIED`** | `adapters/modelStudio/sharedLinkReader.ts` | (in the 52) |
+| Responses API parser | `IMPLEMENTED OFFLINE` | `adapters/modelStudio/responsesShape.ts` | (in the 52) |
+| **Real `web_search`** | **`LIVE UNVERIFIED`** | `adapters/modelStudio/qwenWebResearch.ts` | 52 against recorded bodies |
+| **Real `web_extractor`** | **`LIVE UNVERIFIED`** | same | (in the 52) |
+| User-shared link logic (safety, states, interest) | `IMPLEMENTED OFFLINE` | `adapters/modelStudio/sharedLinkReader.ts` | (in the 52) |
+| **Real user-shared page extraction** | **`LIVE UNVERIFIED`** | same | (in the 52) |
 | Direct TikTok / Instagram / Reddit APIs | `NOT IMPLEMENTED` | none, deliberately | n/a |
 | Scraping or browser automation | `NOT IMPLEMENTED` | none, deliberately | n/a |
 
@@ -387,9 +404,14 @@ one offer in isolation:
 
 | Capability | Status | Blocker |
 | --- | --- | --- |
-| Qwen structured extraction | `UNVERIFIED` | Client code complete and tested. No credential exists, so no live call has been made |
-| Qwen web research | `UNVERIFIED` | Same |
-| Model Studio account / credential | `NOT IMPLEMENTED` | None created. Required before either of the above can move to `IMPLEMENTED` |
+| Qwen structured extraction | `LIVE UNVERIFIED` | Client complete and tested offline. No credential exists, so no live call has been made |
+| Qwen web research | `LIVE UNVERIFIED` | Same |
+| Model Studio account / credential | `NOT CONFIGURED` | None created. Required before either of the above can move to `LIVE VERIFIED` |
+| Alibaba Cloud account setup | `NOT CONFIGURED` | No account action has been taken |
+| External-call kill switch | `IMPLEMENTED` | `MODEL_STUDIO_MODE`, default `disabled`. See `PROVIDER_MODES.md` |
+| Offline credential pre-flight | `IMPLEMENTED` | `npm run preflight:model-studio`; no network, no secret printed |
+| Secret-safety gate | `IMPLEMENTED` | `npm run check:secrets`, inside `npm run verify` |
+| Recorded (sanitised live) results | `NOT IMPLEMENTED` | None exist. Only a real successful call can produce one |
 | Atlas flight search | `BLOCKED` | Phase 7. Needs real documentation and sandbox credentials |
 | Atlas offer verification | `BLOCKED` | Phase 7. Same |
 | Atlas sandbox order | `BLOCKED` | Phase 10. Explicit approval required |

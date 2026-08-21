@@ -53,7 +53,7 @@ it, reports honestly how much of the existing plan survived, and asks only the
 people whose own decisions moved. Where a plan misses somebody's preference it
 proposes an explicit compromise to that person rather than deciding for them.
 
-860 tests pass across 43 files, none of them touching a network. Lint,
+885 tests pass across 44 files, none of them touching a network. Lint,
 typecheck and the production build are clean.
 
 Phase 4 closes the outbound-only gap. A journey is now an ordered list of legs,
@@ -182,6 +182,13 @@ npm run typecheck
 npm test
 ```
 
+Offline, and safe to run at any time:
+
+```bash
+npm run preflight:model-studio   # would a live call work? no network, no secret
+npm run check:secrets            # also runs inside npm run verify
+```
+
 Optional, and never part of the gate above, because they call a paid external
 service:
 
@@ -206,6 +213,7 @@ never overstating what it knows.
 
 | Rule | Meaning |
 | --- | --- |
+| External calls are off by default | A credential is a capability, not an instruction. `MODEL_STUDIO_MODE` decides |
 | Unknown stays UNKNOWN | Missing data is reported as missing, never assumed to pass |
 | Community opinion stays COMMUNITY SIGNAL | Reviews describe experience; they never establish an operational fact |
 | Fixture stays LOCAL FIXTURE | Hand-written demo data is never labelled as live |
@@ -243,6 +251,10 @@ Start with `docs/PRODUCT_SPEC.md` for what the product does, and
 | `ATLAS_INTEGRATION.md` | Flight provider boundary and Atlas plan |
 | `ALIBABA_CLOUD.md` | Qwen, Model Studio and agent runtime plan |
 | `QWEN_INTEGRATION.md` | The Model Studio specifics: endpoints, prompts, validation, bounds |
+| `PROVIDER_MODES.md` | disabled / recorded / live, and why a key alone is not permission |
+| `EXTERNAL_SETUP.md` | What is configured, what is not, and how to connect it |
+| `SESSION_TRANSFER.md` | The accurate handoff record. Read first with no context |
+| `NEXT_CLAUDE_SESSION.md` | The startup prompt for a fresh session |
 | `QODER_USAGE.md` | Recorded Qoder review stages |
 | `DEMO_SCRIPT.md` | The demo scenario and narrative |
 | `FAILURE_MODES.md` | What can go wrong and the intended behaviour |
