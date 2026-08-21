@@ -222,52 +222,17 @@ export function inFlightRequestBadge(status: InFlightRequestStatus): TruthBadgeM
 }
 
 /**
- * The data-source banner shown throughout the app.
+ * WHERE THE DATA-SOURCE BANNER WENT.
  *
- * Built so the later states already have a home. Today only LOCAL_FIXTURE is
- * reachable, and the others are declared rather than claimed.
+ * Phase 5 had `dataSourceBanner` and a `CURRENT_DATA_SOURCE` constant here: one
+ * label for the whole application, correct while everything came from one place.
+ *
+ * Phase 6 removed both. Group understanding can now be a live model while flight
+ * inventory is still a fixture in this repository, so a single global label is no
+ * longer capable of being true, and leaving a ready-made one available in the
+ * codebase would be an invitation to reintroduce exactly the claim this phase
+ * exists to prevent.
+ *
+ * Provenance now lives in `src/ui/view/provenance.ts`, per subsystem, where the
+ * flight row says LOCAL FIXTURE no matter how live anything else becomes.
  */
-export type DataSourceMode =
-  | "LOCAL_FIXTURE"
-  | "RECORDED_ATLAS_SANDBOX"
-  | "LIVE_ATLAS_SANDBOX"
-  | "ATLAS_VERIFIED";
-
-export interface DataSourceBanner {
-  readonly label: string;
-  readonly detail: string;
-  readonly tone: TruthTone;
-}
-
-export function dataSourceBanner(mode: DataSourceMode): DataSourceBanner {
-  switch (mode) {
-    case "LOCAL_FIXTURE":
-      return {
-        label: "Demo mode - local fixture data",
-        detail:
-          "Flights, prices and destination ideas are demo data from this build. Nothing here came from an airline and nothing is booked.",
-        tone: "neutral",
-      };
-    case "RECORDED_ATLAS_SANDBOX":
-      return {
-        label: "Recorded sandbox data",
-        detail: "Replayed from a sandbox response captured earlier. Not live.",
-        tone: "neutral",
-      };
-    case "LIVE_ATLAS_SANDBOX":
-      return {
-        label: "Live sandbox",
-        detail: "Live calls to the provider sandbox. Test environment, not production.",
-        tone: "neutral",
-      };
-    case "ATLAS_VERIFIED":
-      return {
-        label: "Provider verified",
-        detail: "Re-checked with the provider.",
-        tone: "verified",
-      };
-  }
-}
-
-/** The mode this build actually runs in. There is no way to set another. */
-export const CURRENT_DATA_SOURCE: DataSourceMode = "LOCAL_FIXTURE";

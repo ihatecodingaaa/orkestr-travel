@@ -337,3 +337,88 @@ a { color: inherit; }
   position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
   overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
 }
+
+/* ---------- Phase 6: provenance, understanding and evidence ---------- */
+
+/* The subsystem board replaces the single fixture banner. Every row is always
+   shown, including the ones saying LOCAL FIXTURE and NOT CONNECTED, so a live
+   badge on one row can never be read as covering the others. */
+.provenance {
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  background: var(--paper-sunken);
+  padding: 1rem 1.1rem;
+  margin: 1.5rem 0;
+}
+.provenance-rows { list-style: none; margin: 0.75rem 0 0; padding: 0; display: grid; gap: 0.5rem; }
+.provenance-row {
+  display: grid;
+  grid-template-columns: minmax(9rem, 12rem) auto 1fr;
+  gap: 0.6rem;
+  align-items: baseline;
+}
+.provenance-name { font-weight: 600; }
+.provenance-detail { font-size: 0.85rem; }
+@media (max-width: 40rem) {
+  .provenance-row { grid-template-columns: 1fr; gap: 0.25rem; }
+}
+
+/* A quote is never hidden behind a hover or a disclosure. If somebody has to
+   work to see the basis of a claim about their own trip, the review becomes a
+   rubber stamp. */
+.source-quote {
+  margin: 0.4rem 0 0;
+  padding: 0.35rem 0 0.35rem 0.75rem;
+  border-left: 3px solid var(--accent-line);
+  color: var(--ink-faint);
+  font-style: italic;
+  font-size: 0.9rem;
+}
+.understood-row {
+  padding: 0.6rem 0;
+  border-bottom: 1px solid var(--line);
+}
+.understood-row:last-child { border-bottom: 0; }
+
+.intent-input {
+  width: 100%;
+  font: inherit;
+  padding: 0.75rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--line-strong);
+  background: var(--paper);
+  color: var(--ink);
+  resize: vertical;
+}
+
+.claim { padding: 0.75rem 0; border-bottom: 1px solid var(--line); }
+.claim:last-child { border-bottom: 0; }
+.claim-statement { margin: 0 0 0.4rem; }
+
+.source-list { list-style: none; margin: 0.5rem 0 0; padding: 0; display: grid; gap: 0.45rem; }
+.source-item { display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: baseline; font-size: 0.9rem; }
+.source-item a { color: var(--ink); }
+
+/* A disagreement is rendered as a disagreement. Both statements stay visible and
+   neither is styled as the answer. */
+.conflict {
+  margin: 0.5rem 0;
+  padding: 0.6rem 0.8rem;
+  border-left: 3px solid var(--tone-alert);
+  background: var(--tone-alert-bg);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+.conflict ul { margin: 0.35rem 0; padding-left: 1.1rem; }
+.conflict p { margin: 0.35rem 0 0; }
+
+.reasons, .unknowns { margin: 0; padding-left: 1.1rem; display: grid; gap: 0.35rem; }
+.unknowns { color: var(--ink-faint); }
+
+.shared-link {
+  list-style: none;
+  padding: 0.6rem 0;
+  border-bottom: 1px solid var(--line);
+}
+.shared-link:last-child { border-bottom: 0; }
+.shared-link a { color: var(--ink); word-break: break-all; }
+.shared-link code { word-break: break-all; font-size: 0.85rem; }

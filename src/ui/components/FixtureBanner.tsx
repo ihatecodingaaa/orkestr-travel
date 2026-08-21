@@ -1,22 +1,20 @@
-import { CURRENT_DATA_SOURCE, dataSourceBanner } from "../view/truth";
+import { SubsystemStatusBoard } from "./SubsystemStatusBoard";
+import { buildDemoProvenanceBoard } from "../view/provenance";
 
 /**
- * The persistent data-source banner.
+ * The data-source surface for the fixture-backed demo trip.
  *
- * Always visible, never a tooltip. Somebody watching a demo has to be able to
- * see at any moment that the flights and prices are not real, without hovering
- * anything or being told.
+ * Phase 5 shipped this as ONE banner saying "demo mode, local fixture data",
+ * which was true when everything in the product came from one place. Phase 6
+ * connected a language model and a web search, so that is no longer true of the
+ * application as a whole, and a single label would now be the wrong shape even
+ * on the screens where it is still accurate.
  *
- * It renders whichever mode the build is in. Today only LOCAL_FIXTURE is
- * reachable; the other modes exist in the model so that connecting a real
- * provider later changes one constant rather than the layout.
+ * So it is the same per-subsystem board used everywhere else, filled in for what
+ * these screens actually are: a trip whose group, activities and flights are all
+ * fixtures in this repository. Always visible, never a tooltip, so somebody
+ * watching a demo can see at any moment that none of it is real.
  */
 export function FixtureBanner() {
-  const banner = dataSourceBanner(CURRENT_DATA_SOURCE);
-  return (
-    <div className="fixture-banner" role="note" aria-label="Data source notice">
-      <strong>{banner.label}</strong>
-      <span>{banner.detail}</span>
-    </div>
-  );
+  return <SubsystemStatusBoard rows={buildDemoProvenanceBoard()} />;
 }
