@@ -3,6 +3,7 @@ import type { AssistanceNeedType } from "./assistance";
 import type { AgeBand, PacePreference } from "./traveller";
 import type { DateRange, IsoDateTime } from "./time";
 import type {
+  ClaimSubject,
   CommunityEvidenceSummary,
   EvidenceIngestionOrigin,
   EvidenceLedger,
@@ -77,6 +78,31 @@ export interface GroupContext {
   readonly pace?: PacePreference;
 }
 
+/**
+ * A subject the CALLER already knows about, offered to the model as a choice.
+ *
+ * This is the whole of the entity-binding design, and the reason it is a list of
+ * candidates rather than a free-text field.
+ *
+ * A model asked "what is this claim about?" will answer with a name, and a name
+ * is not an identity. It will confidently produce "Senso-ji Temple" where our
+ * journey holds "Senso-ji", or invent "some-other-temple-123" outright, and
+ * either would become a real domain entity the moment we trusted the string.
+ *
+ * So the model never supplies identity. It supplies a CHOICE from a bounded set
+ * we handed it, by id, and software resolves that id back to the subject we
+ * already had. An id we did not issue resolves to nothing.
+ */
+export interface SubjectCandidate {
+  /**
+   * Stable, caller-owned identifier. Offered to the model verbatim and matched
+   * back exactly. Never parsed, never pattern-matched, never fuzzily resolved.
+   */
+  readonly id: string;
+  /** The real domain subject this id maps to. The model never sees its internals. */
+  readonly subject: ClaimSubject;
+}
+
 export interface ResearchQuestion {
   readonly id: ResearchQuestionId;
   readonly kind: ResearchQuestionKind;
@@ -89,6 +115,21 @@ export interface ResearchQuestion {
   readonly maxSources: number;
   /** One sentence stating what an answer would let the product do. */
   readonly purpose: string;
+
+  /**
+   * Entities a claim from this question is allowed to be about.
+   *
+   * Empty or absent means no claim can be bound, and every claim from the run
+   * stays UNSPECIFIED. That is a real answer: it says we asked a question
+   * without telling the system what the answer could be about.
+   *
+   * THE RESEARCH TARGET IS NOT THE CLAIM SUBJECT. Researching a museum returns
+   * pages about the museum and pages about the station next to it, and a true
+   * official statement about the station must not clear an access requirement
+   * for the museum. Listing a candidate makes it *bindable*, never *assumed*:
+   * nothing here is inherited by claims that did not name it.
+   */
+  readonly subjectCandidates?: readonly SubjectCandidate[];
 }
 
 /**

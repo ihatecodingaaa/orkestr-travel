@@ -223,3 +223,17 @@ of subsystem modes and assert the flight and capacity rows never move.
 the failure.** Three separate defects in this phase produced honest-looking
 failure states that were actually our own bugs, and in every case the wall-clock
 time gave it away before the error message did.
+
+## Subject binding failures (Phase 6.7)
+
+| Symptom | Meaning | What to check |
+|---|---|---|
+| Every claim is `UNSPECIFIED` | No candidates were supplied, or the model returned null for all | `question.subjectCandidates`; the instruction says "none were supplied" when empty |
+| `rejectedSubjectIds` is non-empty | The model named ids we never issued | Normal in small numbers. A rising count means the candidate list and the prompt have drifted apart |
+| A claim binds to the research target that should not | **Serious.** Nothing may inherit the target | The target is never copied to claims; check nobody added a default |
+| An access requirement clears when it should not | Check all five conditions, not just authority | `core/research/suggestions.ts`; subject match is condition 1 |
+
+**The one that would be hardest to notice:** an officially-sourced, correctly-cited,
+non-conflicting operational fact about the *wrong entity*. Every integrity signal
+reads green. Only the subject comparison catches it, which is why it is a
+deterministic check and not a prompt instruction.

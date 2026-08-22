@@ -168,3 +168,37 @@ movement need while an official one can; `tests/evalCases.test.ts` asserts the
 scorer fails a reading that infers a need from somebody being 78; and
 `tests/intentMapping.test.ts` asserts an extracted need arrives SENSITIVE,
 unconfirmed by its owner and UNKNOWN to any provider.
+
+## Which evidence may clear a stated access requirement (Phase 6.7)
+
+A stated movement requirement is treated as met ONLY when every one of these
+holds. No single one is sufficient, and the list is enforced in
+`core/research/suggestions.ts`, not in prompt wording:
+
+1. The claim's subject **is the journey entity in question**.
+2. An `OFFICIAL_WEB` or `PROVIDER` source stands behind it.
+3. The claim is an `OPERATIONAL_FACT`.
+4. It is not conflicting or otherwise awaiting confirmation.
+5. It passed validation and is in the ledger.
+
+Where they do not all hold, the suggestion is **not rejected**. It is shown
+carrying `ACCESSIBILITY_UNVERIFIED` and a confirmation task, because refusing
+every venue without an official page would quietly exclude the person with the
+requirement from the trip. What must never happen is the claim being shown as
+settled.
+
+### The neighbouring-station case, observed live
+
+Researching Hamarikyu Gardens returned the Tokyo metropolitan authority's
+official accessibility page for **Shiodome Station**, and a true statement from
+it: three elevators, one wheelchair-accessible restroom. Official source, real
+citation, operational fact, no conflict.
+
+It still cannot clear the garden's requirement, because it is not about the
+garden. A person planning a day for someone who uses a wheelchair would read
+"step-free, officially confirmed" and arrive at a garden nobody had checked.
+That is the failure entity binding exists to prevent, and it is the reason
+condition 1 sits above the other four rather than beside them.
+
+The person is told, in words: *"No official source confirmed the access this
+group needs."*

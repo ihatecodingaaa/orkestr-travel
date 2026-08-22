@@ -9,7 +9,7 @@ import {
   RESEARCH_PROMPT_VERSION,
   RESEARCH_SYSTEM_PROMPT,
   buildResearchInstruction,
-} from "@/adapters/modelStudio/prompts/researchV1";
+} from "@/adapters/modelStudio/prompts/researchV2";
 import { HERO_QUESTION } from "@/ui/demo/researchDemo";
 
 /**
@@ -94,7 +94,7 @@ describe("the discussion is wrapped as data", () => {
 
 describe("the research prompt refuses to reason from age", () => {
   it("is versioned", () => {
-    expect(RESEARCH_PROMPT_VERSION).toBe("orkestr-research-v1");
+    expect(RESEARCH_PROMPT_VERSION).toBe("orkestr-research-v2");
   });
 
   it("forbids inferring interests or needs from anybody's age", () => {

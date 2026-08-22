@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { readModelStudioConfig } from "@/adapters/modelStudio/config";
 import { HttpModelStudioTransport } from "@/adapters/modelStudio/transport";
 import { readResponsesBody } from "@/adapters/modelStudio/responsesShape";
-import { RESEARCH_SYSTEM_PROMPT, buildResearchInstruction } from "@/adapters/modelStudio/prompts/researchV1";
+import { RESEARCH_SYSTEM_PROMPT, buildResearchInstruction } from "@/adapters/modelStudio/prompts/researchV2";
 import type { ResearchQuestion } from "@/domain/research";
 import { asResearchQuestionId } from "@/domain/ids";
 import { loadLocalEnv, report, requireConfig } from "./harness";

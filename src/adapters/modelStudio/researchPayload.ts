@@ -128,11 +128,34 @@ export function parseResearchPayload(text: string): ResearchPayloadResult {
         )
       : [];
 
+    /**
+     * The subject the model chose, as a bare id and nothing else.
+     *
+     * Read as an opaque string and passed through unresolved -- this module
+     * cannot tell a real id from an invented one, and must not try.
+     * `resolveClaimSubject` decides, against the list we actually issued.
+     *
+     * Note what is NOT read here: a `subject` object. `ProposedClaim` has such a
+     * field, for hand-written fixtures that genuinely know their own subjects,
+     * and model output must never reach it. If this parser ever learned to read
+     * it, a model could emit a fully-formed subject of its own invention and
+     * skip validation entirely. That is asserted in the tests.
+     *
+     * `null` is an expected, correct answer: it is what the prompt asks for when
+     * a claim is not about any of the candidates.
+     */
+    const rawSubjectId = entry["subjectId"];
+    const subjectId =
+      typeof rawSubjectId === "string" && rawSubjectId.trim().length > 0
+        ? rawSubjectId.trim()
+        : undefined;
+
     claims.push({
       statement: trimmed,
       claimType: claimType as ClaimType,
       citedUrls,
       ...(contradicts.length === 0 ? {} : { contradictsIndexes: contradicts }),
+      ...(subjectId === undefined ? {} : { subjectId }),
     });
   }
 

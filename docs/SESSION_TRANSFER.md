@@ -339,3 +339,36 @@ Qoder, which is part of the hackathon judging criteria.
 - **Do not record fake "live" results.** A sanitised test fixture is not a
   recorded Model Studio result, and only a real successful call can produce one
 - **Do not treat a passing mock as evidence the integration works**
+
+## State at end of Phase 6.7 (22 August 2026)
+
+**Done and verified live:** structured intent extraction, Responses API,
+`web_search`, `web_extractor`, the evidence layer, user-shared links, and
+research subject binding.
+
+**998 tests across 49 files.** Lint, typecheck, build and secret check clean.
+
+**The subject-binding gap from Phase 6.6 is closed.** Claims bind to journey
+entities by an id the caller issues; the model chooses from a bounded list and
+can never supply identity itself. Verified live: 4 claims, 2 to the venue, 2 to
+the neighbouring station, 0 invented ids.
+
+**Still true, do not re-litigate:**
+
+* Live research is a coin flip (54-76s when it works, >120s otherwise) and this
+  is not tunable -- `web_extractor` requires thinking mode. Do not demo it live.
+* `enable_thinking` must be `false` for structured extraction and `true` for
+  anything using `web_extractor`. They are opposite and both mandatory.
+* `web_extractor` cannot be declared without `web_search`.
+
+**Known limitations, honestly:**
+
+* Subject binding was proved by ONE live run. It behaved correctly, including
+  the neighbouring-station case, but one run is one run.
+* `TOKYO_MULTIGEN` has 4 of 7 claims deliberately unspecified. That is the
+  original design exercising the unspecified path -- do not "fix" it.
+* The recorded live fixture's subjects were assigned **by hand** from statements
+  that name the venue, not returned by the model (it ran under prompt v1). This
+  is documented in the fixture itself.
+
+**Next:** Phase 7, Atlas sandbox FlightProvider. Not started.

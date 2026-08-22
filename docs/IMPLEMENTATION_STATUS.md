@@ -7,28 +7,33 @@ If a capability is not marked `IMPLEMENTED` here, it does not work, regardless o
 what any other document, comment or UI label suggests. Any disagreement between
 this table and another document is a bug in the other document.
 
-- **Last updated:** 22 August 2026 (live research and shared links verified)
-- **Phases completed:** Phase 0 (foundation), Phase 1 (deterministic core), Phase 2 (travel waves), Phase 3 (compromise and repair), Phase 4 (journey, legs, provider, package), Phase 5 (local interface), Phase 6 (language understanding, evidence layer, bounded research), Phase 6.5 (live extraction), Phase 6.6 (live Responses API, web research, evidence, shared links)
+- **Last updated:** 22 August 2026 (live subject binding verified)
+- **Phases completed:** Phase 0 (foundation), Phase 1 (deterministic core), Phase 2 (travel waves), Phase 3 (compromise and repair), Phase 4 (journey, legs, provider, package), Phase 5 (local interface), Phase 6 (language understanding, evidence layer, bounded research), Phase 6.5 (live extraction), Phase 6.6 (live Responses API, web research, evidence, shared links), Phase 6.7 (research subject binding)
 - **Phase in progress:** none. Phase 7 not started.
 
-### The one thing to read first about Phase 6.6
+### The one thing to read first about Phase 6.7
 
-**The research side is now live-verified too.** `web_search`, `web_extractor`,
-the Responses API, the evidence layer and the user-shared-link path have all been
-executed against the real service and produced real, checked results.
+**The subject-binding gap Phase 6.6 found is closed and verified live.** A claim
+can now be tied to a known journey entity, and the tying is done by matching an
+identifier WE issued -- the model chooses from a bounded list and never supplies
+identity itself.
 
-What that verification actually found matters more than the fact of it:
+The live run that proved it produced the interesting case without being asked to:
+researching a garden returned the city's official accessibility page for the
+STATION next to it, and the model bound those claims to the station. A true,
+officially-published, correctly-cited accessibility fact therefore does not clear
+the garden's requirement. That is the whole point.
 
-* **Three separate defects were caught only because the calls were real.** All
-  three passed every offline test. One of them -- extracted pages never being
-  collected as sources -- made a run report `SUCCESS` while producing 12 claims
-  with zero sources and rejecting two genuinely official pages as fabricated.
-* **Research succeeds roughly half the time.** Three of six live attempts
-  completed, at 54-57s; the other three exceeded the ceiling with zero search
-  operations. This is not tunable: `web_extractor` requires thinking mode, and
-  thinking mode is the latency. A recorded fallback exists for this reason.
-* **Live claims arrive with no subject**, so they are `UNSPECIFIED` and can clear
-  no accessibility requirement. The fail-safe works; the capability is limited.
+**Phase 6.6 findings still stand and are not superseded:**
+
+* Research succeeds in roughly half of live attempts. Successful runs measured
+  54s, 55s, 57s and 76s; three others exceeded 120s with zero search operations.
+* This is not tunable. `web_extractor` requires thinking mode, and thinking mode
+  is the latency.
+* **Live research remains unsuitable for the stage demo.** Use the recorded
+  fallback. See `DEMO_SCRIPT.md`.
+* Three defects in Phase 6.6 were caught only because the calls were real; all
+  three passed every offline test.
 
 Everything below distinguishes `IMPLEMENTED OFFLINE` from `LIVE UNVERIFIED` on
 exactly that basis. A passing mock is not evidence that an integration works, and
@@ -362,7 +367,9 @@ one offer in isolation:
 | Responses API output reader | `IMPLEMENTED` | `adapters/modelStudio/responsesShape.ts` | (in the 52) |
 | Recorded research provider, same pipeline | `IMPLEMENTED` | `adapters/fixture/fixtureResearch.ts` | (in the 52) |
 | Recorded fallback transcribed from a real live run | `IMPLEMENTED` | `adapters/fixture/researchFixtures.ts` | 4, incl. "never reports itself as live" |
-| Claim subject binding on **live** claims | **`NOT IMPLEMENTED`** | the research prompt never asks for a subject | Live claims are `UNSPECIFIED`, so they clear no stated requirement. Fail-safe holds; capability is limited |
+| Claim subject binding on **live** claims | **`LIVE VERIFIED`** | `core/research/claims.ts`, prompt `orkestr-research-v2` | 25. One live run: 4 claims, 2 bound to the venue, 2 to the neighbouring station, 0 invented ids |
+| Bounded subject candidates (model chooses by id, never names) | `IMPLEMENTED` | `domain/research.ts`, `resolveClaimSubject` | (in the 25) |
+| Entity-mismatch refusal (station page cannot clear a venue) | `IMPLEMENTED` | `core/research/suggestions.ts` | 3 traceability + offline cases B/G/K |
 | Responses API parser | `IMPLEMENTED OFFLINE` | `adapters/modelStudio/responsesShape.ts` | (in the 52) |
 | **Real `web_search`** | **`LIVE VERIFIED`** | `adapters/modelStudio/qwenWebResearch.ts` | Real sources captured; 6 live runs, 3 succeeded |
 | **Real `web_extractor`** | **`LIVE VERIFIED`** | same | 3 pages opened in one run. Requires `web_search` + thinking mode |

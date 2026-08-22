@@ -234,3 +234,34 @@ One global "live" label would now be true of the part somebody is looking at
 and false of the part they are about to trust. The old global banner was
 deleted rather than left unused, because a ready-made one sitting in the
 codebase is an invitation to reintroduce exactly that claim.
+
+## Where entity identity lives (Phase 6.7)
+
+```
+JourneyItem / known entity
+        |  caller issues an id
+        v
+ResearchQuestion.subjectCandidates   [{ id, subject }]
+        |  only id + label cross the boundary
+        v
+prompt (orkestr-research-v2)  ->  model returns "subjectId" or null
+        |  untrusted string
+        v
+resolveClaimSubject(...)      exact match against the issued list
+        |                     no match -> UNSPECIFIED + rejectedSubjectIds
+        v
+EvidenceClaim.subject
+        |
+        v
+subjectMatches(claim, required)  in core/research/suggestions.ts
+```
+
+The boundary that matters is the third arrow. Above it, identity is ours; below
+it, the model holds an opaque string it cannot turn into an entity on its own.
+That is why the resolver takes a candidate list rather than a name, and why
+matching is exact rather than tolerant.
+
+`ProposedClaim` has two subject fields for one reason: `subjectId` is the only
+one model output can reach, and `subject` exists for hand-written fixtures that
+genuinely know their own. `subjectId` takes precedence *including when it fails
+to resolve*, so the fixture field can never become a fallback for an invented id.

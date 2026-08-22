@@ -214,6 +214,21 @@ const TOKYO_MULTIGEN: RecordedResearch = {
  * WHAT IT MUST NEVER DO: claim to be live. The provider replaying it reports
  * RECORDED_WEB, and the interface renders that differently from LIVE_WEB.
  *
+ * SUBJECT ASSIGNMENT IS AUTHORED, NOT RECORDED. Every claim below carries
+ * `subject: HAMARIKYU`, and the live model did NOT supply that -- Phase 6.6 ran
+ * under research prompt v1, which never asked what a claim was about, so the
+ * live claims came back unbound and were stored as UNSPECIFIED.
+ *
+ * The subjects here were assigned by hand, and they are defensible only because
+ * each statement names Hamarikyu Gardens explicitly and cites a page about it.
+ * That is a fixture author reading a record, which is a legitimate source of
+ * identity for a hand-maintained fixture and is NOT evidence that live binding
+ * works. Live binding is proved by a v2 run, not by this file.
+ *
+ * (Three statements were paraphrased in Phase 6.6 in a way that dropped the
+ * venue name the run actually used. They have been restored to name it, so the
+ * assignment can be checked against the statement rather than taken on trust.)
+ *
  * The conflict in it is REAL and was not manufactured. The official Tokyo
  * metropolitan accessibility page states four wheelchair-accessible restrooms;
  * a community accessibility review counts five. Nobody arranged that. It is what
@@ -289,7 +304,7 @@ const HAMARIKYU_ACCESS_LIVE: RecordedResearch = {
     },
     {
       statement:
-        "The pathways are not paved but padded dirt and gravel, which can become muddy after rain.",
+        "The pathways at Hamarikyu Gardens are not paved but padded dirt and gravel, which can become muddy after rain.",
       claimType: "COMMUNITY_SIGNAL",
       citedUrls: ["https://www.accessible-japan.com/hama-rikyu-gardens-accessibility-review/"],
       subject: HAMARIKYU,
@@ -297,7 +312,7 @@ const HAMARIKYU_ACCESS_LIVE: RecordedResearch = {
     {
       // Index 6. The community count that disagrees with the official one.
       statement:
-        "There are 5 accessible toilets in the gardens, by the boat dock, near the Nakanogomon and Otemon gates, near Fujimi-yama hill, and near the tea house.",
+        "There are 5 accessible toilets in Hamarikyu Gardens, by the boat dock, near the Nakanogomon and Otemon gates, near Fujimi-yama hill, and near the tea house.",
       claimType: "COMMUNITY_SIGNAL",
       citedUrls: ["https://www.j-g-a.org/hamarikyugardens-bf.html"],
       contradictsIndexes: [2],
@@ -305,7 +320,7 @@ const HAMARIKYU_ACCESS_LIVE: RecordedResearch = {
     },
     {
       statement:
-        "The tea house on the island is not wheelchair accessible, and only one of the three bridges reaching it is, with some bumps.",
+        "The tea house on the island in Hamarikyu Gardens is not wheelchair accessible, and only one of the three bridges reaching it is, with some bumps.",
       claimType: "COMMUNITY_SIGNAL",
       citedUrls: ["https://www.accessible-japan.com/hama-rikyu-gardens-accessibility-review/"],
       subject: HAMARIKYU,

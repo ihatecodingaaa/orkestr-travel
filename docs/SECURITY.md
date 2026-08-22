@@ -169,3 +169,25 @@ including a testnet wallet key. **Nothing from that environment is copied here**
 and no credential is shared between the two projects. Credentials created for
 hackathon services stay scoped to this repository and must not be introduced into
 the startup's environment without a deliberate decision.
+
+## Entity identity is not model-controlled (Phase 6.7)
+
+A model that can name the entity a claim is about can attach a true statement to
+the wrong thing, which is more dangerous than an obviously false statement:
+every other integrity signal stays green.
+
+The containment is that **the model cannot express identity at all**. It receives
+a list of ids we issued, returns one of them or `null`, and any other string
+resolves to `UNSPECIFIED`. There is no free-text subject channel, and the
+research payload parser deliberately does not read a `subject` object even
+though the internal type has one.
+
+Tested directly (`tests/subjectBinding.test.ts`, case J):
+
+* A claim whose statement instructs the reader to reassign every subject to the
+  target venue, carrying an invented id -- resolves to `UNSPECIFIED`.
+* A payload supplying a complete, well-formed `subject` object -- the parser
+  does not read it.
+
+Related: an unknown `subjectId` does not fall back to the fixture-only `subject`
+field. A fallback there would be a bypass, not a convenience.

@@ -4,7 +4,7 @@ import { HttpModelStudioTransport } from "@/adapters/modelStudio/transport";
 import { QwenWebResearchProvider } from "@/adapters/modelStudio/qwenWebResearch";
 import { DEFAULT_RESEARCH_BUDGET } from "@/core/research/budget";
 import { checkPublicUrl } from "@/core/research/url";
-import type { ResearchQuestion } from "@/domain/research";
+import type { ResearchQuestion, SubjectCandidate } from "@/domain/research";
 import { asResearchQuestionId } from "@/domain/ids";
 import { asIsoDateTime } from "@/domain/time";
 import { loadLocalEnv, report, requireConfig } from "./harness";
@@ -46,6 +46,28 @@ const configured = config.configured;
  */
 const ATTRACTION = "Hamarikyu Gardens";
 
+/**
+ * The bounded candidate set, standing in for a real JourneyItem.
+ *
+ * TWO candidates, not one, and the second is the point. Researching a garden
+ * returns pages about the garden AND pages about the station beside it, and an
+ * officially-sourced true statement about the station must not clear the
+ * garden's access requirement. Offering the station its own id means a claim
+ * about it has somewhere correct to go -- which is a far better test than
+ * offering only the garden, where any station claim would land on `null` for
+ * lack of alternatives rather than because the model placed it correctly.
+ */
+const SUBJECT_CANDIDATES: readonly SubjectCandidate[] = [
+  {
+    id: "journey-item-hamarikyu",
+    subject: { key: "hamarikyu-gardens", label: "Hamarikyu Gardens", kind: "VENUE" },
+  },
+  {
+    id: "journey-item-shiodome",
+    subject: { key: "shiodome-station", label: "Shiodome Station", kind: "STATION" },
+  },
+];
+
 const QUESTION: ResearchQuestion = {
   id: asResearchQuestionId("Q-LIVE-ACCESS"),
   kind: "OFFICIAL_ACCESSIBILITY",
@@ -62,6 +84,7 @@ const QUESTION: ResearchQuestion = {
   maxSources: 3,
   purpose:
     "Establish what is officially published about step-free access at this one attraction, for a group that stated the requirement.",
+  subjectCandidates: SUBJECT_CANDIDATES,
 };
 
 /** Bounded tightly for a first live run. */
@@ -162,6 +185,20 @@ describe("live web research", () => {
       });
     }
 
+    report("SUBJECT BINDING", {
+      candidatesOffered: SUBJECT_CANDIDATES.map((c) => c.id).join(", "),
+      claimsBoundToGarden: String(
+        ledger.claims.filter((c) => c.subject.key === "hamarikyu-gardens").length,
+      ),
+      claimsBoundToStation: String(
+        ledger.claims.filter((c) => c.subject.key === "shiodome-station").length,
+      ),
+      claimsUnspecified: String(
+        ledger.claims.filter((c) => c.subject.kind === "UNSPECIFIED").length,
+      ),
+      inventedSubjectIds: ledger.rejectedSubjectIds.join(" | ") || "none",
+    });
+
     report("rejected citations", {
       count: String(ledger.rejectedCitations.length),
       urls: ledger.rejectedCitations.join(" | ") || "none",
@@ -202,6 +239,18 @@ describe("live web research", () => {
       const official = sources.some((s) => s.authority === "OFFICIAL_WEB" || s.authority === "PROVIDER");
       if (!official) {
         violations.push(`operational claim ${claim.id as string} has no official source behind it`);
+      }
+    }
+
+    /**
+     * No claim may carry a subject we did not issue. This is the whole phase in
+     * one loop: the model can name an id, and only an id we handed it survives.
+     */
+    const allowed = new Set(SUBJECT_CANDIDATES.map((c) => c.subject.key));
+    for (const claim of ledger.claims) {
+      if (claim.subject.kind === "UNSPECIFIED") continue;
+      if (!allowed.has(claim.subject.key)) {
+        violations.push(`claim ${claim.id as string} bound to a subject we never issued: ${claim.subject.key}`);
       }
     }
 

@@ -9,6 +9,7 @@ import type {
   SourceAuthority,
 } from "../../domain/evidence";
 import type { EvidenceId, ResearchSourceId } from "../../domain/ids";
+import type { SubjectCandidate } from "../../domain/research";
 import type { IsoDateTime } from "../../domain/time";
 import { asEvidenceId } from "../../domain/ids";
 import { UNSPECIFIED_SUBJECT } from "../../domain/evidence";
@@ -46,13 +47,59 @@ export interface ProposedClaim {
   /** Statements this one contradicts, by index into the proposed list. */
   readonly contradictsIndexes?: readonly number[];
   /**
-   * What the claim is about. Omitted means UNSPECIFIED, which matches nothing.
+   * A subject id the MODEL proposed, to be resolved against the bounded
+   * candidate set. Untrusted. An id we did not issue resolves to UNSPECIFIED.
    *
-   * Defaulting to "unspecified" rather than to "whatever we were researching" is
-   * the whole safety property: a claim that cannot be tied to a subject must not
-   * inherit one by being in the same result set as claims that can.
+   * This is the only subject channel available to model output. The parser in
+   * `researchPayload.ts` reads this field and never `subject` below, so no
+   * amount of prose or injected instruction can put a fully-formed subject into
+   * a claim -- the most a model can do is name an id, and naming an id we never
+   * issued achieves nothing.
+   */
+  readonly subjectId?: string;
+
+  /**
+   * An ALREADY-RESOLVED subject. For callers that genuinely know, which in
+   * practice means hand-written and migrated fixtures, never model output.
+   *
+   * Omitted means UNSPECIFIED, which matches nothing. Defaulting to "unspecified"
+   * rather than to "whatever we were researching" is the whole safety property:
+   * a claim that cannot be tied to a subject must not inherit one by being in
+   * the same result set as claims that can.
    */
   readonly subject?: ClaimSubject;
+}
+
+/**
+ * Resolve a model's proposed subject id against the candidates we issued.
+ *
+ * The precedence rule matters more than it looks. When a claim carries a
+ * `subjectId`, that id decides the outcome ON ITS OWN -- including when it
+ * resolves to nothing. Falling back to the trusted `subject` field on a failed
+ * lookup would create exactly the bypass this design exists to prevent: emit an
+ * unknown id, get the pre-resolved subject anyway.
+ *
+ * Matching is exact. No trimming into equivalence, no case folding, no
+ * similarity. "Tokyo National Museum" and "The National Museum" are different
+ * strings and must stay different things; anything cleverer would be a fuzzy
+ * resolver wearing a validator's clothes.
+ *
+ * PURE.
+ */
+export function resolveClaimSubject(
+  claim: Pick<ProposedClaim, "subjectId" | "subject">,
+  candidates: readonly SubjectCandidate[],
+): { readonly subject: ClaimSubject; readonly rejectedId?: string } {
+  if (claim.subjectId !== undefined) {
+    const match = candidates.find((candidate) => candidate.id === claim.subjectId);
+    if (match === undefined) {
+      // An id nobody issued. Never a subject, and recorded as an attempt.
+      return { subject: UNSPECIFIED_SUBJECT, rejectedId: claim.subjectId };
+    }
+    return { subject: normaliseSubject(match.subject) };
+  }
+  if (claim.subject !== undefined) return { subject: normaliseSubject(claim.subject) };
+  return { subject: UNSPECIFIED_SUBJECT };
 }
 
 /** Normalise a subject key so casing and spacing cannot split one subject in two. */
@@ -123,6 +170,14 @@ export interface ClaimAssemblyOptions {
   readonly retrievedAt: IsoDateTime;
   /** Prefix for claim ids, so ids trace back to the operation that made them. */
   readonly idPrefix: string;
+  /**
+   * Entities a claim from this operation may be bound to.
+   *
+   * Absent means none, and every claim stays UNSPECIFIED. Note what this list
+   * does NOT do: it does not assign anything. A claim that names no candidate
+   * gets no subject, however obvious the intended one seems.
+   */
+  readonly subjectCandidates?: readonly SubjectCandidate[];
 }
 
 export interface ClaimAssemblyResult {
@@ -145,7 +200,15 @@ export function assembleClaims(
   options: ClaimAssemblyOptions,
 ): ClaimAssemblyResult {
   const rejectedCitations: string[] = [];
+  const rejectedSubjectIds: string[] = [];
   const downgraded: EvidenceId[] = [];
+  const candidates = options.subjectCandidates ?? [];
+
+  const subjectOf = (claim: ProposedClaim): ClaimSubject => {
+    const resolved = resolveClaimSubject(claim, candidates);
+    if (resolved.rejectedId !== undefined) rejectedSubjectIds.push(resolved.rejectedId);
+    return resolved.subject;
+  };
 
   const claimIdAt = (index: number): EvidenceId =>
     asEvidenceId(`${options.idPrefix}-EV-${String(index + 1).padStart(3, "0")}`);
@@ -213,8 +276,7 @@ export function assembleClaims(
       statement: claim.statement,
       claimType,
       state,
-      subject:
-        claim.subject === undefined ? UNSPECIFIED_SUBJECT : normaliseSubject(claim.subject),
+      subject: subjectOf(claim),
       sourceIds,
       needsConfirmation,
       conflictsWithClaimIds: conflictIndexes.map(claimIdAt),
@@ -228,6 +290,7 @@ export function assembleClaims(
       sources: collected,
       claims,
       rejectedCitations: [...new Set(rejectedCitations)],
+      rejectedSubjectIds: [...new Set(rejectedSubjectIds)],
     },
     downgraded,
   };

@@ -185,3 +185,43 @@ floating-point arithmetic on money. Phase 6 added: the mapper assigns only the
 safe literals to `origin` and `confirmation`; the schema refuses every authority
 field by name; no fixture claims to be live; and no recorded research claim is
 long enough to be a stored page body.
+
+## Subject binding (Phase 6.7)
+
+`tests/subjectBinding.test.ts` (22) and `tests/subjectTraceability.test.ts` (3).
+
+The binding tests are lettered A-L and each asks the same question from a
+different angle: **can anything other than an identifier we issued decide what a
+claim speaks for?**
+
+| | Case | Answer required |
+|---|---|---|
+| A | Venue claim names the venue's id | binds |
+| B | Station claim during venue research | binds to the station, never the venue |
+| C | Invented id | `UNSPECIFIED`, recorded in `rejectedSubjectIds` |
+| D | No id at all | `UNSPECIFIED`, clears nothing |
+| E | Community source, correct subject | still downgraded |
+| F | Official source, correct subject | may support the requirement |
+| G | Official source, wrong subject | may not |
+| H | Prose names the venue, no id | cannot bind |
+| I | One page, two entities | one subject each |
+| J | Injection telling it to set every subject to the target | refused |
+| K | Genuine citation, wrong subject | provenance does not override mismatch |
+| L | Two sources disagree about one subject | conflict preserved |
+
+Three of these are worth calling out because they are the ones a well-meaning
+refactor would break:
+
+* **C also checks near-misses.** `JOURNEY-ITEM-MUSEUM`, `journey_item_museum`
+  and `journey-item-museum-2` must all fail. Any "helpful" normalisation here
+  turns the validator into a fuzzy resolver.
+* **C also checks the fallback bypass.** An unknown `subjectId` must NOT fall
+  through to the pre-resolved `subject` field, or a model could emit any id and
+  still be handed a real entity.
+* **J checks the parser, not just the resolver.** Model output must have no
+  channel to a fully-formed subject object at all.
+
+The traceability tests walk the whole chain -- journey entity id, candidate,
+chosen id, retrieved source, claim subject, source authority, evidence state,
+user-facing sentence -- using the **actual claims from the live run**, including
+the station claim that must not clear the garden.

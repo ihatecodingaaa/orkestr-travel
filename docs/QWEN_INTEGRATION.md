@@ -413,3 +413,39 @@ back at all rather than something coming back late.
 Raising the ceiling further was considered and rejected. A minute is already past
 what a person will wait, and nothing in the evidence suggests a longer wait would
 have helped.
+
+## Research prompt v2 (Phase 6.7)
+
+`orkestr-research-v1` -> `orkestr-research-v2`. The version is bumped rather
+than edited in place because the OUTPUT CONTRACT changed: claims now carry
+`subjectId`, and a v1 result has no such field to compare against.
+
+**What changed:** one new output field and a block of rules about it. Nothing
+about sources, citations, conflicts or claim types moved.
+
+**What invariant it establishes:** a claim can be tied to a known journey entity,
+by an identifier we issued, without the model ever supplying identity itself.
+The prompt is given a `SUBJECTS` list of `id = label` pairs and told to use one
+of those ids exactly or `null`. The internal subject key is never shown to it.
+
+The rules that matter most, and why each is there:
+
+| Rule | Failure it prevents |
+|---|---|
+| Use an id from the list, or null | Invented identifiers becoming domain entities |
+| Null is a correct answer | Guessing rather than declining |
+| The subject is what the STATEMENT describes, not where you read it | A station claim on a museum's website becoming a museum claim |
+| Publishing a page does not make the publisher the subject | An operator's page about a third-party venue |
+| Do not assume the researched place is the subject | The research target silently landing on every claim |
+| Do not carry access information between subjects | "Next door is step-free, so this is" |
+| Two subjects on one page means two claims | One claim quietly speaking for two places |
+
+**Live result, 22 August 2026.** One bounded run, two candidates offered
+(a garden and the station beside it). Four claims came back: two bound to the
+garden, two to the station, none unspecified, **zero invented subject ids**. The
+model was not steered toward the station -- the search returned an official
+transport page on its own, and the model placed the claims from it correctly.
+
+Latency for that run was 76.6s (two searches, two pages extracted), which sits
+above the 54-57s cluster recorded in the table above and does not change the
+conclusion below.

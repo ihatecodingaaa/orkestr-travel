@@ -15,7 +15,7 @@ import { assembleClaims } from "../../core/research/claims";
 import { collectSources } from "../../core/research/sources";
 import { ResearchLedgerBudget } from "../../core/research/budget";
 import { readResponsesBody } from "./responsesShape";
-import { RESEARCH_SYSTEM_PROMPT, buildResearchInstruction } from "./prompts/researchV1";
+import { RESEARCH_SYSTEM_PROMPT, buildResearchInstruction } from "./prompts/researchV2";
 import { parseResearchPayload } from "./researchPayload";
 
 /**
@@ -40,7 +40,12 @@ import { parseResearchPayload } from "./researchPayload";
  * reason.
  */
 
-const EMPTY_LEDGER: EvidenceLedger = { sources: [], claims: [], rejectedCitations: [] };
+const EMPTY_LEDGER: EvidenceLedger = {
+  sources: [],
+  claims: [],
+  rejectedCitations: [],
+  rejectedSubjectIds: [],
+};
 
 export class QwenWebResearchProvider implements ResearchProvider {
   readonly name = "alibaba-model-studio-web";
@@ -228,6 +233,15 @@ export class QwenWebResearchProvider implements ResearchProvider {
     const assembly = assembleClaims(proposed, collection.sources, {
       retrievedAt: context.now,
       idPrefix: context.requestId,
+      /**
+       * The bounded set the model was offered, passed to the validator that
+       * checks what it chose. These have to be the same list: offering one set
+       * and validating against another would either reject every valid choice
+       * or accept ids we never showed it.
+       */
+      ...(question.subjectCandidates === undefined
+        ? {}
+        : { subjectCandidates: question.subjectCandidates }),
     });
 
     const community = buildCommunitySummary(

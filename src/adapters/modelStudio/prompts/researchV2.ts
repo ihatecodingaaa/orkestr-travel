@@ -1,7 +1,7 @@
 import type { ResearchQuestion } from "../../../domain/research";
 
 /**
- * The research prompt, version orkestr-research-v1.
+ * The research prompt, version orkestr-research-v2.
  *
  * The difference between this and a useful answer from a chatbot is that the
  * question is CONSTRUCTED, not typed. `buildResearchInstruction` turns a typed
@@ -15,7 +15,20 @@ import type { ResearchQuestion } from "../../../domain/research";
  * established.
  */
 
-export const RESEARCH_PROMPT_VERSION = "orkestr-research-v1";
+/**
+ * v2 (Phase 6.7) adds ENTITY BINDING, and nothing else.
+ *
+ * v1 asked for claims and citations but never asked what each claim was ABOUT.
+ * Live runs therefore produced claims with no subject, which is safe -- an
+ * unspecified subject matches nothing -- but useless: a genuinely official
+ * statement about a venue could not clear that venue's access requirement,
+ * because nothing tied the statement to the venue.
+ *
+ * The version is bumped rather than edited in place because the output contract
+ * changed. Two runs under the same version name must be comparable, and a v1
+ * result has no subject field to compare.
+ */
+export const RESEARCH_PROMPT_VERSION = "orkestr-research-v2";
 
 export const RESEARCH_SYSTEM_PROMPT = `You are the research step of Orkestr, a group travel planner. You answer one narrow question about a destination using web search, and you return structured JSON describing what the sources said.
 
@@ -26,6 +39,16 @@ RULES ABOUT SOURCES
 - Only cite pages that the search and extraction tools actually returned to you in this conversation. Never cite a URL from memory, however confident you are that it exists. A citation that was not retrieved will be rejected and the claim will be recorded as unsupported.
 - Copy URLs exactly as the tools gave them.
 - An operator, venue, transport authority or government page is an official source. A review, forum thread, social post or video is a community source. Never describe a community source as official.
+
+RULES ABOUT WHAT A CLAIM IS ABOUT
+- Each claim must say which subject it concerns, using "subjectId". You will be given a list of subjects with their ids. Use one of those ids exactly as written, or null.
+- Use null whenever the claim is not clearly about one of the listed subjects. Null is a correct and expected answer, and is much better than a guess.
+- Never invent a subject id. An id that is not on the list is discarded and the claim ends up tied to nothing.
+- The subject is what the STATEMENT describes, not where you read it. A statement about a railway station is about that station even when you found it on a museum's own website, and it must not be given the museum's id.
+- Publishing a page does not make an organisation the subject. An operator's page describing a different venue is a claim about that venue.
+- Do not assume a claim is about the subject just because that is what was being researched. Most of these questions are about one place, and pages about nearby places will come back too.
+- Do not carry accessibility information from one subject to another. That one place has step-free access says nothing about the place next to it.
+- If the same page states things about two different subjects, make two claims with two different subjectIds.
 
 RULES ABOUT CLAIMS
 - Mark a claim OPERATIONAL_FACT only when an official or provider page states it: opening hours, step-free access, wheelchair facilities, capacity, booking policy, certified dietary provision.
@@ -45,6 +68,7 @@ Return one JSON object and nothing else:
     {
       "statement": "one sentence, specific, no hedging language",
       "claimType": "OPERATIONAL_FACT | COMMUNITY_SIGNAL | EDITORIAL_CONTEXT",
+      "subjectId": "an id from the SUBJECTS list, or null",
       "citedUrls": ["exact URLs the tools returned"],
       "contradictsIndexes": [0]
     }
@@ -141,6 +165,34 @@ export function buildResearchInstruction(
 
   if (question.window !== undefined) {
     lines.push(`WHEN: between ${question.window.from} and ${question.window.to}.`);
+  }
+
+  /**
+   * The bounded subject list.
+   *
+   * Only id and label cross this boundary. The model never sees the internal
+   * subject key or kind, so nothing it writes can shape a subject directly --
+   * the most it can do is name one of these ids, and any other string it
+   * produces resolves to nothing.
+   *
+   * When there are no candidates the instruction says so plainly rather than
+   * omitting the section. An absent rule invites the model to improvise a
+   * subject field; an explicit "there are none, use null" does not.
+   */
+  lines.push(``);
+  const candidates = question.subjectCandidates ?? [];
+  if (candidates.length > 0) {
+    lines.push(`SUBJECTS you may attribute a claim to. Use the id exactly, or null:`);
+    for (const candidate of candidates) {
+      lines.push(`  id: ${candidate.id}  =  ${candidate.subject.label}`);
+    }
+    lines.push(
+      `A claim about anything not on this list must use "subjectId": null. Pages about nearby places will come back; those claims get null, not the id of the place being researched.`,
+    );
+  } else {
+    lines.push(
+      `SUBJECTS: none were supplied for this question. Set "subjectId": null on every claim.`,
+    );
   }
 
   lines.push(

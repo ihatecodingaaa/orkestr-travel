@@ -212,6 +212,15 @@ export interface EvidenceLedger {
   readonly claims: readonly EvidenceClaim[];
   /** Citations the model produced that named no collected source. Rejected. */
   readonly rejectedCitations: readonly string[];
+  /**
+   * Subject ids the model proposed that we never issued.
+   *
+   * Recorded rather than silently dropped, for the same reason as rejected
+   * citations: a model inventing entity identifiers is a thing the operator
+   * should be able to see happening, and a count of zero is only meaningful if
+   * a non-zero count would have been visible.
+   */
+  readonly rejectedSubjectIds: readonly string[];
 }
 
 /**

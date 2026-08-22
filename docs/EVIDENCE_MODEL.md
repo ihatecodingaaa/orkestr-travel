@@ -223,14 +223,78 @@ Two lessons worth keeping:
 
 ### Entity binding, live
 
-Claims returned by the live model arrive with **no subject**, so they are stored
-as `UNSPECIFIED`. `UNSPECIFIED` matches nothing, which means none of them can
-clear a stated accessibility requirement.
+**Phase 6.6 finding, kept here because it is the reason the design below exists.**
+Claims returned by the live model arrived with **no subject**, so they were
+stored as `UNSPECIFIED`. `UNSPECIFIED` matches nothing, so none of them could
+clear a stated accessibility requirement. That was the fail-safe behaving as
+designed and a real limitation at the same time: the research prompt never asked
+the model what each claim was about, so genuinely official facts could not be
+tied to the venue they described.
 
-That is the fail-safe behaving exactly as designed, and it is also a real
-limitation: the research prompt does not yet ask the model to name what each
-claim is about, so useful official facts cannot currently be bound to the venue
-they describe. The recorded fixture binds subjects explicitly, which is why the
-replay path can demonstrate the matching that the live path cannot yet reach.
-Closing this means adding a subject field to the research payload -- a change to
-the prompt and the schema, not to the safety rule.
+**Phase 6.7 closed it.** See below.
+
+## Entity binding: how a claim gets a subject
+
+### The problem with asking a model what a claim is about
+
+It answers with a NAME, and a name is not an identity. It will produce
+"Senso-ji Temple" where the journey holds "Senso-ji", or invent
+`some-other-temple-123` outright. Either becomes a real domain entity the moment
+the string is trusted, and no amount of string comparison fixes that -- "Tokyo
+National Museum" and "The National Museum" must stay different things, because
+deciding they are the same is a guess wearing a validator's clothes.
+
+### The design: bounded candidates, chosen by id
+
+The model never supplies identity. It supplies a CHOICE from a set we handed it.
+
+```
+ResearchQuestion.subjectCandidates: [
+  { id: "journey-item-hamarikyu", subject: { key: "hamarikyu-gardens", ... } },
+  { id: "journey-item-shiodome",  subject: { key: "shiodome-station",  ... } },
+]
+```
+
+Only `id` and `label` cross the boundary into the prompt. The model returns
+`"subjectId": "journey-item-hamarikyu"` or `null`, and `resolveClaimSubject`
+matches that id **exactly** against the list we issued. An id we did not issue
+resolves to `UNSPECIFIED` and is recorded in `ledger.rejectedSubjectIds`.
+
+Two rules make it hold:
+
+* **`subjectId` decides alone, including when it fails.** `ProposedClaim` also
+  has a pre-resolved `subject` field, for hand-written fixtures. If an unknown
+  id fell back to it, a model could emit any id and still be handed a real
+  entity. It does not fall back.
+* **The parser never reads `subject` from model output.** The only subject
+  channel available to a model is an id. Asserted in `tests/subjectBinding.test.ts`.
+
+### The research TARGET is not the claim SUBJECT
+
+This is the distinction the whole design is for. Researching a garden returns
+pages about the garden *and* pages about the station beside it. Listing a
+candidate makes it **bindable**, never **assumed** -- nothing is inherited by a
+claim that did not name it, however obvious the intended subject looks.
+
+Verified live on 22 August 2026, and it happened without being arranged:
+researching Hamarikyu Gardens turned up the Tokyo metropolitan authority's
+official page for **Shiodome Station**. The model bound that claim to the
+station, not the garden. A true, officially-published accessibility statement
+about the station therefore cannot clear the garden's step-free requirement --
+which is exactly the failure this exists to prevent.
+
+### What must all hold before a requirement is met
+
+No single condition is sufficient:
+
+| Condition | Where |
+|---|---|
+| Claim subject == the required journey entity | `subjectMatches` |
+| Source authority is `OFFICIAL_WEB` or `PROVIDER` | `canEstablishOperationalFact` |
+| Claim type is operationally relevant | `claimType === "OPERATIONAL_FACT"` |
+| Not conflicting or otherwise awaiting confirmation | `needsConfirmation === false` |
+| Claim passed validation | present in the ledger |
+
+A correct subject buys a community source **nothing**: it is still downgraded to
+`COMMUNITY_SIGNAL`. Nine posts saying "step-free, no problem" remain nine
+people's experience regardless of how precisely they are addressed.

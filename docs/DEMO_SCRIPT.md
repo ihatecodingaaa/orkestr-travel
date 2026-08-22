@@ -329,3 +329,24 @@ believing everything else.
    a venue is step-free.
 
 All three are refusals. That is the product.
+
+### The entity-binding beat (Phase 6.7)
+
+Worth thirty seconds if the room is technical, because it is the least obvious
+thing the product does.
+
+Researching Hamarikyu Gardens returned the city's **official** accessibility
+page for Shiodome Station, next door. Real page, real citation, true statement:
+three lifts, one accessible restroom.
+
+It does not clear the garden's step-free requirement, and the screen still says
+*"No official source confirmed the access this group needs."*
+
+Say why: every integrity signal on that claim is green. Official source. Genuine
+citation. Not conflicting. The only thing wrong with it is that it is about
+somewhere else -- and a planner who trusted it would send someone who uses a
+wheelchair to a garden nobody had checked.
+
+**The demo-mode policy has not changed.** Live research still succeeds in about
+half of runs (54-76s when it works, >120s when it does not), and this run took
+76.6s. Show this from the recorded fallback, not live.
