@@ -556,3 +556,55 @@ Order creation, payment and ticketing remain unimplemented on purpose --
 
 **Not claimed:** end-to-end live Tokyo Atlas. Atlas Sandbox does not carry the
 route, and the demo says so rather than blurring it.
+
+---
+
+## CANONICAL STATUS — end of Phase 9
+
+The single table to trust. Supersedes every per-phase table above, which remain
+as dated history.
+
+| Capability | Status |
+| --- | --- |
+| Qwen structured extraction | **LIVE VERIFIED** |
+| Responses API | **LIVE VERIFIED** |
+| `web_search` | **LIVE VERIFIED** |
+| `web_extractor` | **LIVE VERIFIED** |
+| Research claim subject binding | **LIVE VERIFIED** |
+| Qwen research, for the demo | RECORDED (live is 54–76s with timeouts) |
+| Atlas browser authorization | **LIVE VERIFIED** (human step, completed) |
+| Atlas sandbox environment guard | **LIVE VERIFIED** (set-then-confirm, before every call) |
+| Atlas sandbox search | **LIVE VERIFIED** |
+| Atlas offer normalisation | **LIVE VERIFIED** |
+| Atlas sandbox verification | **LIVE VERIFIED** |
+| Recorded Atlas Sandbox fallback | IMPLEMENTED, from a real verified run |
+| Agent orchestration run | IMPLEMENTED + OFFLINE VERIFIED |
+| Bounded step budget | IMPLEMENTED + OFFLINE VERIFIED |
+| `STEP_LIMIT_REACHED` never becomes success | IMPLEMENTED + OFFLINE VERIFIED |
+| Postcondition / false-success check | IMPLEMENTED + OFFLINE VERIFIED |
+| Provider freshness precondition | IMPLEMENTED + OFFLINE VERIFIED |
+| Local plan repair | IMPLEMENTED + OFFLINE VERIFIED |
+| Decision preservation | IMPLEMENTED + OFFLINE VERIFIED |
+| Private compromise, owner authority | IMPLEMENTED + OFFLINE VERIFIED |
+| Demo determinism | OFFLINE VERIFIED (byte-identical between runs) |
+| Tokyo hero journey | DETERMINISTIC DEMO SCENARIO — **not** Atlas-backed |
+| Atlas provider card | RECORDED ATLAS SANDBOX (HKG → MNL) |
+| Price-change branch | OFFLINE VERIFIED (the real verification returned *unchanged*) |
+| Unavailable branch | OFFLINE VERIFIED (no live outage occurred) |
+| Runs with zero credentials | **VERIFIED** against a production build; every route 200 |
+| Atlas production | **NOT AUTHORISED** — not representable in the type |
+| Order creation | NOT IMPLEMENTED |
+| Payment | NOT IMPLEMENTED |
+| Ticketing | NOT IMPLEMENTED |
+| Persistence / database | NOT IMPLEMENTED |
+| Qoder | **NOT USED** — see `JUDGING_RUBRIC_AUDIT.md` |
+| Deployment | **NOT PERFORMED** — see `DEPLOYMENT_PLAN.md` |
+
+**Tests: 1,146 across 55 files.** Lint, typecheck, build, check, verify and the
+secret check are all green, with no network access required.
+
+### The three things not to overclaim
+
+1. **The Tokyo flights are not from Atlas.** Sandbox serves a bounded route set.
+2. **Research is recorded for the demo.** Live works; it is too slow to film.
+3. **No price change happened live.** The fare-shock beat is a demo scenario.

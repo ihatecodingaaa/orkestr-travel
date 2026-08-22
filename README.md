@@ -1,30 +1,105 @@
 # Orkestr Travel
 
-**Tell Orkestr who is going and what matters. It orchestrates the rest.**
+**The coordination agent for group journeys.**
 
-Orkestr Travel is a coordination agent that turns the changing needs of multiple
-travellers into one feasible, evidence-backed group journey, while asking the
-humans involved for as little as possible.
+Most travel AI helps one person build an itinerary. Orkestr coordinates a
+**group** with conflicting dates, budgets and needs — and when something
+changes, it repairs only the part that actually broke instead of starting the
+trip over.
 
-The question it exists to answer is:
-
-> What is the minimum information, group split and compromise required to make
-> this journey possible?
+> **Other planners regenerate the trip. Orkestr works out what actually changed.**
 
 Built for the **Alibaba Cloud x Atlas Agentic AI Hackathon 2026**.
 
-**This is an experimental travel vertical, not the Orkestr startup itself.** The
-long-term startup lives in the `orkestr_luc` repository and keeps its own
-validation thesis; this build does not replace it, and the hackathon
-technologies used here (Atlas, ATRIP, Alibaba Cloud, AgentRun, Function Compute,
-Model Studio / Qwen, Qoder) are not automatically permanent startup
-dependencies. See `docs/STARTUP_BOUNDARY.md`.
+---
+
+## The problem, in one paragraph
+
+Seven people want to go to Tokyo. Grandma can only fly Tuesday. Ryan can only
+fly Wednesday and joins a week late. One person uses a wheelchair. One has a
+budget they will not say out loud. Somebody's fare moves by forty dollars the
+night before.
+
+Every one of those is a *coordination* problem, not a search problem. And the
+moment any of them changes, a normal planner throws the whole itinerary away and
+starts again — losing every decision the group already argued their way to.
+
+## What makes it different
+
+**Travel Waves.** When no single flight works for everybody, Orkestr splits the
+group by *confirmed availability* — deterministically, not by asking a model
+what it thinks — and tracks when everyone is finally in the same place.
+
+**Least-change repair.** Planning asks "what is the best trip?". Repair asks
+"what is the smallest valid change to the trip we already have?". Those are
+different questions and Orkestr answers them differently.
+
+**It tells you what it did NOT touch.** Most planners cannot, because they
+rebuilt everything and have nothing left to compare against.
+
+**AI proposes. Code decides.** Qwen reads the messy group chat. Deterministic
+code decides who flies when, what anybody can afford, and whether a repair is
+valid. No model is consulted for any of that.
+
+## The agent loop
+
+```mermaid
+flowchart TD
+    A[Group conversation] --> B[Qwen understanding]
+    B --> C[Constraint engine]
+    C --> D[Travel Waves]
+    D --> E[Journey + reunion]
+    E --> F[Atlas flight facts + evidence]
+    F --> G{Something changes}
+    G --> H[What does this affect?]
+    H --> I[Re-check stale provider facts]
+    I --> J[Repair only what broke]
+    J --> K[Validate the result]
+    K --> L[Explain, then stop]
+```
+
+The loop is **bounded**: a hard step limit, one place that counts steps, and no
+path that reaches an ending without the count being accurate. Running out of
+steps is recorded as running out of steps — never as success.
+
+## See it in 60 seconds
+
+```bash
+npm install
+npm run dev
+```
+
+Then open **`/demo/agent`** — the one screen that answers *"when the plan breaks,
+does it know what to leave alone?"*
+
+Click **Ryan joins**. Read three things: what changed, what it affected, and what
+stayed exactly as it was.
+
+No credentials needed. With nothing configured the whole demo runs from recorded
+and fixture data, and says so on screen.
+
+## What is real
+
+| | |
+|---|---|
+| **Alibaba Cloud Model Studio (Qwen)** | Live-verified: structured extraction, Responses API, `web_search`, `web_extractor`, entity-bound research claims |
+| **Atlas** | Live-verified: sandbox search and offer verification against the real CLI |
+| **Everything consequential** | Deterministic. Money in exact minor units, constraints, waves, repair, preservation |
+| **The demo** | Recorded Model Studio + recorded Atlas Sandbox + deterministic engines, so it never depends on a network |
+
+Sandbox fares are **test data**. Nothing is booked, and there is no order,
+payment or ticketing path in this application at all.
 
 ---
 
 ## What this is not
 
-Saying this plainly saves a lot of confusion later. Orkestr Travel is **not** an
+**This is an experimental travel vertical, not the Orkestr startup itself.** The
+long-term startup lives in the `orkestr_luc` repository and keeps its own
+validation thesis. The hackathon technologies used here are not automatically
+permanent startup dependencies. See `docs/STARTUP_BOUNDARY.md`.
+
+Saying the rest plainly saves confusion later. Orkestr Travel is **not** an
 AI flight search engine, an itinerary generator, a group-chat app, an
 expense-splitting app, or a travel chatbot. Those all exist. None of them answer
 the question above.
@@ -257,6 +332,13 @@ Start with `docs/PRODUCT_SPEC.md` for what the product does, and
 | `NEXT_CLAUDE_SESSION.md` | The startup prompt for a fresh session |
 | `QODER_USAGE.md` | Recorded Qoder review stages |
 | `DEMO_SCRIPT.md` | The demo scenario and narrative |
+| `SUBMISSION_PACK.md` | **Submission content: title, descriptions, storyboard, narration** |
+| `JUDGE_QA.md` | Hard questions from judges and investors, answered honestly |
+| `JUDGING_RUBRIC_AUDIT.md` | Ruthless self-assessment against the published rubric |
+| `DEPLOYMENT_PLAN.md` | **Deployment options and the Atlas hosting limitation** |
+| `MANUAL_QA_CHECKLIST.md` | Browser checks for the founder to run |
+| `VIDEO_RECORDING_CHECKLIST.md` | Recording setup and what to say out loud |
+| `DEMO_CLAIM_MAP.md` | Every narration sentence, mapped to what backs it |
 | `FAILURE_MODES.md` | What can go wrong and the intended behaviour |
 | `SECURITY.md` | Secrets, privacy and sandbox safety |
 | `TESTING.md` | Test strategy and required coverage |
