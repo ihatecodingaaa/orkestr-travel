@@ -26,7 +26,8 @@
     "smoke:responses": "vitest run --config vitest.live.config.ts evals/responsesSmoke.live.ts",
     "research:live": "vitest run --config vitest.live.config.ts evals/research.live.ts",
     "research:diagnose": "vitest run --config vitest.live.config.ts evals/researchDiagnostic.live.ts",
-    "shared:live": "vitest run --config vitest.live.config.ts evals/sharedLinks.live.ts"
+    "shared:live": "vitest run --config vitest.live.config.ts evals/sharedLinks.live.ts",
+    "atlas:smoke": "vitest run --config vitest.live.config.ts evals/atlas.live.ts"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.0",

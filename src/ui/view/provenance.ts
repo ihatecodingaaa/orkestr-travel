@@ -155,22 +155,76 @@ export function researchStatus(mode: ResearchMode, failed = false): SubsystemSta
 }
 
 /**
+ * How the flights on screen were obtained.
+ *
+ * Phase 7 connected a real provider, so this row is no longer fixed. What has
+ * NOT changed is that it is a separate row: a live badge on research still says
+ * nothing about the flights, and vice versa.
+ */
+export type FlightInventoryMode =
+  /** Hand-written data in this repository. */
+  | "LOCAL_FIXTURE"
+  /** A real Atlas sandbox call, made just now. */
+  | "ATLAS_SANDBOX"
+  /** A real Atlas sandbox result captured earlier and replayed. */
+  | "RECORDED_ATLAS_SANDBOX"
+  /** Atlas was asked and could not answer. Never silently replaced. */
+  | "ATLAS_FAILED";
+
+/**
  * Flight inventory.
  *
- * FIXED AT LOCAL_FIXTURE, with no parameter to change it. Phase 6 connected a
- * language model and a web search; it connected no airline. This row exists
- * precisely so that a live badge elsewhere on the page cannot be read as
- * covering the flights, which are still hand-written data in this repository.
+ * THE WORD "SANDBOX" IS IN EVERY ATLAS LABEL, and that is not decoration.
+ * Sandbox fares are test data. A row reading "Atlas — live" would be true about
+ * the call and deeply misleading about the price, because somebody would take it
+ * for a fare they could buy. Whatever else changes here, that word stays.
+ *
+ * There is also no branch in which an Atlas failure renders as fixture data. A
+ * failure says it failed; choosing to fall back to the demo trip is an explicit
+ * decision made elsewhere, and it renders as the recorded or fixture row it
+ * actually is.
  */
-export function flightInventoryStatus(): SubsystemStatus {
-  return {
-    subsystem: "Flight inventory",
-    state: "LOCAL_FIXTURE",
-    label: "Local fixture",
-    detail:
-      "Flights, prices and availability are demo data compiled into this build. Nothing came from an airline and nothing is booked.",
-    tone: toneFor("LOCAL_FIXTURE"),
-  };
+export function flightInventoryStatus(
+  mode: FlightInventoryMode = "LOCAL_FIXTURE",
+): SubsystemStatus {
+  switch (mode) {
+    case "ATLAS_SANDBOX":
+      return {
+        subsystem: "Flight inventory",
+        state: "LIVE",
+        label: "Atlas sandbox",
+        detail:
+          "These flights came from a real Atlas sandbox search. Sandbox fares are test data: they are not prices anybody can buy, and nothing is booked.",
+        tone: toneFor("LIVE"),
+      };
+    case "RECORDED_ATLAS_SANDBOX":
+      return {
+        subsystem: "Flight inventory",
+        state: "RECORDED",
+        label: "Recorded Atlas sandbox",
+        detail:
+          "A real Atlas sandbox result captured earlier and replayed here. Sandbox fares are test data, this was not requested just now, and nothing is booked.",
+        tone: toneFor("RECORDED"),
+      };
+    case "ATLAS_FAILED":
+      return {
+        subsystem: "Flight inventory",
+        state: "FAILED",
+        label: "Atlas unavailable",
+        detail:
+          "Atlas was asked for flights and could not answer. Nothing is shown in its place.",
+        tone: toneFor("FAILED"),
+      };
+    case "LOCAL_FIXTURE":
+      return {
+        subsystem: "Flight inventory",
+        state: "LOCAL_FIXTURE",
+        label: "Local fixture",
+        detail:
+          "Flights, prices and availability are demo data compiled into this build. Nothing came from an airline and nothing is booked.",
+        tone: toneFor("LOCAL_FIXTURE"),
+      };
+  }
 }
 
 /** Provider capacity. No provider exists, so there is nothing to ask. */
@@ -180,7 +234,7 @@ export function providerCapacityStatus(): SubsystemStatus {
     state: "NOT_CONNECTED",
     label: "Not connected",
     detail:
-      "No flight provider is connected, so no seat has been checked. A traveller who fits a flight is logically compatible, never confirmed.",
+      "No seat has been reserved. Searching for a fare and re-checking it is not the same as holding one: this application does not create orders, so a traveller who fits a flight is logically compatible and never confirmed.",
     tone: toneFor("NOT_CONNECTED"),
   };
 }
@@ -210,6 +264,8 @@ export interface ProvenanceBoardInput {
   readonly research: ResearchMode;
   readonly researchFailed?: boolean;
   readonly assistanceTravellerConfirmed?: boolean;
+  /** Defaults to the fixture row, so a caller cannot claim Atlas by omission. */
+  readonly flights?: FlightInventoryMode;
 }
 
 /**
@@ -223,7 +279,7 @@ export function buildProvenanceBoard(input: ProvenanceBoardInput): readonly Subs
   return [
     understandingStatus(input.understanding, input.understandingFailed ?? false),
     researchStatus(input.research, input.researchFailed ?? false),
-    flightInventoryStatus(),
+    flightInventoryStatus(input.flights ?? "LOCAL_FIXTURE"),
     providerCapacityStatus(),
     assistanceStatus(input.assistanceTravellerConfirmed ?? false),
   ];

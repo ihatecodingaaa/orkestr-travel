@@ -150,3 +150,35 @@ states four wheelchair-accessible restrooms; a community accessibility review
 counts five. That disagreement was not manufactured for the fixture -- it is
 what the web said on the day, and it is precisely the case the evidence layer
 exists to surface rather than average away.
+
+## ATLAS_MODE (Phase 7)
+
+A second provider, the same shape as `MODEL_STUDIO_MODE`, deliberately -- a
+different set of rules for the second integration would be one more thing to
+reason about at exactly the wrong moment.
+
+| Value | Behaviour |
+|---|---|
+| `disabled` (default) | The CLI is never started. |
+| `recorded` | Replay a captured sandbox result. Never labelled live. |
+| `sandbox` | Contact Atlas, after proving the environment. |
+
+**There is no `production` value, and setting `ATLAS_MODE=production` yields
+`disabled`.** Production is not disabled by configuration here; it is absent
+from the type. Adding it would be a code review, not an environment variable.
+
+Fail-closed on typos, same as Model Studio: `ATLAS_MODE=sandbx` is `disabled`.
+
+### The sandbox proof runs before EVERY operation
+
+Not once at startup. Atlas defaults to production and offers no command that
+reads the current environment, so `proveSandbox` sets sandbox and reads the
+confirmation back, immediately before each call. A read-then-act check would
+leave a gap; this has none, and it can only ever move towards safety.
+
+### No fallback, in either direction
+
+An Atlas failure throws. It does not return mock offers, recorded offers, or an
+empty list that reads like "no flights today". Switching to recorded data is a
+decision made above the provider, explicitly, and it renders as the recorded row
+it actually is.

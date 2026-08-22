@@ -74,11 +74,36 @@ describe("no subsystem can borrow another's credibility", () => {
     expect(understandingIndex).toBeLessThan(flightIndex);
   });
 
-  it("mentions Atlas nowhere, because no provider is connected", () => {
-    const board = buildProvenanceBoard({ understanding: "LIVE_MODEL", research: "LIVE_WEB" });
-    const text = JSON.stringify(board).toLowerCase();
-    expect(text).not.toContain("atlas");
-    expect(text).not.toContain("atrip");
+  /**
+   * This previously asserted that Atlas is mentioned NOWHERE, which was true
+   * until Phase 7 connected it. The premise changed; the property worth keeping
+   * did not. A board that was not told about Atlas must not name it, because
+   * naming a provider nobody called is the overclaim this row exists to prevent.
+   */
+  it("names Atlas only when Atlas was actually used", () => {
+    const withoutAtlas = buildProvenanceBoard({
+      understanding: "LIVE_MODEL",
+      research: "LIVE_WEB",
+    });
+    expect(JSON.stringify(withoutAtlas).toLowerCase()).not.toContain("atlas");
+
+    const withAtlas = buildProvenanceBoard({
+      understanding: "LIVE_MODEL",
+      research: "LIVE_WEB",
+      flights: "ATLAS_SANDBOX",
+    });
+    expect(JSON.stringify(withAtlas).toLowerCase()).toContain("atlas");
+  });
+
+  it("never mentions ATRIP, which is an account system and not a data source", () => {
+    for (const flights of ["LOCAL_FIXTURE", "ATLAS_SANDBOX", "RECORDED_ATLAS_SANDBOX"] as const) {
+      const board = buildProvenanceBoard({
+        understanding: "LIVE_MODEL",
+        research: "LIVE_WEB",
+        flights,
+      });
+      expect(JSON.stringify(board).toLowerCase()).not.toContain("atrip");
+    }
   });
 });
 
@@ -161,5 +186,68 @@ describe("the fixture and capacity rows say what they mean", () => {
     const status = providerCapacityStatus();
     expect(status.detail).toContain("logically compatible");
     expect(status.detail).not.toContain("seat is available");
+  });
+});
+
+/**
+ * Phase 7. The flight row can now say Atlas, which makes it the row most able
+ * to mislead: a sandbox fare is test data, and somebody reading "live" beside a
+ * price will believe it is a price.
+ */
+describe("the flight inventory row after Atlas", () => {
+  it("says sandbox in every Atlas label, because sandbox fares are not buyable", () => {
+    for (const mode of ["ATLAS_SANDBOX", "RECORDED_ATLAS_SANDBOX"] as const) {
+      const row = flightInventoryStatus(mode);
+      expect(row.label.toLowerCase()).toContain("sandbox");
+      expect(row.detail.toLowerCase()).toContain("test data");
+      expect(row.detail.toLowerCase()).toContain("nothing is booked");
+    }
+  });
+
+  it("distinguishes a live sandbox call from a replayed one", () => {
+    expect(flightInventoryStatus("ATLAS_SANDBOX").state).toBe("LIVE");
+    expect(flightInventoryStatus("RECORDED_ATLAS_SANDBOX").state).toBe("RECORDED");
+    // A recording must never carry a live tone.
+    expect(flightInventoryStatus("RECORDED_ATLAS_SANDBOX").detail).toMatch(/captured earlier/i);
+  });
+
+  it("renders an Atlas failure as a failure, never as fixture data", () => {
+    const row = flightInventoryStatus("ATLAS_FAILED");
+    expect(row.state).toBe("FAILED");
+    expect(row.detail).toMatch(/nothing is shown in its place/i);
+    expect(row.label.toLowerCase()).not.toContain("fixture");
+  });
+
+  it("defaults to the fixture row, so Atlas cannot be claimed by omission", () => {
+    expect(flightInventoryStatus().state).toBe("LOCAL_FIXTURE");
+    const board = buildProvenanceBoard({ understanding: "LIVE_MODEL", research: "LIVE_WEB" });
+    const flights = board.find((row) => row.subsystem === "Flight inventory");
+    expect(flights?.state).toBe("LOCAL_FIXTURE");
+  });
+
+  it("keeps flights independent of everything else that went live", () => {
+    const board = buildProvenanceBoard({
+      understanding: "LIVE_MODEL",
+      research: "RECORDED_WEB",
+      flights: "ATLAS_SANDBOX",
+    });
+    // Three subsystems, three different provenances, one page. No global badge.
+    const states = new Map(board.map((row) => [row.subsystem, row.state] as const));
+    expect(states.get("Group understanding")).toBe("LIVE");
+    expect(states.get("Destination research")).toBe("RECORDED");
+    expect(states.get("Flight inventory")).toBe("LIVE");
+    expect(states.get("Provider capacity")).toBe("NOT_CONNECTED");
+  });
+
+  it("still says no seat is reserved, even with Atlas connected", () => {
+    const board = buildProvenanceBoard({
+      understanding: "LIVE_MODEL",
+      research: "LIVE_WEB",
+      flights: "ATLAS_SANDBOX",
+    });
+    const capacity = board.find((row) => row.subsystem === "Provider capacity");
+    expect(capacity?.state).toBe("NOT_CONNECTED");
+    // Searching is not ordering, and the row must not blur them.
+    expect(capacity?.detail).toMatch(/does not create orders/i);
   });
 });

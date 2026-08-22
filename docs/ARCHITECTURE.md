@@ -265,3 +265,32 @@ matching is exact rather than tolerant.
 one model output can reach, and `subject` exists for hand-written fixtures that
 genuinely know their own. `subjectId` takes precedence *including when it fails
 to resolve*, so the fixture field can never become a fallback for an invented id.
+
+## Where Atlas lives (Phase 7)
+
+```
+domain/flight.ts          FlightOffer, FlightProvider, VerifyOfferResult
+        ^                 no vendor name, no Atlas field, no CLI import
+        |
+core/providers/           MockFlightProvider
+                          verificationToEvent  (VerifyOfferResult -> TripEvent)
+        ^
+        |
+adapters/atlas/           cli.ts          process boundary, no shell, bounded
+                          envelope.ts     strict envelope + code taxonomy
+                          offerShape.ts   strict payload parser, money, time
+                          normalise.ts    Atlas facts -> FlightOffer
+                          environment.ts  sandbox proof, fail closed
+                          config.ts       ATLAS_MODE kill switch
+                          atlasFlightProvider.ts
+```
+
+The domain does not import the Atlas CLI package, and no Atlas code, field name
+or error code appears above `adapters/atlas/`. `AtlasFlightProvider` implements
+exactly the same interface as `MockFlightProvider`, so the engines cannot tell
+which one they are holding.
+
+`verificationToEvent` is the seam. A provider produced a fact; what the fact
+MEANS is decided by the engines that already handle every other change. It maps
+one fact to one event and stops -- it does not decide whether a price is
+acceptable, and it cannot soften an unavailable flight into a price change.

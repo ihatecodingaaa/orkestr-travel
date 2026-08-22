@@ -23,3 +23,10 @@ recordings/
 .DS_Store
 .idea/
 *.swp
+
+# Third-party agent skills, installed by "npx skills add". Not vendored:
+# the official Skill and CLI manage their own updates, and committing a copy
+# would pin somebody else's release into our history. See docs/EXTERNAL_SETUP.md.
+.agents/
+.claude/
+skills-lock.json

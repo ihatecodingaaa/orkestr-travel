@@ -350,3 +350,33 @@ wheelchair to a garden nobody had checked.
 **The demo-mode policy has not changed.** Live research still succeeds in about
 half of runs (54-76s when it works, >120s when it does not), and this run took
 76.6s. Show this from the recorded fallback, not live.
+
+## Atlas, as things actually stand (Phase 7)
+
+**Do not promise a live Atlas search on stage.** Not because it is slow -- that
+is the Model Studio problem -- but because as of the end of Phase 7 **no
+authorised Atlas call has been made**. Authorization is a browser step nobody
+has completed on this machine.
+
+Until it is, the flight row says `LOCAL_FIXTURE`, and that is the truth.
+
+### After the two human steps in `EXTERNAL_SETUP.md`
+
+If a real sandbox search succeeds, the beat is worth showing:
+
+1. Orkestr determines two Travel Waves from confirmed availability.
+2. Atlas Sandbox returns provider-backed offers for each wave.
+3. **Orkestr** picks the compatible candidate -- not Atlas's first result.
+4. Atlas re-checks that one offer.
+5. The screen shows what came back: verified, changed, or gone.
+
+**Say "sandbox" out loud, every time.** Sandbox fares are test data. Every label
+in the UI already contains the word; the narration should match it. Calling a
+sandbox fare a real price is the one claim that would be both easy to make and
+impossible to defend.
+
+### The line worth landing
+
+Searching is not holding. Orkestr can find a fare and re-check it; it creates no
+order and reserves no seat, and the provider-capacity row says so on every
+screen regardless of what else went live.

@@ -482,3 +482,32 @@ The only outward-facing actions taken have been git pushes to the
 `orkestr-travel` GitHub repository, which the founder explicitly authorised. The
 separate `orkestr_luc` startup repository is out of scope and untouched; see
 `STARTUP_BOUNDARY.md`.
+
+### Atlas (Phase 7)
+
+| Capability | Status | Evidence |
+| --- | --- | --- |
+| Atlas Skill + CLI installed | `IMPLEMENTED` | `atlas-flight 0.3.12` verified on this machine |
+| CLI process boundary (no shell, bounded, argv array) | `IMPLEMENTED` | 54 tests |
+| Envelope parser and stable code taxonomy | `IMPLEMENTED` | transcribed from the installed Skill |
+| Sandbox proof, fail-closed | `IMPLEMENTED` | cannot express production |
+| `ATLAS_MODE` kill switch, default `disabled` | `IMPLEMENTED` | no production variant exists |
+| Offer normalisation to `FlightOffer` | `IMPLEMENTED OFFLINE` | itinerary field names **not yet seen from a real payload** |
+| Search / verify lifecycle separation | `IMPLEMENTED` | search never sets `verifiedAt` |
+| Fare-shock / repair integration | `IMPLEMENTED` | `verificationToEvent` into existing engines |
+| UI provenance for Atlas | `IMPLEMENTED` | every Atlas label contains "sandbox" |
+| **Atlas authorization** | **`BLOCKED — HUMAN STEP`** | `authenticated: false`. See `EXTERNAL_SETUP.md` |
+| **Atlas sandbox search** | **`LIVE UNVERIFIED`** | no authorised call has been made |
+| **Atlas sandbox verification** | **`LIVE UNVERIFIED`** | same |
+| **Recorded Atlas sandbox fallback** | **`NOT CREATED`** | requires a real successful run first |
+| Atlas order creation | `NOT IMPLEMENTED IN ORKESTR` | deliberately out of scope |
+| Atlas payment | `NOT IMPLEMENTED IN ORKESTR` | deliberately out of scope |
+| Atlas ticketing | `NOT IMPLEMENTED IN ORKESTR` | deliberately out of scope |
+| Production Atlas | `NOT REPRESENTABLE` | absent from the type, not merely disabled |
+| Real production fares | `NEVER USED` | no authorised call reached flight services |
+| Flight inventory demo | `LOCAL FIXTURE` | unchanged until a sandbox run exists |
+
+**The honest summary:** the integration is built, tested and safe. It has not
+been proven against Atlas, because authorization is a browser step that only the
+founder can complete. Everything above the `BLOCKED` line is real; everything
+below it is a promise until a real call is made.

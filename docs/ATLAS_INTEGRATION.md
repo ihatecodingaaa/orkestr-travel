@@ -178,3 +178,76 @@ implemented and then defended.
 - Mark assistance as supported before Atlas states it
 - Call a live or paid endpoint from any test
 - Create a production order
+
+## What the real CLI actually does (verified, 22 August 2026)
+
+CLI `atlas-flight 0.3.12`, from PyPI via `uv`. Skill installed from
+`atlas-doc/atlas-flight-booking-skill`, Apache 2.0.
+
+### Findings that changed the design
+
+**1. Production is the default.** Straight from the official README: *"Atlas
+Flight Booking uses production services by default."* Sandbox is opt-in, per
+machine, and a bug that merely fails to switch is a bug that searches live fares.
+
+**2. There is no way to READ the current environment.** `environment use
+sandbox` and `environment use production` exist. `environment`, `environment
+show`, `environment status` and `environment current` all return
+`INVALID_ARGUMENT`. So "check we are in sandbox and stop if not" is not
+implementable, and the only available proof is to SET sandbox and read the
+confirmation back. That is what `proveSandbox` does, immediately before every
+operation -- which removes the gap a read-then-act check would leave. **Orkestr
+cannot select production: the string appears in no argument array it can build.**
+
+**3. A terminal error exits ZERO.**
+
+```
+$ atlas-flight environment --json ; echo $?
+{"schema_version":"1","status":"terminal_error","code":"INVALID_ARGUMENT",...}
+0
+```
+
+An adapter that trusted exit codes would treat every Atlas failure as a success.
+Success is decided by the envelope, never by the exit code.
+
+**4. Search is two commands, not one.** `search` returns a `search_id`;
+`offer list --search-id` returns the offers.
+
+**5. The contract forbids `--help`.** *"Never run `--help`, probe variants,
+inspect configuration, or call a service directly."* Command discovery came from
+the Skill's own `references/cli-contract.md`, not from probing. The one
+exception was four `environment` sub-commands, checked because proving sandbox
+is a hard safety requirement and the read command's existence had to be
+established. All four are local, read-only and non-flight.
+
+### The envelope
+
+```
+{schema_version, status, code, message, retryable, request_id, data, details}
+```
+
+*"Branch on `code`; never parse `message`."* So `message` is carried for
+diagnostics and never matched against; English wording from somebody else's
+release notes is not a control flow input.
+
+### Offer freshness is a provider concept, not just ours
+
+Offers carry `bookable` and `price_status` (`current` | `reference`). A
+`reference` price is comparison-only and cannot be verified at all. Orkestr does
+not spend a call discovering this: it refuses to verify such an offer locally.
+
+Verification returns `price_change` (`unchanged` | `decreased` | `increased`),
+`previous_price`, `current_price`, `currency`, `baggage_supported`,
+`seat_supported`. An unreadable `price_change` is **not** treated as unchanged.
+
+### What is NOT verified against a real payload
+
+The itinerary shape inside an offer -- field names for segments, carrier,
+flight number, departure and arrival -- **is not documented anywhere in the
+Skill**, and no authorised call has been made. The parser accepts a small list of
+candidate names per field and **fails closed naming the missing field** rather
+than guessing. The first authorised sandbox search settles this; the candidate
+lists should then shrink to what Atlas actually sends.
+
+A half-populated flight offer is worse than none: it reaches a screen and
+somebody plans around it.

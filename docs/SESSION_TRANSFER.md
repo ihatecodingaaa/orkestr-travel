@@ -372,3 +372,37 @@ the neighbouring station, 0 invented ids.
   is documented in the fixture itself.
 
 **Next:** Phase 7, Atlas sandbox FlightProvider. Not started.
+
+## State at end of Phase 7 (22 August 2026)
+
+**1067 tests across 51 files.** Lint, typecheck, build and secret check clean.
+
+**Atlas is built but not proven.** The adapter, parser, sandbox guard, kill
+switch, lifecycle and engine integration are all done and tested. No authorised
+Atlas call has been made, because authorization is a browser step. Two commands
+in `EXTERNAL_SETUP.md` unblock it.
+
+**Read `docs/ATLAS_INTEGRATION.md` before touching the adapter.** Five findings
+from the real CLI shape the design, and at least three of them look like bugs
+until you know why:
+
+* Production is the DEFAULT, and no command reads the current environment.
+* A terminal error exits ZERO.
+* Search is two commands (`search`, then `offer list --search-id`).
+* The official contract forbids `--help`.
+* Offers carry `bookable` and `price_status`; a `reference` price cannot be
+  verified at all.
+
+**The known gap:** the itinerary field names inside an offer are documented
+nowhere and have never been seen. The parser accepts candidate names and fails
+closed naming the missing field. **The first authorised search will probably
+reject every offer, and that is the design working** -- the rejection reasons say
+exactly which names to fix.
+
+**Do not:**
+* Add a fallback from Atlas to fixtures. There is deliberately none.
+* Add a `production` mode. It is absent from the type on purpose.
+* Implement order creation, payment or ticketing. Out of scope, and the
+  capability report says UNSUPPORTED for a reason.
+
+**Next:** Phase 8, end-to-end agent repair and hero demo. Not started.

@@ -225,3 +225,37 @@ The traceability tests walk the whole chain -- journey entity id, candidate,
 chosen id, retrieved source, claim subject, source authority, evidence state,
 user-facing sentence -- using the **actual claims from the live run**, including
 the station claim that must not clear the garden.
+
+## Atlas adapter (Phase 7)
+
+`tests/atlasAdapter.test.ts` (54) and `tests/atlasImpact.test.ts` (8).
+
+Every envelope in these tests is shaped from the **real** CLI 0.3.12 contract:
+the `schema_version`/`status`/`code`/`retryable`/`data`/`details` envelope was
+captured from actual invocations, and the codes are transcribed from the
+installed Skill's `error-handling.md`. Nothing is invented.
+
+Cases A-V follow the Phase 7 brief. The ones that would be easiest to get wrong,
+and hardest to notice:
+
+* **A terminal error exits ZERO.** Asserted directly, because it is true of the
+  real binary and inverts the usual instinct.
+* **Opaque ids survive verbatim**, including surrounding whitespace and mixed
+  case. The fixture id is `"  OfFeR/9x+Za==  "` precisely so that a "tidy-up"
+  trim fails the test rather than the next real verification.
+* **Money never touches a float.** `279.30` as a float times 100 is
+  `27929.999999999996`. Also asserted: JPY is not divided by a hundred, and more
+  decimal places than the currency has is refused rather than rounded.
+* **A timestamp without an offset is refused**, not assumed to be local. SIN to
+  NRT crosses an hour; the duration test would pass with the wrong answer if it
+  were not.
+* **A searched offer is never verified.** No `verifiedAt`, and the evidence
+  state says `ATLAS_SANDBOX_SEARCH`.
+* **An unreadable `price_change` is not "unchanged."**
+* **Hostile input starts no process at all** -- not even the environment call.
+* **The environment argument array can never contain "production."**
+
+`atlasImpact.test.ts` runs Atlas-shaped offers through the SAME engines every
+other change uses: a hard ceiling does not relax itself when a fare rises, a soft
+one becomes a compromise asked of its owner, and no fare rule exists in provider
+code.

@@ -237,3 +237,25 @@ time gave it away before the error message did.
 non-conflicting operational fact about the *wrong entity*. Every integrity signal
 reads green. Only the subject comparison catches it, which is why it is a
 deterministic check and not a prompt instruction.
+
+## Atlas failures (Phase 7)
+
+| Symptom | Meaning | Action |
+|---|---|---|
+| `ENVIRONMENT_NOT_PROVEN` | Sandbox could not be established, OR `ATLAS_MODE` is not `sandbox` | Nothing was requested. Check the two human steps in `EXTERNAL_SETUP.md`. |
+| `AUTHORIZATION_REQUIRED` | Nobody has authorised this machine | A human browser step. Not retryable. |
+| `ACCOUNT_NOT_ENABLED` | `SUBSCRIPTION_REQUIRED` | Search may still work while verification does not -- a top-up or activation gap. |
+| `NOT_INSTALLED` | CLI missing or not on `PATH` | `~/.local/bin` is often absent from a fresh shell. |
+| `PROVIDER_PROTOCOL_ERROR` | Atlas answered with something unreadable | Most likely the undocumented offer shape. The rejection names the field. |
+| `NO_OFFERS` | `SEARCH_NO_RESULTS` | A real, successful, empty answer. Not a failure. |
+| `OFFER_GONE` | Expired, unavailable, or comparison-only | Never continue with old IDs; search again. |
+
+**The one that would be hardest to notice:** the CLI exits **0** on
+`terminal_error`. An adapter that trusted exit codes would treat every failure as
+a success. Success is decided by the envelope; the exit code is recorded and
+never used to decide anything.
+
+**Second hardest:** a verification whose `price_change` cannot be read. The
+command succeeded and nothing obviously went wrong, so defaulting to "unchanged"
+is very tempting -- and would let a fare move and be reported as confirmed. It
+raises `PROVIDER_PROTOCOL_ERROR` instead.

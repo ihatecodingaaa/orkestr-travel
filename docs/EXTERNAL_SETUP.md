@@ -122,3 +122,71 @@ Atlas code, no endpoint and no guessed payload shape.
 - **No claim that something is verified because its code exists.** The whole
   point of the preflight and smoke commands is that "it should work" and "it
   worked" are different statements.
+
+## Atlas Flight Booking (Phase 7)
+
+Two of the three steps are done. The third needs a human and cannot be
+automated, faked, or worked around.
+
+### Done, on this machine
+
+```bash
+npx --yes skills add https://github.com/atlas-doc/atlas-flight-booking-skill   --skill atlas-flight-booking
+uv tool install --force --python 3.12 atlas-flight-booking==0.3.12
+```
+
+Verified: `atlas-flight 0.3.12`. Installed to `~/.local/bin`, which may not be on
+`PATH` in a fresh shell.
+
+The Skill installs into `.agents/skills/` inside this repository and is
+**gitignored**. It is not vendored: the official Skill and CLI manage their own
+updates, and committing a copy would pin somebody else's release into our
+history.
+
+### YOU NEED TO DO THIS -- step 1, authorization
+
+```bash
+atlas-flight auth login --json
+```
+
+Open the `data.authorization_url` it prints, sign in to ATRIP (or choose
+**Create one** and register), and complete authorization. Then:
+
+```bash
+atlas-flight auth poll --timeout 120 --json
+```
+
+Wait for `AUTHORIZED`. Current state on this machine is `authenticated: false`,
+which is why Phase 7 stopped where it did.
+
+### YOU NEED TO DO THIS -- step 2, sandbox
+
+**Atlas uses production by default.** Read that sentence again: production is
+not something you switch on, it is where you already are.
+
+```bash
+atlas-flight environment use sandbox --json
+```
+
+Check the response says sandbox before doing anything else. Any offer obtained
+before the switch expires, so start a fresh search afterwards.
+
+### Then, and only then
+
+```bash
+ATLAS_MODE=sandbox npm run atlas:smoke
+```
+
+`ATLAS_MODE` defaults to `disabled`. Installing the CLI, authorising it and
+selecting sandbox are all capabilities; none of them is an instruction to call
+anybody, and none of them switches Orkestr on.
+
+### Do not
+
+* Paste an Atlas credential anywhere. The CLI owns its own secure store and this
+  application never reads it, never passes a token, and never puts one in a
+  command argument.
+* Run `atlas-flight environment use production`. Orkestr cannot issue that
+  command -- the word does not appear in any argument array it can build -- but
+  your terminal can.
+* Treat a sandbox fare as a real price. It is test data.

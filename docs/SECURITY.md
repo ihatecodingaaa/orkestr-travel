@@ -191,3 +191,50 @@ Tested directly (`tests/subjectBinding.test.ts`, case J):
 
 Related: an unknown `subjectId` does not fall back to the fixture-only `subject`
 field. A fallback there would be a bypass, not a convenience.
+
+## The Atlas CLI boundary (Phase 7)
+
+### Credentials are not ours to hold
+
+The `atlas-flight` CLI owns its own secure store. This application never reads
+it, never passes a token, and never puts one in a command argument. There is no
+Atlas credential in `.env.local`, in source, in tests or in fixtures, and
+nothing in the adapter looks for one.
+
+`stderr` from the CLI is **counted, never kept**. It is diagnostic text from
+somebody else's program and the most likely place for something we should not be
+storing to appear; a byte count says "it spoke" without repeating what it said.
+Malformed stdout is likewise refused without echoing it.
+
+### Command injection
+
+`spawn` with `shell: false` and an argument ARRAY. No code path in the adapter
+builds a command string, so shell metacharacters have no meaning anywhere.
+
+On top of that, request values are **allow-listed, not sanitised**: an airport
+code must match `^[A-Z0-9]{3}$`. Allow-listing beats escaping because there is
+no escaping to get wrong and a character nobody thought of is excluded by
+default. Values are additionally refused if they contain a NUL byte or begin
+with `-` -- a value like `--passengers-file` would silently become a FLAG and
+change which command Atlas actually ran.
+
+Validation happens before the process exists. `tests/atlasAdapter.test.ts`
+asserts that a hostile origin starts no subprocess at all -- not even the
+environment call.
+
+Model output reaches this boundary the same way user input does and is held to
+the same rule: Qwen proposes, deterministic validation decides, only then does
+Atlas see anything.
+
+### Production
+
+Orkestr cannot select the production environment. The string appears in no
+argument array it can build, there is no configuration value that produces one,
+and `ATLAS_MODE` has no production variant. Asserted directly in tests.
+
+### Passenger data
+
+None. Phase 7 performs search and verification only, neither of which requires
+passenger identity. The adapter cannot create an order, and `stdin` is closed on
+every invocation, so there is no channel through which passenger data could
+reach the CLI even by mistake.
