@@ -143,7 +143,11 @@ The Skill installs into `.agents/skills/` inside this repository and is
 updates, and committing a copy would pin somebody else's release into our
 history.
 
-### YOU NEED TO DO THIS -- step 1, authorization
+> **DONE, 22 August 2026.** Both steps below were completed by the founder.
+> `doctor` reports `DOCTOR_OK`; `auth status` reports `AUTHORIZED`.
+> Kept as the procedure for a new machine.
+
+### Step 1, authorization
 
 ```bash
 atlas-flight auth login --json
@@ -156,10 +160,9 @@ Open the `data.authorization_url` it prints, sign in to ATRIP (or choose
 atlas-flight auth poll --timeout 120 --json
 ```
 
-Wait for `AUTHORIZED`. Current state on this machine is `authenticated: false`,
-which is why Phase 7 stopped where it did.
+Wait for `AUTHORIZED`.
 
-### YOU NEED TO DO THIS -- step 2, sandbox
+### Step 2, sandbox
 
 **Atlas uses production by default.** Read that sentence again: production is
 not something you switch on, it is where you already are.

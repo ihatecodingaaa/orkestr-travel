@@ -496,10 +496,16 @@ separate `orkestr_luc` startup repository is out of scope and untouched; see
 | Search / verify lifecycle separation | `IMPLEMENTED` | search never sets `verifiedAt` |
 | Fare-shock / repair integration | `IMPLEMENTED` | `verificationToEvent` into existing engines |
 | UI provenance for Atlas | `IMPLEMENTED` | every Atlas label contains "sandbox" |
-| **Atlas authorization** | **`BLOCKED — HUMAN STEP`** | `authenticated: false`. See `EXTERNAL_SETUP.md` |
-| **Atlas sandbox search** | **`LIVE UNVERIFIED`** | no authorised call has been made |
-| **Atlas sandbox verification** | **`LIVE UNVERIFIED`** | same |
-| **Recorded Atlas sandbox fallback** | **`NOT CREATED`** | requires a real successful run first |
+| **Atlas authorization** | **`HUMAN CONFIGURED / VERIFIED`** | `DOCTOR_OK`, `AUTHORIZED`, `search_available: true` |
+| **Atlas Sandbox environment setter** | **`LIVE VERIFIED`** | set-then-confirm, proven in 1,076ms and 1,265ms |
+| **Atlas Sandbox search** | **`LIVE ATTEMPTED — PROVIDER FAULT`** | 4 searches, 2 routes, 4 dates: all `INTERNAL_ERROR` server-side |
+| **Atlas Sandbox offer list** | **`LIVE UNVERIFIED`** | never reached; search never succeeded |
+| **Atlas Sandbox offer normalisation** | **`LIVE UNVERIFIED`** | real payload shape still unobserved |
+| **Atlas Sandbox verification** | **`LIVE UNVERIFIED`** | never reached |
+| **Recorded Atlas Sandbox fallback** | **`NOT CREATED`** | requires a real successful run. Deliberately not fabricated |
+| Search-vs-verify lifecycle | `OFFLINE VERIFIED` | 62 adapter tests |
+| Price-change handling | `OFFLINE VERIFIED` | no live change occurred |
+| Availability-change handling | `OFFLINE VERIFIED` | no live event occurred |
 | Atlas order creation | `NOT IMPLEMENTED IN ORKESTR` | deliberately out of scope |
 | Atlas payment | `NOT IMPLEMENTED IN ORKESTR` | deliberately out of scope |
 | Atlas ticketing | `NOT IMPLEMENTED IN ORKESTR` | deliberately out of scope |
@@ -507,7 +513,16 @@ separate `orkestr_luc` startup repository is out of scope and untouched; see
 | Real production fares | `NEVER USED` | no authorised call reached flight services |
 | Flight inventory demo | `LOCAL FIXTURE` | unchanged until a sandbox run exists |
 
-**The honest summary:** the integration is built, tested and safe. It has not
-been proven against Atlas, because authorization is a browser step that only the
-founder can complete. Everything above the `BLOCKED` line is real; everything
-below it is a promise until a real call is made.
+**The honest summary, updated after the live closeout.** Authorization is done
+and the sandbox environment setter is LIVE VERIFIED. Everything beyond it is
+blocked by **Atlas's own search service**, which returns `INTERNAL_ERROR` for
+every search including the official documented example route.
+
+That is not our defect and it is not something this repository can fix. It is
+also not a reason to invent a recorded fixture: a fallback that did not come from
+a real successful run is a lie with a timestamp on it.
+
+The adapter, parser, sandbox guard, kill switch, lifecycle and engine
+integration are real and tested. The provider-side path beyond the environment
+switch remains unproven, and will stay that way until Atlas Sandbox search
+works.

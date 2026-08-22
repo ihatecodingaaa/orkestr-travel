@@ -251,3 +251,86 @@ lists should then shrink to what Atlas actually sends.
 
 A half-populated flight offer is worse than none: it reaches a screen and
 somebody plans around it.
+
+## Live closeout, 22 August 2026
+
+Authorization completed by the founder. `doctor` reports `DOCTOR_OK` with every
+check true; `auth status` reports `AUTHORIZED`, `authenticated: true`,
+`search_available: true`, `ticketing_available: true`.
+
+### The sandbox proof was broken, and the way it was broken matters
+
+The Phase 7 implementation required Atlas to ECHO the environment back, and
+refused with:
+
+> "Atlas did not state which environment is active, and an unstated environment
+> is not a proven one."
+
+That sounds rigorous and is impossible. The real confirmation is:
+
+```json
+{"schema_version":"1","status":"success","code":"CONFIGURATION_UPDATED",
+ "message":"Atlas configuration updated","data":{}}
+```
+
+**An empty `data` object. Atlas never sends an environment field.** So the guard
+could not pass, and it blocked the first authorised search.
+
+A guard that can never succeed is not a safe guard. It is a broken one that
+happens to fail in the safe direction -- and it is exactly the kind of thing that
+gets ripped out under time pressure by somebody who trusts it less carefully than
+the person who wrote it.
+
+### The corrected proof: set-then-confirm
+
+The proof is now about what **we did**, not about what Atlas said back:
+
+1. Orkestr invoked exactly its internal sandbox argument array (a module-scope
+   constant, no interpolation site, no caller parameter).
+2. The envelope parsed and `status` is `success`.
+3. The code is on the allow-list `["CONFIGURATION_UPDATED"]`.
+
+The word "sandbox" in the result comes from the command this module executed, not
+from pretending Atlas confirmed a value it never sends. `proofMethod` records
+this as `EXPLICIT_SET_CONFIRMED`.
+
+**Still fail-closed.** A `status: success` with an unrecognised code is refused:
+that means the CLI's behaviour moved, and the answer to that is to stop. Adding a
+code is a deliberate act with the official contract in hand.
+
+**LIVE VERIFIED**: proven in 1,076ms and again in 1,265ms.
+
+### Atlas Sandbox search is failing server-side
+
+Four consecutive searches, immediately after a confirmed sandbox switch:
+
+| Route | Date | Latency | Result |
+|---|---|---|---|
+| SIN to NRT | 2026-11-17 | ~3.5s | `terminal_error` / `INTERNAL_ERROR` |
+| KUL to SIN | 2026-09-05 | 2,429ms | `terminal_error` / `INTERNAL_ERROR` |
+| KUL to SIN | 2026-08-29 | 2,432ms | `terminal_error` / `INTERNAL_ERROR` |
+| KUL to SIN | 2026-09-20 | 2,783ms | `terminal_error` / `INTERNAL_ERROR` |
+
+`KUL to SIN` is the **official documented example route** from the Skill README.
+Every response carried `retryable: false` and an empty `data`.
+
+Two routes, four dates, a healthy authorized CLI, and an identical fault. This is
+not a route problem, a date-window problem, an authorization problem or a parser
+problem. **The Atlas Sandbox search service is failing on Atlas's side.**
+
+Production was NOT tried, and must not be: it is not representable in this
+application and it is not authorised.
+
+`INTERNAL_ERROR` is absent from `error-handling.md`. It is classified as
+`PROVIDER_UNAVAILABLE` rather than left `UNRECOGNISED`, because the latter
+renders as "this application does not handle that" and points an operator at our
+code for a fault that is not ours. It is deliberately NOT added to the transient
+list, so it is never retried.
+
+### Consequently still unproven
+
+Offer list, the real offer payload shape, normalisation against a real payload,
+and verification. The itinerary field names remain undocumented and unobserved.
+No recorded Atlas Sandbox fixture exists, and **none has been fabricated** -- a
+recorded fallback must come from a real successful run or it is a lie with a
+timestamp on it.

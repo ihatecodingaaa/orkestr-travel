@@ -380,3 +380,21 @@ impossible to defend.
 Searching is not holding. Orkestr can find a fare and re-check it; it creates no
 order and reserves no seat, and the provider-capacity row says so on every
 screen regardless of what else went live.
+
+## Atlas after the live closeout (22 August 2026)
+
+**The flight row still says `LOCAL_FIXTURE`, and that is still the truth.**
+
+Authorization is complete and the sandbox switch is proven live, but Atlas
+Sandbox search itself returns `INTERNAL_ERROR` server-side on every route tried,
+including Atlas's own documented example. No offer has ever been retrieved, so
+there is no recorded Atlas Sandbox fixture and none has been invented.
+
+**Demo mode decision: LOCAL FIXTURE.** Not by preference -- by the only honest
+option available.
+
+If someone asks about the Atlas integration on stage, the truthful and
+genuinely interesting answer is: it is built, it proves it is pointed at the
+sandbox before every single call, it cannot express the production environment
+at all, and it refuses to show anything when the provider fails. The last part
+is currently on display whether we like it or not.

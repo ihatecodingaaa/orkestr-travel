@@ -259,3 +259,22 @@ never used to decide anything.
 command succeeded and nothing obviously went wrong, so defaulting to "unchanged"
 is very tempting -- and would let a fare move and be reported as confirmed. It
 raises `PROVIDER_PROTOCOL_ERROR` instead.
+
+## Atlas live closeout findings (22 August 2026)
+
+| Symptom | Cause | Note |
+|---|---|---|
+| Sandbox proof always fails with "did not state which environment" | Our bug. Atlas returns `data: {}` | Fixed: set-then-confirm on `CONFIGURATION_UPDATED` |
+| `terminal_error` / `INTERNAL_ERROR` on every search | **Atlas server-side.** Not route, date, auth or parser | `retryable: false`; not retried |
+| A failure report that names no code or stage | Our harness gap | Fixed: the live harness now prints kind, stage and Atlas code before rethrowing |
+
+**The lesson worth keeping from the first one:** a guard that cannot pass looks
+identical to a guard that is working, right up until the moment it blocks
+something legitimate. Both fail safely. Only one of them is correct, and the
+broken one is more dangerous long-term because it teaches people to distrust the
+guard.
+
+**The lesson from the third:** a live harness that reports "this application does
+not handle that" and nothing else forces whoever is debugging into a terminal to
+run the provider by hand. Kind, stage and provider code cost three lines and save
+that entirely.

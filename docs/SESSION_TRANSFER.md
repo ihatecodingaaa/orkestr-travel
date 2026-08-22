@@ -406,3 +406,34 @@ exactly which names to fix.
   capability report says UNSUPPORTED for a reason.
 
 **Next:** Phase 8, end-to-end agent repair and hero demo. Not started.
+
+## Atlas live closeout state (22 August 2026)
+
+**1075 tests across 51 files.** All gates green.
+
+**Authorization: DONE.** `DOCTOR_OK`, `AUTHORIZED`, `search_available: true`.
+
+**Sandbox environment setter: LIVE VERIFIED.** The Phase 7 proof was broken --
+it required Atlas to echo an environment field that the CLI never sends, so it
+could never pass. Replaced with set-then-confirm on `CONFIGURATION_UPDATED`.
+Proven live twice, ~1.1-1.3s.
+
+**Atlas Sandbox search: BLOCKED BY ATLAS.** Four searches across two routes and
+four dates -- including the official documented `KUL to SIN` example -- all
+return `terminal_error` / `INTERNAL_ERROR` with `retryable: false` and empty
+data, while the CLI reports fully healthy and authorized. Server-side.
+
+**Do not, when picking this up:**
+* Retry the search hoping it clears. Four attempts established the pattern; a
+  fifth proves nothing. Check `atlas-flight search ... --json` by hand first.
+* Switch to production to "see if it works". Not authorised, not representable.
+* Fabricate a recorded Atlas Sandbox fixture. It must come from a real
+  successful run.
+* Loosen the offer parser. It has never seen a real payload, so there is
+  nothing yet to align it to.
+
+**Still unknown:** the real offer payload shape. The parser fails closed naming
+the missing field, and the live harness now prints kind, stage and Atlas code, so
+the first successful search will diagnose itself.
+
+**Next:** Phase 8, end-to-end agent repair and hero demo. Not started.
