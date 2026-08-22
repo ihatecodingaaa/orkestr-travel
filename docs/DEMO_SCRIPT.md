@@ -467,7 +467,7 @@ actually changed."*
 | 1:35–1:55 | `?stage=RYAN_JOINED` | Ryan joins after everything was agreed. |
 | 1:55–2:20 | `/demo/agent` | **What changed. What it affected. What stayed exactly as it was.** |
 | 2:20–2:40 | `?fareScenario=SOFT_BREACH` → `/demo/participant/...` | The fare moves. One person is asked, privately. |
-| 2:40–2:55 | `/demo/agent` | 18 of 20 decisions kept. 0 rebuilds. 6 of 7 steps. |
+| 2:40–2:55 | `/demo/agent` | 10 of 10 earlier decisions kept, 1 new one added. 0 rebuilds. 5 of 7 steps. |
 | 2:55–3:00 | — | Closing line. |
 
 ### What each label on screen actually means
