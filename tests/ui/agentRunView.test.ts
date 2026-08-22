@@ -159,6 +159,48 @@ describe("the numbers are measured, not marketed", () => {
     expect(rendered).not.toMatch(/\$|saved|cheaper|cost you|percent cheaper/i);
   });
 
+
+  it("says what full preservation MEANS rather than just 100%", () => {
+    /**
+     * The real Ryan run preserves every earlier decision and adds exactly one.
+     * A bare "100%" reads as an empty statistic; the interesting claim is that
+     * nothing already agreed had to be undone.
+     */
+    const run = buildRun({
+      decisionsPreserved: {
+        oldCount: 10,
+        preservedCount: 10,
+        changedCount: 0,
+        removedCount: 0,
+        addedCount: 1,
+        preservedPercent: 100,
+      },
+    });
+    const kept = runFacts(run).find((f) => f.label === "Earlier decisions kept");
+    expect(kept?.value).toBe("10 of 10");
+    expect(kept?.note).toMatch(/nothing already agreed had to be undone/i);
+    // The plan did grow, and that must stay visible beside it.
+    expect(kept?.note).toMatch(/1 new decision added/);
+  });
+
+  it("shows no percentage when nothing had been agreed yet", () => {
+    // "100% of no decisions" reads as "we kept everything" when nothing was
+    // ever at stake.
+    const run = buildRun({
+      decisionsPreserved: {
+        oldCount: 0,
+        preservedCount: 0,
+        changedCount: 0,
+        removedCount: 0,
+        addedCount: 0,
+        preservedPercent: 100,
+      },
+    });
+    const kept = runFacts(run).find((f) => f.label === "Earlier decisions kept");
+    expect(kept?.note).toMatch(/nothing had been agreed yet/i);
+    expect(kept?.note).not.toMatch(/100%/);
+  });
+
   it("says the model was not consulted during the repair", () => {
     const ai = runFacts(buildRun()).find((f) => f.label === "AI calls while repairing");
     expect(ai?.value).toBe("0");

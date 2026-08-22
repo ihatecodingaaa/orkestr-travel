@@ -1,7 +1,7 @@
 import { buildDemoWorld, buildAgentRun } from "@/ui/demo/scenario";
 import { readDemoState, demoHref } from "@/ui/demo/params";
 import type { RawParams } from "@/ui/demo/params";
-import { DemoChrome } from "@/ui/components/DemoChrome";
+import { DemoChrome, DemoControls } from "@/ui/components/DemoChrome";
 import { TruthBadge } from "@/ui/components/TruthBadge";
 import {
   auditTrail,
@@ -41,8 +41,9 @@ export default async function AgentPage({
     return (
       <DemoChrome state={state} current="agent">
         <section className="stack gap-3" style={{ paddingTop: "2rem" }}>
+          <DemoControls state={state} path="/demo/agent" />
           <header className="stack gap-1">
-            <p className="eyebrow">The agent</p>
+            <p className="eyebrow">Orkestr Travel · the coordination agent for group journeys</p>
             <h1>Nothing has changed yet</h1>
             <p className="lede">
               The plan is agreed and nobody has moved. Orkestr only runs when something actually
@@ -70,10 +71,21 @@ export default async function AgentPage({
   return (
     <DemoChrome state={state} current="agent">
       <section className="stack gap-3" style={{ paddingTop: "2rem" }}>
+        <DemoControls state={state} path="/demo/agent" />
+
         <header className="stack gap-1">
-          <p className="eyebrow">The agent</p>
+          <p className="eyebrow">Orkestr Travel · the coordination agent for group journeys</p>
           <h1>{headline.title}</h1>
           <p className="lede">{headline.detail}</p>
+          {/*
+            The sentence a judge needs in the first five seconds. Most planners
+            rebuild the trip; the interesting claim is the opposite one.
+          */}
+          <p>
+            Everyone has different dates, budgets and needs. When something changes, Orkestr
+            works out what actually broke and repairs only that — instead of starting the trip
+            over.
+          </p>
           <p>
             <TruthBadge
               model={{
@@ -198,6 +210,46 @@ export default async function AgentPage({
             routes and does not carry it, so the provider proof is shown on a route it does serve
             rather than pretending otherwise.
           </p>
+        </article>
+
+
+        {/* ---------------------------------------------- who decides what */}
+        <article className="card stack gap-2">
+          <h2>AI proposes. Code decides.</h2>
+          <p>
+            The model is very good at reading a messy group chat. It is not the thing that should
+            decide whether somebody can afford a flight.
+          </p>
+          <dl className="fact-grid">
+            <div className="fact">
+              <dt>Understanding the conversation</dt>
+              <dd>
+                Alibaba Cloud Model Studio · Qwen
+                <span className="faint"> proposes; nothing it says is confirmed on its own</span>
+              </dd>
+            </div>
+            <div className="fact">
+              <dt>Researching the destination</dt>
+              <dd>
+                Alibaba Cloud Model Studio
+                <span className="faint"> every claim cites a page that was actually fetched</span>
+              </dd>
+            </div>
+            <div className="fact">
+              <dt>Flight facts</dt>
+              <dd>
+                Atlas
+                <span className="faint"> searched, then re-checked before being relied on</span>
+              </dd>
+            </div>
+            <div className="fact">
+              <dt>Who flies when, budgets, repair</dt>
+              <dd>
+                Orkestr, deterministically
+                <span className="faint"> no model is consulted for any of it</span>
+              </dd>
+            </div>
+          </dl>
         </article>
 
         {/* ---------------------------------------------- technical drawer */}

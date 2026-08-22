@@ -79,9 +79,14 @@ export function DemoControls({ state, path }: { readonly state: DemoState; reado
         </Link>
       )}
 
+      {/*
+        Stays on the CURRENT page rather than jumping to the journey.
+        During a recording, a control that navigates away costs a cut and makes
+        the change harder to attribute to the button that caused it.
+      */}
       <Link
         className="btn btn-secondary btn-small"
-        href={demoHref("/demo/journey", state, { fareScenario: "SOFT_BREACH" })}
+        href={demoHref(path, state, { fareScenario: "SOFT_BREACH" })}
       >
         Check the fares
       </Link>

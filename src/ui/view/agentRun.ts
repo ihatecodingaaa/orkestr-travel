@@ -98,17 +98,38 @@ export interface RunFacts {
  * decisions kept" is arithmetic somebody can audit against the decision list on
  * the same screen.
  */
+
+/** What the preservation figure actually means, in words. */
+function preservationNote(preserved: AgentRun["decisionsPreserved"]): string {
+  const added =
+    preserved.addedCount > 0
+      ? ` · ${String(preserved.addedCount)} new decision${preserved.addedCount === 1 ? "" : "s"} added`
+      : "";
+
+  if (preserved.oldCount === 0) return "Nothing had been agreed yet";
+  if (preserved.preservedCount === preserved.oldCount) {
+    return `Nothing already agreed had to be undone${added}`;
+  }
+  return `${String(preserved.preservedPercent)}%${added}`;
+}
+
 export function runFacts(run: AgentRun): readonly RunFacts[] {
   const preserved = run.decisionsPreserved;
   return [
     {
       label: "Earlier decisions kept",
       value: `${String(preserved.preservedCount)} of ${String(preserved.oldCount)}`,
-      note: `${String(preserved.preservedPercent)}%${
-        preserved.addedCount > 0
-          ? ` · ${String(preserved.addedCount)} new decision${preserved.addedCount === 1 ? "" : "s"} added`
-          : ""
-      }`,
+      /**
+       * The note carries the meaning, because the number alone can mislead in
+       * both directions. A bare "100%" reads as an empty statistic unless it
+       * says that nothing had to be undone; and new decisions must be visible
+       * beside it, or a reader could think the plan simply did not grow.
+       *
+       * A denominator of zero gets no percentage at all. "100% of no decisions"
+       * reads on a screen as "we kept everything" when nothing was ever at
+       * stake.
+       */
+      note: preservationNote(preserved),
     },
     {
       label: "Whole-trip rebuilds",
