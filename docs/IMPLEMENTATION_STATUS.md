@@ -608,3 +608,44 @@ secret check are all green, with no network access required.
 1. **The Tokyo flights are not from Atlas.** Sandbox serves a bounded route set.
 2. **Research is recorded for the demo.** Live works; it is too slow to film.
 3. **No price change happened live.** The fare-shock beat is a demo scenario.
+
+---
+
+## CONSUMER REBUILD — Stage 1
+
+The hackathon tables above remain accurate about the engines. This table is
+about the product a person uses.
+
+| Capability | Status |
+| --- | --- |
+| Consumer homepage | IMPLEMENTED |
+| Trip creation (four questions, no model call) | IMPLEMENTED LOCALLY |
+| Local trip persistence | IMPLEMENTED (`localStorage`, one device) |
+| People management, add and edit | IMPLEMENTED LOCALLY |
+| Required vs preferred requirements | IMPLEMENTED |
+| Private requirements, group never sees the value | IMPLEMENTED + VERIFIED IN THE RENDERED PAGE |
+| Group Pulse | IMPLEMENTED — counted, never invented |
+| Travel groups from stated availability | IMPLEMENTED |
+| Reunion | IMPLEMENTED — computed from the last arrival |
+| Journey timeline | IMPLEMENTED |
+| Decisions, designed to be empty | IMPLEMENTED |
+| Updates | IMPLEMENTED |
+| Change preview (affected vs untouched) | IMPLEMENTED in the example |
+| Tokyo example through the product screens | IMPLEMENTED |
+| Provenance moved out of the first viewport | DONE — now at `/sources` |
+| **Real authentication** | **NOT IMPLEMENTED** |
+| **Cross-device shared trips** | **NOT IMPLEMENTED** |
+| **Invite links** | **NOT IMPLEMENTED** — and deliberately not faked |
+| **Production database** | **NOT IMPLEMENTED** |
+| Deployment | NOT PERFORMED |
+| Atlas production | NOT AUTHORISED |
+| Booking, payment, ticketing | NOT IMPLEMENTED |
+| Social link analysis | NOT IMPLEMENTED |
+
+**Tests: 1,186 across 56 files.** No network access required.
+
+### What "local only" actually means
+
+A trip created in Chrome on a laptop is not visible in Safari, on a phone, or to
+anybody else. There is no sync and no sharing. The People screen says this in
+words rather than offering a Share button that would not work.

@@ -509,3 +509,44 @@ HKG → MNL because Sandbox serves a bounded route set. The agent screen states
 this in writing so the claim survives without narration.
 
 **Next:** Phase 9 — ship. No new features.
+
+## Consumer rebuild, Stage 1 (22 August 2026)
+
+**1,186 tests across 56 files.** All gates green.
+
+**What changed.** Orkestr stopped being a demo with a homepage and became a
+product somebody can use. A person can now create their own trip, add people,
+record what each of them needs, and watch Group Pulse respond — none of which
+was possible before.
+
+**The domain engines were not touched.** This is a UX and product layer on top
+of them.
+
+**New:** `domain/consumerTrip.ts`, `core/trips/{store,pulse}.ts`,
+`ui/storage/localTripRepository.ts`, `ui/trip/*`, and routes under `/new`,
+`/trip/[id]/*`, `/examples/tokyo-family`, `/sources`.
+
+**The old home page moved to `/sources`.** It was honest and it was the wrong
+thing to lead with. `/demo/agent` still exists as technical proof.
+
+### Two architectural rules this stage tripped, and honoured
+
+Both were caught by the repository's own guard tests, and both were real:
+
+* `src/core` may not touch `Date`. The trip store now uses `civilDate` helpers.
+  It also stopped substituting the Unix epoch for a missing `createdAt` — that
+  was exactly the invented value the parser exists to prevent.
+* Client components may not import `@/adapters`. Browser storage was mis-filed
+  there; `adapters` is for integrations holding credentials. It moved to
+  `src/ui/storage`.
+
+### Do not
+
+* Add a Share or Invite button. There is no backend; a button that looks like it
+  works and does not is worse than its absence.
+* Let trip creation depend on a model call.
+* Put provenance back at the top of a page.
+* Treat a missing answer as availability.
+
+**Next:** infrastructure — identity, a server-side store, real invite links.
+Explicitly not started.

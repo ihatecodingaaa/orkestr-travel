@@ -1,15 +1,28 @@
-# Orkestr Travel
+# Orkestr
 
-**The coordination agent for group journeys.**
+**Plan together without doing the planning together.**
 
-Most travel AI helps one person build an itinerary. Orkestr coordinates a
-**group** with conflicting dates, budgets and needs — and when something
-changes, it repairs only the part that actually broke instead of starting the
-trip over.
+Everyone in a group trip has different dates, budgets, needs and preferences.
+Orkestr understands the group, works out a plan everyone can actually take, asks
+only for the decisions that matter, and repairs only what changes later.
 
 > **Other planners regenerate the trip. Orkestr works out what actually changed.**
 
-Built for the **Alibaba Cloud x Atlas Agentic AI Hackathon 2026**.
+---
+
+## Try it
+
+```bash
+npm install
+npm run dev
+```
+
+* **`/`** — plan a trip. Four questions, no account, no credentials.
+* **`/examples/tokyo-family`** — a family of seven who cannot all fly on the same
+  day, and what happens when one of them joins late.
+
+Trips are saved in your browser, on your device. There are no accounts and
+nothing is shared with anyone yet.
 
 ---
 
@@ -62,21 +75,18 @@ The loop is **bounded**: a hard step limit, one place that counts steps, and no
 path that reaches an ending without the count being accurate. Running out of
 steps is recorded as running out of steps — never as success.
 
-## See it in 60 seconds
+## The technical proof
 
-```bash
-npm install
-npm run dev
-```
+The consumer product sits on engines built and verified over nine phases. For
+judges and engineers:
 
-Then open **`/demo/agent`** — the one screen that answers *"when the plan breaks,
-does it know what to leave alone?"*
+* **`/demo/agent`** — the bounded agent run: what changed, what it affected, what
+  stayed the same, and why it stopped.
+* **`/sources`** — which subsystem is live, recorded or fixture. This used to be
+  the home page; it is honest and it was the wrong thing to lead with.
 
-Click **Ryan joins**. Read three things: what changed, what it affected, and what
-stayed exactly as it was.
-
-No credentials needed. With nothing configured the whole demo runs from recorded
-and fixture data, and says so on screen.
+No credentials needed for either. With nothing configured everything runs from
+recorded and fixture data, and says so on screen.
 
 ## What is real
 
@@ -312,7 +322,9 @@ Start with `docs/PRODUCT_SPEC.md` for what the product does, and
 | --- | --- |
 | `IMPLEMENTATION_STATUS.md` | What actually works today. Read this first |
 | `HACKATHON_MASTER_PLAN.md` | Phase plan and judging alignment |
-| `PRODUCT_SPEC.md` | Product principles and behaviour |
+| `CONSUMER_PRODUCT_SPEC.md` | **The canonical product document. Read this first** |
+| `UX_PRINCIPLES.md` | Ten rules the interface is held to |
+| `PRODUCT_SPEC.md` | Original product principles and behaviour |
 | `ARCHITECTURE.md` | Layers, boundaries and data flow |
 | `GROUP_STATE.md` | Travellers, membership and trip events |
 | `TRAVEL_WAVES.md` | The wave engine and reunion anchors |
