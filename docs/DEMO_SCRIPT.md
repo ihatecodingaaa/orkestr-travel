@@ -55,7 +55,7 @@ Point at the disabled text box.
 > "Reading free text isn't built yet, so this build says so rather than
 > pretending. Everything here comes from a structured demo fixture."
 
-Click **Load the family demo**.
+Click **Explore an example**.
 
 ### 0:20 - Who is going (25 seconds)
 

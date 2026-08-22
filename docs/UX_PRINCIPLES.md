@@ -1,7 +1,7 @@
 # UX principles
 
-Ten rules. Each one exists because breaking it produced something worse in this
-repository, not because it sounded good.
+Thirteen rules. Each one exists because breaking it produced something worse in
+this repository, not because it sounded good.
 
 ---
 
@@ -17,7 +17,7 @@ of a product somebody just opened.
 
 **3. Ask only when the answer matters.**
 If one option satisfies every confirmed constraint, choose it. A question that
-cannot change the outcome is an interruption. **The Decisions screen is designed
+cannot change the outcome is an interruption. **The Inbox is designed
 to be empty.**
 
 **4. Private by default where it is personal.**
@@ -51,6 +51,21 @@ timeline that squeezes a date onto three lines at 390px is broken, not
 The engines are genuinely complicated. Nobody planning a family holiday should
 have to learn what an impact radius is to use them.
 
+**11. Every screen is a verb.**
+Explore, contribute, coordinate, plan, decide, adapt. A screen that only reports
+state is a dashboard, and dashboards get opened once. If a person cannot do
+something on a screen, it does not deserve a tab.
+
+**12. Refuse by name rather than answer vaguely.**
+Ask Orkestr understands a fixed list of things and says so when a sentence falls
+outside it. A box that accepts everything and answers plausibly destroys the one
+claim this product is built on — that it does not make things up.
+
+**13. Never invent an impact to look busier.**
+The what-if preview lists the reunion as *kept* when it does not move. Padding a
+consequence list would make the one feature that proves the product honest into
+the one that isn't.
+
 ---
 
 ## Copy translations
@@ -72,6 +87,10 @@ the left.
 | `PROVIDER_UNAVAILABLE` | We couldn't check this right now |
 | `STEP_LIMIT_REACHED` | Orkestr stopped safely before changing more |
 | Structured extraction | What Orkestr understood |
+| Idea saved by N travellers | N people have saved this |
+| `PlanItemStatus.FIXED` | Locked in |
+| Autopilot rule | What Orkestr does on its own |
+| Hypothetical trip diff | What would change · What would stay |
 
 ## Empty states
 
@@ -82,5 +101,9 @@ Every one has a purpose and a next step.
 * No updates → *"Nothing has changed yet — that's a good thing."*
 * No plan yet → *"Once people say when they can travel, Orkestr will lay out the
   trip."*
+* No ideas → *"Nothing saved yet. Add the first place somebody mentioned."*
+* Nothing on a day → *"Nothing planned. Orkestr can suggest from what people
+  already saved."*
+* No budget entered → *"Nobody has worked this out yet."* — never a zero.
 
 Never `[]`, never `undefined`, never "No records found".

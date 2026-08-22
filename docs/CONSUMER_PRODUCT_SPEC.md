@@ -80,7 +80,7 @@ A requirement can be marked private. Then:
 The group is told *something* deliberately: a plan that changes for no visible
 reason is worse than one that says "somebody has a budget constraint".
 
-There is no authentication yet, so the People screen has a **"preview what each
+There is no authentication yet, so the Group screen has a **"preview what each
 person sees"** control. It is labelled a prototype control, because that is what
 it is. The *data model* is real, so the rule will still hold when accounts
 arrive rather than being painted on afterwards.
@@ -91,7 +91,7 @@ If one option already satisfies every confirmed constraint, Orkestr picks it and
 moves on. A question is asked only when the answer would change feasibility or
 the ordering of preferences.
 
-**The Decisions screen is designed to be empty.** "Nothing needs your attention"
+**The Inbox is designed to be empty.** "Nothing needs your attention"
 is the best possible state, not an empty dashboard to be filled with engagement.
 
 ## Group Pulse
@@ -160,9 +160,29 @@ single point of failure standing in front of the front door.
 ## What is local-only today
 
 * Trips live in **`localStorage`**, on one device, in one browser.
-* There are **no accounts**, no sync, and no invite links. The People screen
+* There are **no accounts**, no sync, and no invite links. The Group screen
   says so rather than offering a Share button that would not work.
 * The example trip is seeded, deterministic, and marked as an example.
+
+## Stage 2: the living trip
+
+Stage 1 delivered a product that was correct and passive — a person could create
+a trip and inspect it, and that was all. Stage 2 added the loop that makes it
+worth opening twice: **discover, contribute, coordinate, plan, decide, adapt**,
+one verb per screen.
+
+The additions are Explore and ideas, a real day-by-day Plan, an Ask Orkestr
+command bar, aggregated Activity, a non-destructive What-if preview, hand-entered
+Money, and visible Autopilot rules. The renames matter as much: *People* became
+**Group**, *Decisions* became **Inbox**, and *Updates* became **Activity** and
+left the primary navigation.
+
+None of it relaxes a claim. Saved links are stored and never fetched, budgets are
+never estimated by Orkestr, `BOOKED` cannot be set by this application, and the
+what-if preview writes nothing until somebody applies it.
+
+Full detail, including what each feature refuses to do: **[The living
+trip](LIVING_TRIP_SPEC.md)**.
 
 ## What the next stage needs
 

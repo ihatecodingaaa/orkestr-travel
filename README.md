@@ -243,9 +243,11 @@ npm install
 npm run dev        # http://localhost:3000
 ```
 
-Then open `/` and choose **Load the family demo**. The app needs no network,
-no keys and no configuration; everything it shows is fixture data compiled into
-the bundle. `docs/DEMO_SCRIPT.md` walks through the three-minute sequence.
+Then open `/` and choose **Plan a trip** to make your own, or **Explore an
+example** for the seven-person Tokyo trip. The app needs no network, no keys and
+no configuration; everything it shows is either fixture data compiled into the
+bundle or a trip you created, held in your browser. `docs/DEMO_SCRIPT.md` walks
+through the three-minute sequence.
 
 `/understand` reads a pasted group discussion. `/research` runs one bounded
 research question and shows every source behind it. Both work with no key,
@@ -323,6 +325,7 @@ Start with `docs/PRODUCT_SPEC.md` for what the product does, and
 | `IMPLEMENTATION_STATUS.md` | What actually works today. Read this first |
 | `HACKATHON_MASTER_PLAN.md` | Phase plan and judging alignment |
 | `CONSUMER_PRODUCT_SPEC.md` | **The canonical product document. Read this first** |
+| `LIVING_TRIP_SPEC.md` | The Stage 2 interaction model, and what each screen refuses to do |
 | `UX_PRINCIPLES.md` | Ten rules the interface is held to |
 | `PRODUCT_SPEC.md` | Original product principles and behaviour |
 | `ARCHITECTURE.md` | Layers, boundaries and data flow |

@@ -550,3 +550,57 @@ Both were caught by the repository's own guard tests, and both were real:
 
 **Next:** infrastructure — identity, a server-side store, real invite links.
 Explicitly not started.
+
+## Consumer rebuild, Stage 2 — the living trip (23 August 2026)
+
+**1,237 tests across 57 files.** All gates green: vitest, `tsc --noEmit`, type-
+aware ESLint, production build, and every route serving 200.
+
+**What changed.** Stage 1 made Orkestr usable; it was also passive — you could
+create a trip and look at it, and that was all. Stage 2 added the loop:
+**discover, contribute, coordinate, plan, decide, adapt**, one verb per screen.
+
+**The domain engines were still not touched.** Stage 2 is a product layer, same
+as Stage 1.
+
+**New:** `domain/livingTrip.ts`, `core/trips/{living,commands,mutate,calendar}.ts`,
+`ui/trip/{AskOrkestr,Overview,Explore,Plan,GroupScreens,WhatIf,Money}.tsx`,
+`app/living.css`, routes `/trip/[id]/{explore,plan,group,inbox,whatif,money,activity}`.
+
+**Renamed and removed:** *People* → **Group**, *Decisions* → **Inbox**, *Updates*
+→ **Activity** (out of the primary nav). The `decisions/` and `updates/` routes
+were deleted, not aliased.
+
+**Schema v2**, additive. `READABLE_SCHEMA_VERSIONS = [1, 2]`; v1 trips open with
+the new fields empty. `parseAutopilot` uses `!== false`, so trips saved before
+the settings existed get them on — the behaviour they already had.
+
+### The line every Stage 2 feature holds
+
+* A pasted link is **stored and never fetched**, and the card says so.
+* Orkestr **never estimates a price**. Every Money figure was typed by a person.
+  An empty box clears an estimate rather than writing zero.
+* `setPlanItemStatus` **refuses `BOOKED`**. Nothing in this application books.
+* The what-if preview **writes nothing** until somebody applies it, and lists the
+  reunion as *kept* when it does not move.
+* "Why this fits" says *"1 stated requirement to check against this place"* — it
+  never claims a requirement is cleared, because nobody checked the venue.
+* Ask Orkestr **refuses unrecognised text by name**. There is no guessing branch,
+  and no model call.
+
+### Do not
+
+* Turn Ask Orkestr into a chatbot with a fallback answer. The refusal is the
+  feature; wire `recognise` to a model if you like, but it must still produce a
+  typed `Intent` and stop at the same gate.
+* Add an autopilot switch for relaxing a required constraint or accepting a
+  compromise on somebody's behalf. The type deliberately has no field for either.
+* Let Explore fetch a URL a person pasted without saying that it did.
+* Fill an empty budget with a plausible number.
+* Merge non-consecutive activity entries — it would rewrite when things happened.
+
+**Everything from Stage 1's "Do not" list still applies**, including no Share
+button and no model call on trip creation.
+
+**Next:** unchanged — infrastructure (identity, a server-side store, real invite
+links). Still explicitly not started.

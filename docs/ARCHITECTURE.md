@@ -344,3 +344,56 @@ stopped at its limit. Failing any of them produces `OUTCOME_NOT_CONFIRMED`.
 fare is a fare somebody saw once; rearranging a group's travel around one without
 re-checking it would make every other guarantee here worthless. `undefined` means
 no provider fact was involved, which is different from "not fresh".
+
+## The living trip (Consumer Rebuild, Stage 2)
+
+```
+domain/livingTrip.ts     ideas, plan items, budget, autopilot
+domain/consumerTrip.ts   schema v2; v1 still readable
+core/trips/living.ts     every figure a screen shows, computed
+core/trips/commands.ts   text -> Intent -> answer | Action
+core/trips/mutate.ts     the only place a trip changes
+core/trips/calendar.ts   weekdays without Date (Sakamoto)
+ui/trip/*                one component per verb
+```
+
+**Reads and writes are separate files.** `living.ts` computes and never mutates;
+`mutate.ts` mutates and never computes. A screen that could quietly write while
+rendering is how a what-if preview turns into an accidental edit.
+
+### The command layer is three functions, not one
+
+```
+recognise  ->  a typed Intent, or nothing
+answer     ->  read-only, from trip state
+toAction   ->  a typed Action the CALLER validates and applies
+```
+
+`recognise` cannot mutate, and `toAction` returns a description of a change
+rather than performing one. When language understanding replaces the string
+matching, it produces an `Intent` and stops at the same gate — a model proposing
+"remove Grandma" is checked exactly like a person typing it.
+
+Unrecognised text is refused by name. There is no fallback branch that guesses.
+
+### Schema v2 migrates by addition
+
+`READABLE_SCHEMA_VERSIONS` is `[1, 2]`. A v1 trip loads, and the four new fields
+parse to empty rather than failing. `parseAutopilot` tests `!== false`, so a trip
+saved before the settings existed gets them switched **on** — the behaviour it
+already had.
+
+The version gate became a migration gate: refusing to open a trip somebody made
+last week is a data-loss bug wearing a correctness costume.
+
+### Two rules are not settings
+
+`AutopilotSettings` has three fields. It deliberately has no field for "relax a
+required constraint" or "accept a compromise on somebody's behalf", so no screen
+can offer to switch off the two guarantees the product rests on.
+
+### Calendar arithmetic without `Date`
+
+`src/core` may not touch `Date` — a repo guard test enforces it. Weekday names
+come from Sakamoto's algorithm over the civil date, which is pure, testable, and
+immune to the machine's timezone.

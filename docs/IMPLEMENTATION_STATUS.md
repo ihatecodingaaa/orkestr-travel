@@ -642,10 +642,56 @@ about the product a person uses.
 | Booking, payment, ticketing | NOT IMPLEMENTED |
 | Social link analysis | NOT IMPLEMENTED |
 
-**Tests: 1,186 across 56 files.** No network access required.
+**Tests at end of Stage 1: 1,186 across 56 files.** No network access required.
 
 ### What "local only" actually means
 
 A trip created in Chrome on a laptop is not visible in Safari, on a phone, or to
 anybody else. There is no sync and no sharing. The People screen says this in
 words rather than offering a Share button that would not work.
+
+## CONSUMER REBUILD — Stage 2 (the living trip)
+
+Stage 1 made Orkestr usable. Stage 2 made it something a person would open
+twice. Every row below is local-only; nothing here changes the deployment,
+persistence or authorisation status recorded above.
+
+| Capability | Status |
+| --- | --- |
+| Consumer schema v2, v1 trips still readable | IMPLEMENTED — additive migration |
+| Explore, category-led idea discovery | IMPLEMENTED — local example content |
+| Save an idea, per-traveller | IMPLEMENTED |
+| Add your own idea, with an optional link | IMPLEMENTED |
+| Pasted links analysed | **NOT IMPLEMENTED** — stored, never fetched, labelled as such |
+| "Why this fits", countable reasons | IMPLEMENTED — including the cautions |
+| Day-by-day plan with times, kinds and owners | IMPLEMENTED |
+| Move, restatus and remove plan items | IMPLEMENTED |
+| Suggest items for an empty day | IMPLEMENTED — only from what the group saved |
+| `BOOKED` status | **REFUSED BY THE MUTATOR** — nothing here can book |
+| Ask Orkestr command bar | IMPLEMENTED — eight intents, refuses the rest by name |
+| Natural-language understanding in the command bar | **NOT IMPLEMENTED** — no model call |
+| Inbox, owned decisions only | IMPLEMENTED |
+| Activity, consecutive entries aggregated | IMPLEMENTED |
+| What-if preview | IMPLEMENTED — computes a hypothetical, writes nothing |
+| Money, five hand-entered categories | IMPLEMENTED |
+| Prices estimated by Orkestr | **NOT IMPLEMENTED** — deliberately never guessed |
+| Autopilot settings, three switches | IMPLEMENTED — describes existing engine behaviour |
+| Background monitoring | **NOT IMPLEMENTED** — and the screen says so |
+| Private budget value hidden from the group | VERIFIED IN THE RENDERED PAGE |
+| Mobile layout at 390px | IMPLEMENTED |
+
+**Tests: 1,237 across 57 files.** 51 added for Stage 2. No network access
+required.
+
+### The three things not to overclaim in Stage 2
+
+1. **Explore content is local example data.** It is not research output. The
+   research pipeline is real and lives elsewhere in this repo; these cards do not
+   come from it.
+2. **A saved link was never opened.** Orkestr stores the URL and says on the card
+   that it has not been analysed.
+3. **No money figure was produced by Orkestr.** Every number on the Money screen
+   was typed in by a person.
+
+See **[The living trip](LIVING_TRIP_SPEC.md)** for what each feature refuses to
+do and why.
