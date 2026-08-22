@@ -2,9 +2,9 @@
 
 import { use } from "react";
 import Link from "next/link";
-import { useTrip } from "@/ui/trip/TripsClient";
+import { useTrip, useViewer } from "@/ui/trip/TripsClient";
 import { ExampleNote, TripShell } from "@/ui/trip/TripShell";
-import { Overview } from "@/ui/trip/Overview";
+import { GroupScreen } from "@/ui/trip/GroupScreens";
 
 /**
  * A trip screen.
@@ -15,7 +15,8 @@ import { Overview } from "@/ui/trip/Overview";
  */
 export default function Page({ params }: { readonly params: Promise<{ tripId: string }> }) {
   const { tripId } = use(params);
-  const { loading, trip, save } = useTrip(tripId);
+  const { loading, trip } = useTrip(tripId);
+  const { viewerId, setViewerId } = useViewer(trip);
   const base = `/trip/${tripId}`;
 
   if (loading) return <p className="faint">Loading your trip…</p>;
@@ -38,9 +39,9 @@ export default function Page({ params }: { readonly params: Promise<{ tripId: st
   }
 
   return (
-    <TripShell trip={trip} current="overview">
+    <TripShell trip={trip} current="group">
       {trip.isExample === true && <ExampleNote />}
-      <Overview base={base} save={save} trip={trip} />
+      <GroupScreen trip={trip} base={base} viewerId={viewerId} setViewer={setViewerId} />
     </TripShell>
   );
 }

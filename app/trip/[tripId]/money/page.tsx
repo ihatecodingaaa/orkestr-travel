@@ -2,9 +2,9 @@
 
 import { use } from "react";
 import Link from "next/link";
-import { useTrip } from "@/ui/trip/TripsClient";
+import { useTrip, useViewer } from "@/ui/trip/TripsClient";
 import { ExampleNote, TripShell } from "@/ui/trip/TripShell";
-import { Overview } from "@/ui/trip/Overview";
+import { Money } from "@/ui/trip/Money";
 
 /**
  * A trip screen.
@@ -16,7 +16,7 @@ import { Overview } from "@/ui/trip/Overview";
 export default function Page({ params }: { readonly params: Promise<{ tripId: string }> }) {
   const { tripId } = use(params);
   const { loading, trip, save } = useTrip(tripId);
-  const base = `/trip/${tripId}`;
+  const { viewerId } = useViewer(trip);
 
   if (loading) return <p className="faint">Loading your trip…</p>;
 
@@ -38,9 +38,9 @@ export default function Page({ params }: { readonly params: Promise<{ tripId: st
   }
 
   return (
-    <TripShell trip={trip} current="overview">
+    <TripShell trip={trip} current="money">
       {trip.isExample === true && <ExampleNote />}
-      <Overview base={base} save={save} trip={trip} />
+      <Money save={save} viewerId={viewerId} trip={trip} />
     </TripShell>
   );
 }

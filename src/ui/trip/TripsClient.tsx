@@ -80,6 +80,26 @@ export function useTrip(id: string): {
 }
 
 /**
+ * Whose perspective the screen is showing.
+ *
+ * A PROTOTYPE CONTROL, not authentication. There are no accounts, so this
+ * previews what each person would see rather than signing anybody in. It
+ * defaults to the organiser because that is who is holding the device.
+ *
+ * Kept in React state rather than storage: a preview is not a preference, and
+ * persisting it would make somebody wonder why the app remembered them as
+ * their mother.
+ */
+export function useViewer(trip: ConsumerTrip | undefined): {
+  readonly viewerId: string;
+  setViewerId: (id: string) => void;
+} {
+  const [chosen, setChosen] = useState<string | undefined>(undefined);
+  const fallback = trip?.travellers.find((t) => t.isOrganiser)?.id ?? trip?.travellers[0]?.id ?? "";
+  return { viewerId: chosen ?? fallback, setViewerId: setChosen };
+}
+
+/**
  * Ids and timestamps.
  *
  * `crypto.randomUUID` where available, with a readable fallback. Ids are opaque

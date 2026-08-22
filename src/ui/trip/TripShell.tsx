@@ -18,12 +18,26 @@ import { formatRange } from "./format";
  * doing.
  */
 
+/**
+ * Named after what a person wants to do.
+ *
+ * "Decisions" became "Inbox" because it was reading as an administrative
+ * backlog rather than a short list of things waiting on somebody. "People"
+ * became "Group" because a group trip is a group before it is a set of records.
+ * Activity moved out of the primary row: it is worth having and is not a task.
+ */
 const TABS = [
   { key: "overview", label: "Overview", suffix: "" },
-  { key: "people", label: "People", suffix: "/people" },
+  { key: "explore", label: "Explore", suffix: "/explore" },
   { key: "plan", label: "Plan", suffix: "/plan" },
-  { key: "decisions", label: "Decisions", suffix: "/decisions" },
-  { key: "updates", label: "Updates", suffix: "/updates" },
+  { key: "group", label: "Group", suffix: "/group" },
+  { key: "inbox", label: "Inbox", suffix: "/inbox" },
+] as const;
+
+const SECONDARY = [
+  { key: "whatif", label: "What if?", suffix: "/whatif" },
+  { key: "money", label: "Money", suffix: "/money" },
+  { key: "activity", label: "Activity", suffix: "/activity" },
 ] as const;
 
 export function TripShell({
@@ -63,11 +77,24 @@ export function TripShell({
             {...(current === tab.key ? { "aria-current": "page" as const } : {})}
           >
             {tab.label}
-            {tab.key === "decisions" && needs > 0 && (
+            {tab.key === "inbox" && needs > 0 && (
               <span className="tab-count" aria-label={`${String(needs)} needing attention`}>
                 {needs}
               </span>
             )}
+          </Link>
+        ))}
+      </nav>
+
+      <nav className="trip-subnav" aria-label="More">
+        {SECONDARY.map((tab) => (
+          <Link
+            key={tab.key}
+            className="trip-subtab"
+            href={`/trip/${trip.id}${tab.suffix}`}
+            {...(current === tab.key ? { "aria-current": "page" as const } : {})}
+          >
+            {tab.label}
           </Link>
         ))}
       </nav>

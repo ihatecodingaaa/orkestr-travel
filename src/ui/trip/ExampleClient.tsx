@@ -2,171 +2,131 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { TripOverview } from "./TripOverview";
-import { TripPlan, TripUpdates } from "./TripPanels";
-import { countReadiness, groupByDeparture } from "@/core/trips/pulse";
-import { exampleTrip, exampleWithRyan } from "./exampleTrip";
-import { formatWithWeekday, weekdayOf } from "./format";
+import { Overview } from "./Overview";
+import { Explore } from "./Explore";
+import { Plan } from "./Plan";
+import { GroupScreen, Inbox, Activity } from "./GroupScreens";
+import { WhatIf, buildPreview } from "./WhatIf";
+import { Money } from "./Money";
+import { TripPeople } from "./TripPeople";
+import { exampleTrip } from "./exampleTrip";
+import type { ConsumerTrip } from "@/domain/consumerTrip";
 
 /**
- * The Tokyo example, as a guided story.
+ * The Tokyo example.
  *
- * The old controls were a test harness: Reset, Ryan joins, Check the fares.
- * Accurate, and they made the product look like something being debugged. This
- * is the same underlying change presented as what it is -- a thing that happens
- * to a group, and what Orkestr does about it.
+ * THE SAME SCREENS AS A REAL TRIP. Every tab below renders the identical
+ * component a person sees on their own trip, driven by state held in memory
+ * instead of storage. A separate showcase interface would mean maintaining two
+ * products and demonstrating the wrong one.
  *
- * TWO STEPS, not seven. Every extra control is another decision for somebody who
- * came here to find out what the product does.
- *
- * The change preview is the important screen. Before anything is applied, the
- * person sees what this will touch and -- more importantly -- what it will not.
+ * Changes are kept in React state and vanish on reload. That is deliberate: an
+ * example that quietly accumulated somebody's edits would stop being the thing
+ * the next visitor was shown.
  */
-export function ExampleClient() {
-  const [applied, setApplied] = useState(false);
-  const [previewing, setPreviewing] = useState(false);
 
-  const before = useMemo(() => exampleTrip(), []);
-  const after = useMemo(() => exampleWithRyan(before), [before]);
-  const trip = applied ? after : before;
+const TABS = [
+  { key: "overview", label: "Overview" },
+  { key: "explore", label: "Explore" },
+  { key: "plan", label: "Plan" },
+  { key: "group", label: "Group" },
+  { key: "inbox", label: "Inbox" },
+  { key: "whatif", label: "What if?" },
+  { key: "money", label: "Money" },
+  { key: "activity", label: "Activity" },
+] as const;
 
-  const preview = useMemo(() => changePreview(before, after), [before, after]);
+/**
+ * "people" is reachable but not a tab. The Group and Inbox screens link to it
+ * for editing; it does not need a ninth button competing with the six verbs.
+ */
+export type ExampleSection = (typeof TABS)[number]["key"] | "people";
+
+export function ExampleClient({
+  initialTab = "overview",
+}: {
+  readonly initialTab?: ExampleSection;
+}) {
+  const initial = useMemo(() => exampleTrip(), []);
+  const [trip, setTrip] = useState<ConsumerTrip>(initial);
+  const [tab, setTab] = useState<ExampleSection>(initialTab);
+  const [viewerId, setViewerId] = useState("ex-mum");
+
+  const base = "/examples/tokyo-family";
+
+  /**
+   * The headline moment, computed rather than described.
+   *
+   * Ryan is the one person who has not answered, so the preview of him joining
+   * is the change this example exists to show. The numbers come from the same
+   * diff the What-if screen uses -- there is no second, prettier calculation
+   * for the marketing version.
+   */
+  const ryanPreview = useMemo(() => {
+    const ryan = trip.travellers.find((t) => t.id === "ex-ryan");
+    if (ryan === undefined || ryan.comingConfirmed === true) return undefined;
+    return buildPreview(trip, {
+      kind: "TRAVELLER_JOINS",
+      travellerId: "ex-ryan",
+      from: "2026-12-02",
+    });
+  }, [trip]);
 
   return (
     <div className="stack gap-3">
-      {/* ------------------------------------------------------ the story */}
-      <section className="story">
-        <ol className="story-steps">
-          <li className={applied ? "story-step done" : "story-step now"}>
-            <strong>The trip so far</strong>
-            <span className="faint">Six people sorted, one has not replied</span>
-          </li>
-          <li className={applied ? "story-step now" : "story-step next"}>
-            <strong>Ryan can come after all</strong>
-            <span className="faint">
-              {applied ? "Orkestr repaired only what this touched" : "See what this changes"}
-            </span>
-          </li>
-        </ol>
-
-        {!applied && !previewing && (
-          <button className="btn btn-primary" onClick={() => setPreviewing(true)} type="button">
-            Ryan says he can come
-          </button>
-        )}
-        {applied && (
-          <button
-            className="btn btn-secondary btn-small"
-            onClick={() => {
-              setApplied(false);
-              setPreviewing(false);
-            }}
-            type="button"
-          >
-            Start the example again
-          </button>
-        )}
-      </section>
-
-      {/* -------------------------------------------------- change preview */}
-      {previewing && !applied && (
-        <section className="card preview">
-          <h2>Ryan is joining</h2>
-
-          <div className="preview-columns">
-            <div className="stack gap-1">
-              <h3 className="faint">This affects</h3>
-              <ul className="impact-list impact-changed">
-                {preview.affected.map((item) => (
-                  <li key={item}>{item}</li>
-                ))}
-              </ul>
-            </div>
-            <div className="stack gap-1">
-              {/*
-                The half most planners cannot show, because they rebuilt
-                everything and have nothing left to compare against.
-              */}
-              <h3 className="faint">This does not affect</h3>
-              <ul className="impact-list impact-kept">
-                {preview.untouched.map((item) => (
-                  <li key={item}>{item}</li>
-                ))}
-              </ul>
-            </div>
+      {ryanPreview !== undefined && tab !== "whatif" && (
+        <section className="teaser">
+          <div>
+            <strong>Ryan has not replied yet</strong>
+            <p className="faint">
+              See what Orkestr would do if he could come — and how much of the trip would stay
+              exactly as it is.
+            </p>
           </div>
-
-          <p className="preserved">
-            <strong>
-              {preview.keptCount} of {preview.keptCount} earlier decisions kept
-            </strong>{" "}
-            <span className="faint">
-              Nothing the group already agreed had to be undone · 1 new decision added
-            </span>
-          </p>
-
-          <button className="btn btn-primary" onClick={() => setApplied(true)} type="button">
-            Update the trip
+          <button className="btn btn-primary" type="button" onClick={() => setTab("whatif")}>
+            Try it
           </button>
         </section>
       )}
 
-      <TripOverview trip={trip} />
-      <TripPlan trip={trip} />
-      <TripUpdates trip={trip} />
+      <nav className="trip-nav" aria-label="Example sections">
+        {TABS.map((entry) => (
+          <button
+            key={entry.key}
+            type="button"
+            className="trip-tab"
+            onClick={() => setTab(entry.key)}
+            {...(tab === entry.key ? { "aria-current": "page" as const } : {})}
+          >
+            {entry.label}
+          </button>
+        ))}
+      </nav>
 
-      <p className="faint">
-        Every number on this page is computed from the people above, not written into the example.{" "}
-        <Link href="/sources">Where the data comes from</Link>.
-      </p>
+      {tab === "overview" && <Overview trip={trip} base={base} save={setTrip} />}
+      {tab === "explore" && <Explore trip={trip} save={setTrip} viewerId={viewerId} />}
+      {tab === "plan" && <Plan trip={trip} base={base} save={setTrip} />}
+      {tab === "group" && (
+        <GroupScreen trip={trip} base={base} viewerId={viewerId} setViewer={setViewerId} />
+      )}
+      {tab === "inbox" && <Inbox trip={trip} base={base} viewerId={viewerId} />}
+      {tab === "whatif" && <WhatIf trip={trip} save={setTrip} />}
+      {tab === "money" && <Money trip={trip} save={setTrip} viewerId={viewerId} />}
+      {tab === "activity" && <Activity trip={trip} />}
+      {tab === "people" && <TripPeople trip={trip} save={setTrip} />}
+
+      <footer className="stack gap-1">
+        <p className="faint">
+          Changes here are not saved — reload and the example starts over.{" "}
+          <button className="linkish" type="button" onClick={() => setTrip(exampleTrip())}>
+            Start again now
+          </button>
+        </p>
+        <p className="faint">
+          Everything on this page is computed from the seven people in it. Nothing is written into
+          the example. <Link href="/sources">Where the data comes from</Link>.
+        </p>
+      </footer>
     </div>
   );
-}
-
-interface Preview {
-  readonly affected: readonly string[];
-  readonly untouched: readonly string[];
-  readonly keptCount: number;
-}
-
-/**
- * What the change touches, derived by comparing the two states.
- *
- * NOT a hand-written list. A group that already exists in both versions and
- * keeps the same members is untouched; one whose membership moves is affected.
- * Writing these out by hand would make the example's most important claim the
- * one thing on the page that was not computed.
- */
-function changePreview(before: ReturnType<typeof exampleTrip>, after: ReturnType<typeof exampleTrip>): Preview {
-  const groupsBefore = groupByDeparture(before.travellers).groups;
-  const groupsAfter = groupByDeparture(after.travellers).groups;
-
-  const affected: string[] = [];
-  const untouched: string[] = [];
-
-  for (const group of groupsAfter) {
-    const label = `${weekdayOf(group.departureDate)} group (${formatWithWeekday(group.departureDate)})`;
-    const previous = groupsBefore.find((g) => g.departureDate === group.departureDate);
-    const same =
-      previous !== undefined &&
-      previous.travellerIds.length === group.travellerIds.length &&
-      previous.travellerIds.every((id, index) => id === group.travellerIds[index]);
-    if (same) untouched.push(label);
-    else affected.push(label);
-  }
-
-  // Anything the change genuinely cannot reach.
-  untouched.push("The dates for the trip");
-  untouched.push("Everyone else's requirements");
-
-  /**
-   * The denominator is OLD decisions only.
-   *
-   * Ryan's own placement is a NEW decision and must not enter it: counting new
-   * work against the preservation rate would punish the system for being
-   * thorough. Here, every prior decision survives.
-   */
-  const keptCount = countReadiness(before.travellers).ready;
-
-  return { affected, untouched, keptCount };
 }

@@ -4,29 +4,28 @@ import { use } from "react";
 import Link from "next/link";
 import { useTrip } from "@/ui/trip/TripsClient";
 import { ExampleNote, TripShell } from "@/ui/trip/TripShell";
-import { TripDecisions } from "@/ui/trip/TripPanels";
+import { WhatIf } from "@/ui/trip/WhatIf";
 
 /**
  * A trip screen.
  *
- * A client route, because trips live in the browser and the server cannot see
- * them. The three states below are all real and all distinct: still asking,
- * genuinely absent, and found. Collapsing the first two would show "not found"
- * for one frame on every load.
+ * Thin on purpose: read the trip, hand it to a component. The three states
+ * below are all real and all distinct -- still asking, genuinely absent, and
+ * found. Collapsing the first two would flash "not found" on every load.
  */
 export default function Page({ params }: { readonly params: Promise<{ tripId: string }> }) {
   const { tripId } = use(params);
-  const { loading, trip } = useTrip(tripId);
+  const { loading, trip, save } = useTrip(tripId);
 
   if (loading) return <p className="faint">Loading your trip…</p>;
 
   if (trip === undefined) {
     return (
-      <div className="card empty">
+      <div className="empty-panel">
         <h1>That trip isn&rsquo;t on this device</h1>
         <p className="faint">
-          Trips are saved in the browser that created them. If you made this one somewhere else,
-          it will not be here — Orkestr has no accounts or sync yet.
+          Trips are saved in the browser that created them. If you made this one somewhere else it
+          will not be here — Orkestr has no accounts or sync yet.
         </p>
         <p>
           <Link className="btn btn-primary" href="/">
@@ -38,9 +37,9 @@ export default function Page({ params }: { readonly params: Promise<{ tripId: st
   }
 
   return (
-    <TripShell trip={trip} current="decisions">
+    <TripShell trip={trip} current="whatif">
       {trip.isExample === true && <ExampleNote />}
-      <TripDecisions trip={trip} />
+      <WhatIf save={save} trip={trip} />
     </TripShell>
   );
 }

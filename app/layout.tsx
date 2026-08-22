@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import "./globals.css";
 import "./product.css";
+import "./living.css";
 
 export const metadata = {
   title: "Orkestr — plan together without doing the planning together",

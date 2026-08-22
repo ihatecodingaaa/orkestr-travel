@@ -1,6 +1,8 @@
 import type { ConsumerTrip } from "../../domain/consumerTrip";
 import { CONSUMER_TRIP_SCHEMA_VERSION } from "../../domain/consumerTrip";
 import { asIsoDate } from "../../domain/time";
+import { DEFAULT_AUTOPILOT } from "../../domain/livingTrip";
+import { tokyoIdeas, tokyoPlan } from "./exampleContent";
 import type { IsoDateTime } from "../../domain/time";
 
 /**
@@ -158,6 +160,17 @@ export function exampleTrip(): ConsumerTrip {
     ],
     createdAt: CREATED_AT,
     updatedAt: CREATED_AT,
+    ideas: tokyoIdeas(),
+    plan: tokyoPlan(),
+    /**
+     * One category estimated, four left blank on purpose.
+     *
+     * A fully-filled budget would imply Orkestr priced the trip. It did not --
+     * there is no pricing data in this build, so the screen shows one figure
+     * somebody entered and says plainly that the rest are unestimated.
+     */
+    budget: { currency: "SGD", lines: [{ category: "FLIGHTS", perPerson: 620 }] },
+    autopilot: DEFAULT_AUTOPILOT,
   };
 }
 
