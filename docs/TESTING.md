@@ -288,3 +288,32 @@ wrong or would be easy to get wrong:
 covered by `impact.test.ts` and `planRepair.test.ts`, and the reason those need
 no Atlas variant is the architectural point: the engines cannot tell which
 provider a fact came from.
+
+## The agent run (Phase 8)
+
+`tests/agentRun.test.ts` (27) and `tests/ui/agentRunView.test.ts` (16).
+
+Almost every test is about one of two failures, because they are the two that
+matter and the two an audience cannot catch:
+
+**Failing to stop.** The budget is exercised across every repair status at every
+limit from 1 to 7, asserting `stepsUsed <= max` and a terminal status each time.
+There is no path that exceeds the budget and none that ends non-terminally.
+
+**Stopping while claiming something untrue.** `STEP_LIMIT_REACHED` is asserted
+NOT to be in `SUCCESS_STATUSES`, and the view model is asserted to render it as
+"Stopped at its limit" -- explicitly not matching `/repaired|complete|done|success/`.
+
+Others worth knowing:
+
+* A `LOCAL_REPAIR_FOUND` carrying a hard blocker produces
+  `OUTCOME_NOT_CONFIRMED`. The engine said it worked; the postconditions say it
+  did not, and the postconditions win.
+* `postconditionsHold` reports EVERY failure, not the first, because fixing one
+  at a time hides the rest.
+* The audit trail is asserted to contain no internal vocabulary -- no "impact
+  radius", "lexicographic", "canonical" or "source authority".
+* The facts are asserted to make no monetary claim: no `$`, no "saved", no
+  "cheaper".
+* An unresolved requirement is asserted to survive all the way to the screen. An
+  unknown that vanishes on the way to a summary is the dangerous kind.

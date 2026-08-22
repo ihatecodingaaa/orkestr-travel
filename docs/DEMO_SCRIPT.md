@@ -447,3 +447,55 @@ full agent loop in hand.
 The line worth landing: searching is not holding. Orkestr can find a fare and
 re-check it. It creates no order and reserves no seat, and the provider-capacity
 row says so on every screen regardless of what else went live.
+
+## The three-minute run (Phase 8)
+
+**Opening line:** *"Most travel planners re-plan the trip. Orkestr works out what
+actually changed."*
+
+**Closing line:** *"Travel together, even when you can't travel the same way."*
+
+### The sequence
+
+| Time | Screen | What to say |
+|---|---|---|
+| 0:00–0:20 | `/understand` | Seven people, one group chat, nobody free on the same day. |
+| 0:20–0:40 | `/understand` | What Orkestr understood. Proposals still say *proposed*. |
+| 0:40–1:00 | `/demo/waves` | One flight does not work. Two travel groups, from confirmed availability — not from a model's opinion. |
+| 1:00–1:20 | `/demo/journey` | The whole trip, including the reunion. Group things sit after everyone lands. |
+| 1:20–1:35 | `/demo/agent` (provider card) | A real flight provider, searched and then **re-checked**. |
+| 1:35–1:55 | `?stage=RYAN_JOINED` | Ryan joins after everything was agreed. |
+| 1:55–2:20 | `/demo/agent` | **What changed. What it affected. What stayed exactly as it was.** |
+| 2:20–2:40 | `?fareScenario=SOFT_BREACH` → `/demo/participant/...` | The fare moves. One person is asked, privately. |
+| 2:40–2:55 | `/demo/agent` | 18 of 20 decisions kept. 0 rebuilds. 6 of 7 steps. |
+| 2:55–3:00 | — | Closing line. |
+
+### What each label on screen actually means
+
+Every claim maps to something implemented. Nothing below is presenter fiction.
+
+| Label | What it is |
+|---|---|
+| **LIVE MODEL STUDIO** | A real Qwen call. Verified live; ~10s. |
+| **RECORDED MODEL STUDIO** | A real research result captured earlier. Use this on stage — live research took 54–76s with timeouts. |
+| **RECORDED ATLAS SANDBOX** | A real Atlas Sandbox search + verify from 22 Aug 2026. Sandbox fares are **test data**. |
+| **DEMO SCENARIO** | The Tokyo flights. Deterministic fixtures, not provider data. |
+| **DETERMINISTIC** | Constraints, waves, repair, preservation. No model involved. |
+
+### The seam, said out loud
+
+The Tokyo trip is the product story. The Atlas proof is on **HKG → MNL**, because
+Atlas Sandbox serves a bounded set of test routes and does not carry Tokyo.
+
+**Say that.** It takes one sentence — *"the provider proof runs on a route the
+sandbox actually serves"* — and it is far stronger than a seamless story a judge
+could puncture with one follow-up question. The agent screen says it in writing
+too, so the claim survives without narration.
+
+### Do not
+
+* Do not run live research on stage. 54–76s, with timeouts observed.
+* Do not animate "Searching Atlas live…" over a recording.
+* Do not say "real fares". Sandbox is test data and nothing is booked.
+* Do not claim a live price change. The real verification returned **unchanged**;
+  the fare-shock beat is a labelled demo scenario.

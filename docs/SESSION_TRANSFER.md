@@ -480,3 +480,32 @@ manufacturing either would mean spamming the provider. Both are proven against
 Atlas-shaped fixtures.
 
 **Next:** Phase 8, end-to-end agent repair and hero demo. Not started.
+
+## Phase 8 complete (22 August 2026)
+
+**1136 tests across 54 files.** All gates green.
+
+**What is new:** a bounded agent run. `domain/agentRun.ts`, `core/agent/run.ts`,
+`ui/view/agentRun.ts`, `app/demo/agent`.
+
+**What it is not:** a second decision-maker. It coordinates existing engines and
+adds a sequence, a budget and an ending. No branch in it decides whether a fare
+is acceptable or whether a requirement may bend.
+
+**The two invariants worth protecting:**
+
+* `STEP_LIMIT_REACHED` must never become `COMPLETED`. `SUCCESS_STATUSES` has
+  exactly one entry, deliberately written as a list.
+* A repair status of `LOCAL_REPAIR_FOUND` is not a valid journey.
+  `postconditionsHold` is the separate question, and it can contradict the
+  engine.
+
+**One defect found this phase:** `invalidatedDecisionIds` stringified
+`DecisionRecord` objects, producing `[object Object]`. Caught by lint, not by a
+test, because nothing rendered the list yet. Now reads `.key` and is pinned.
+
+**Demo honesty:** the Tokyo flights are a demo scenario. The Atlas proof is
+HKG → MNL because Sandbox serves a bounded route set. The agent screen states
+this in writing so the claim survives without narration.
+
+**Next:** Phase 9 — ship. No new features.

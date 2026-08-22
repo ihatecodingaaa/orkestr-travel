@@ -532,3 +532,27 @@ labelled as such.
 
 Order creation, payment and ticketing remain unimplemented on purpose --
 `ticketing_available: true` is a capability, not an authorization.
+
+### The agent loop (Phase 8)
+
+| Capability | Status | Evidence |
+| --- | --- | --- |
+| End-to-end hero orchestration | `IMPLEMENTED` | `/demo/agent`, one run, one repair |
+| Bounded step budget | `IMPLEMENTED + OFFLINE VERIFIED` | 7 steps; exercised at every limit 1–7 across every repair status |
+| `STEP_LIMIT_REACHED` is never success | `IMPLEMENTED + OFFLINE VERIFIED` | asserted in engine and view model |
+| Postcondition / false-success check | `IMPLEMENTED + OFFLINE VERIFIED` | `LOCAL_REPAIR_FOUND` + hard blocker → `OUTCOME_NOT_CONFIRMED` |
+| Provider freshness precondition | `IMPLEMENTED + OFFLINE VERIFIED` | unverified fare → `OUTCOME_NOT_CONFIRMED` |
+| Provider-unavailable termination | `IMPLEMENTED + OFFLINE VERIFIED` | no fixture substituted |
+| Typed events from Phase 3 | `IMPLEMENTED` | reuses `TripEvent`; no free-form payloads |
+| Operation accounting | `IMPLEMENTED` | counted, passed in, never guessed |
+| Full replans avoided | `IMPLEMENTED` | reported as `0`, not as a saved percentage |
+| Decision preservation surfaced | `IMPLEMENTED` | old-decision denominator, from the real inventory |
+| Audit trail | `IMPLEMENTED` | one line per step, no internal vocabulary |
+| Stage research | `RECORDED MODEL STUDIO` | live is 54–76s with timeouts |
+| Stage flights | `RECORDED ATLAS SANDBOX` | real verified run; offers expire in ~15 min |
+| Tokyo flight data | `DEMO SCENARIO` | **not** Atlas-backed, and labelled as such |
+| Atlas production | `NOT AUTHORISED` | not representable |
+| Order / payment / ticketing | `NOT IMPLEMENTED` | deliberately |
+
+**Not claimed:** end-to-end live Tokyo Atlas. Atlas Sandbox does not carry the
+route, and the demo says so rather than blurring it.

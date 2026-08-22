@@ -258,3 +258,23 @@ flagged.
 - Fare and provider events are not yet modelled as trip events.
 - The repair explores candidates within the same bounded search as planning, and
   says so when the bound is reached.
+
+## How a repair becomes a run (Phase 8)
+
+`repairPlan` already returns everything a run needs: the impact, the decision
+diff, the preservation figure, the compromises, the blockers, the unknowns. The
+orchestration layer does not recompute any of it.
+
+What it adds around the call:
+
+| Before | The run |
+|---|---|
+| A repair result | A sequence with a recorded reason for stopping |
+| A status | A status plus a postcondition check that can contradict it |
+| Counts available | Counts stated, and stated as measured |
+| Fresh-or-not implicit | Freshness checked before the repair is relied on |
+
+**The accounting makes one claim and makes it plainly: `fullReplans: 0`.** Repair
+produces the smallest valid delta from the plan people already agreed to, so the
+honest number is zero -- far more defensible than a percentage saved that nobody
+can reproduce.

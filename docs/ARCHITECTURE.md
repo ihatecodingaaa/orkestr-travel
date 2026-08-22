@@ -294,3 +294,53 @@ which one they are holding.
 MEANS is decided by the engines that already handle every other change. It maps
 one fact to one event and stops -- it does not decide whether a price is
 acceptable, and it cannot soften an unavailable flight into a price change.
+
+## The agent run (Phase 8)
+
+```
+domain/agentRun.ts     the run, its statuses, its accounting
+core/agent/run.ts      the sequence, the budget, the ending
+ui/view/agentRun.ts    the same run, in words a traveller uses
+app/demo/agent         one screen, rendered from one run
+```
+
+**This layer coordinates. It does not judge.** There is no branch in
+`core/agent/run.ts` that decides whether a fare is acceptable, whether a hard
+requirement may bend, or whether a plan is good enough. Those questions were
+answered by engines built in Phase 3, and a second opinion here could disagree
+with the first -- at which point the product has two truths and no way to know
+which one is on screen.
+
+What it adds is the part that did not exist: a sequence, a budget, an ending.
+
+### The step budget
+
+Steps are consumed in ONE function, `take()`, and every transition passes
+through it. No recursion, no loop that can run without incrementing, no path to
+a terminal state with an inaccurate count.
+
+`DEFAULT_MAX_STEPS` is **7** -- the length of the longest legitimate path
+(observe, assess, check freshness, repair, validate, request approval, explain).
+Not a round number chosen to look generous: a bound derived from the work, so
+exceeding it means something genuinely went wrong rather than that the trip was
+complicated.
+
+### Two things that are not success
+
+**`STEP_LIMIT_REACHED` is not `COMPLETED`.** An agent that runs out of budget and
+reports success has told a group their trip is sorted when nobody checked.
+`SUCCESS_STATUSES` is written as a list containing exactly one entry, so adding a
+second is an arguable change rather than an `||` in a condition.
+
+**A command succeeding is not the outcome happening.** `repairPlan` returning
+`LOCAL_REPAIR_FOUND` means the ENGINE RAN. Whether the result is a valid journey
+is a separate question, asked in `postconditionsHold`, which checks for a missing
+plan, surviving hard blockers, unestablished requirements, and a search that
+stopped at its limit. Failing any of them produces `OUTCOME_NOT_CONFIRMED`.
+
+### Freshness is a precondition, not a nicety
+
+`providerVerified: false` stops the run with `OUTCOME_NOT_CONFIRMED`. A searched
+fare is a fare somebody saw once; rearranging a group's travel around one without
+re-checking it would make every other guarantee here worthless. `undefined` means
+no provider fact was involved, which is different from "not fresh".
