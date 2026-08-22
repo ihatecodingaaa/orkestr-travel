@@ -13,7 +13,7 @@ import type { CliRunner } from "./cli";
 import { isInertArgument } from "./cli";
 import { classifyAtlasCode, mayRetryOnce, parseEnvelope } from "./envelope";
 import type { AtlasEnvelope, AtlasFailureKind } from "./envelope";
-import { parseOfferList, parseVerification } from "./offerShape";
+import { parseSearchData, parseVerification } from "./offerShape";
 import type { RawOffer } from "./offerShape";
 import { normaliseOffer } from "./normalise";
 import { proveSandbox } from "./environment";
@@ -247,12 +247,19 @@ export class AtlasFlightProvider implements FlightProvider {
     this.failUnlessSuccess(searchEnvelope, "SEARCH");
 
     /**
-     * Atlas splits search into two commands: `search` returns a `search_id`,
-     * and `offer list --search-id` returns the offers. The second call is not
-     * optional and the first does not carry offers.
+     * ONE COMMAND. The real `FLIGHT_SEARCHED` response carries complete offers
+     * in `data.offers[]`.
+     *
+     * An earlier version of this adapter issued `offer list --search-id` after
+     * every search, because the contract lists both commands and the shape of an
+     * offer had never been seen. Now that it has: the offers are already here,
+     * and the second call would spend a provider round trip re-fetching data we
+     * are holding. `offer list` is documented as replaying a RETAINED search,
+     * which is a recovery path, not a step.
      */
-    const searchId = searchEnvelope.data["search_id"];
-    if (typeof searchId !== "string" || searchId.length === 0) {
+    const parsed = parseSearchData(searchEnvelope.data);
+    const searchId = parsed.searchId;
+    if (searchId === undefined) {
       throw new AtlasProviderError(
         "PROVIDER_PROTOCOL_ERROR",
         "Atlas accepted the search but returned no search id.",
@@ -261,21 +268,7 @@ export class AtlasFlightProvider implements FlightProvider {
       );
     }
 
-    const listEnvelope = await this.invoke(
-      // The search id is OPAQUE and goes back exactly as received.
-      ["offer", "list", "--search-id", searchId, "--json"],
-      this.config.searchTimeoutMs,
-      "OFFER_LIST",
-    );
-    if (classifyAtlasCode(listEnvelope.code) === "NO_OFFERS") {
-      this.lastSearch.clear();
-      return [];
-    }
-    this.failUnlessSuccess(listEnvelope, "OFFER_LIST");
-
-    const parsed = parseOfferList(listEnvelope.data);
     const searchedAt = this.now();
-
     this.lastSearch.clear();
     const offers: FlightOffer[] = [];
     const rejected = [...parsed.rejected];
@@ -346,6 +339,23 @@ export class AtlasFlightProvider implements FlightProvider {
       throw new AtlasProviderError(
         "OFFER_GONE",
         "Atlas offered this fare for comparison only, so its price cannot be verified.",
+        "VERIFY",
+      );
+    }
+
+    /**
+     * Expiry, checked before a call is spent.
+     *
+     * Real sandbox offers expired about fifteen minutes after the search. An
+     * offer past its `expire_time` is not a candidate, and asking Atlas about it
+     * would spend a round trip to be told something we already knew -- then
+     * arrive as an error that reads like a provider problem rather than a stale
+     * one.
+     */
+    if (raw.expireTime !== undefined && Date.parse(raw.expireTime) <= Date.parse(this.now())) {
+      throw new AtlasProviderError(
+        "OFFER_GONE",
+        "That offer has passed its expiry time, so a fresh search is needed.",
         "VERIFY",
       );
     }
@@ -425,7 +435,7 @@ export class AtlasFlightProvider implements FlightProvider {
     price: FlightOffer["pricePerTraveller"] | undefined,
   ): FlightOffer {
     const at = this.now();
-    const withPrice: RawOffer = price === undefined ? raw : { ...raw, price };
+    const withPrice: RawOffer = price === undefined ? raw : { ...raw, totalPrice: price };
     const normalised = normaliseOffer(withPrice, {
       searchedAt: at,
       provider: this.name,

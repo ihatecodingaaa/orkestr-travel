@@ -23,8 +23,6 @@ import type { RawOffer, RawSegment } from "./offerShape";
 const MINUTE_MS = 60_000;
 
 function toSegment(raw: RawSegment): FlightSegment {
-  const departure = Date.parse(raw.departureAt);
-  const arrival = Date.parse(raw.arrivalAt);
   return {
     carrierCode: raw.carrierCode,
     flightNumber: raw.flightNumber,
@@ -33,14 +31,16 @@ function toSegment(raw: RawSegment): FlightSegment {
     departureAt: asIsoDateTime(raw.departureAt),
     arrivalAt: asIsoDateTime(raw.arrivalAt),
     /**
-     * Computed from the two instants, both of which carry an explicit offset.
+     * ATLAS'S OWN FIGURE, not recomputed from the timestamps.
      *
-     * This is the reason `parseInstant` refuses a timestamp without an offset:
-     * SIN to NRT is a one-hour timezone step, so subtracting two naive local
-     * strings understates the flight by an hour. With offsets the arithmetic is
-     * just arithmetic.
+     * The provider states `duration_minutes` directly, and it is the better
+     * source: our instants are reconstructed from wall-clock readings plus an
+     * airport offset, so recomputing would quietly turn any error in that
+     * reconstruction into a wrong flight length. Using the provider's number
+     * keeps the two independent -- and on the real payload they agreed, which
+     * is a check worth being able to make.
      */
-    durationMinutes: asDurationMinutes(Math.round((arrival - departure) / MINUTE_MS)),
+    durationMinutes: asDurationMinutes(raw.durationMinutes),
   };
 }
 
@@ -109,9 +109,14 @@ export function normaliseOffer(raw: RawOffer, options: NormaliseOptions): Normal
       // counting something else.
       stops: segments.length - 1,
 
-      pricePerTraveller: raw.price,
+      pricePerTraveller: raw.totalPrice,
 
-      // Atlas search does not report baggage. Saying so is the honest answer.
+      /**
+       * Atlas lists WHICH ancillaries an offer supports, e.g. ["baggage"], but
+       * not what allowance is included. "Baggage can be added" and "a bag is
+       * included" are different sentences, and only the first is supported by
+       * this payload, so the allowance stays unknown.
+       */
       baggage: { unknown: true },
 
       searchedAt: options.searchedAt,
