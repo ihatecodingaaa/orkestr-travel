@@ -259,3 +259,32 @@ and hardest to notice:
 other change uses: a hard ceiling does not relax itself when a fare rises, a soft
 one becomes a compromise asked of its owner, and no fare rule exists in provider
 code.
+
+## Atlas real-shape suite (Phase 7 closeout)
+
+`tests/atlasRealShape.test.ts` (42) joins `atlasAdapter.test.ts` and
+`atlasImpact.test.ts`. Every fixture is transcribed from the real 22 August 2026
+Sandbox responses.
+
+The tests worth knowing about, because each pins something that was actually
+wrong or would be easy to get wrong:
+
+* **`135.73 * 100 === 13572.999999999998`** -- a real float artifact in the real
+  payload. The test asserts both that truncation gives 13572 and that the parser
+  gives 13573.
+* **`209.6` must become 20960**, not 2096. One decimal place in the wild.
+* **Airports that observe daylight saving are asserted ABSENT** from the
+  fixed-offset table. `LHR`, `JFK`, `CDG`, `SYD`, `AKL` must all fail to resolve.
+* **A connecting offer keeps two segments**, and the ICN leg's +09:00 is checked
+  against Atlas's own stated 235 minutes -- two independent sources agreeing.
+* **The recorded fallback replays through the real parser**, so a parser
+  regression breaks the demo path too instead of hiding behind it.
+* **The verification parser is asserted NOT to read** `required_fields`,
+  `given_name`, `surname`, `birth_date` or `travelers`.
+* **`cabin_class: 1` never renders as "Economy"** -- asserted by searching the
+  serialised offer for the word.
+
+`atlasImpact.test.ts` deliberately does NOT re-prove wave isolation. That is
+covered by `impact.test.ts` and `planRepair.test.ts`, and the reason those need
+no Atlas variant is the architectural point: the engines cannot tell which
+provider a fact came from.

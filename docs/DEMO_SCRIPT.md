@@ -398,3 +398,52 @@ genuinely interesting answer is: it is built, it proves it is pointed at the
 sandbox before every single call, it cannot express the production environment
 at all, and it refuses to show anything when the provider fails. The last part
 is currently on display whether we like it or not.
+
+## Atlas is live-verified (Phase 7 closed)
+
+The whole provider path works against the real Atlas Sandbox: authorization,
+sandbox switch, search, normalisation and verification.
+
+**Stage mode: RECORDED ATLAS SANDBOX.** Not because live is slow -- the whole
+path is about 8 seconds -- but because live Sandbox offers **expire in roughly
+fifteen minutes**, and a demo that searches during setup and verifies on stage
+will show an expired offer to an audience. The recording came from a real
+verified run and replays through the same parser.
+
+Say "sandbox" out loud. Sandbox fares are test data, they cannot be bought, and
+every label in the UI already contains the word.
+
+### The route problem, stated honestly
+
+Atlas Sandbox has a **bounded test dataset**. HKG-MNL works. SIN-NRT and KUL-SIN
+return `INTERNAL_ERROR`. The Tokyo family story does not have a Sandbox-backed
+flight path, and pretending otherwise would be the one claim on stage that a
+judge could disprove by asking a single follow-up question.
+
+**Recommendation: keep the Tokyo hero story, and show Atlas as a separate,
+clearly-labelled provider segment on HKG-MNL.** Reasoning:
+
+* The story is the product. Travel Waves, compromise and repair are what make
+  this different, and none of them depend on which airports Atlas happens to
+  stock.
+* Rewriting the hero to Hong Kong to Manila would buy one end-to-end line and
+  cost the group narrative the whole demo is built on.
+* A thirty-second "and here is that same pipeline against a real provider" beat
+  is more credible than a seamless story nobody can verify, because it shows the
+  seam rather than hiding it.
+
+Phase 8 owns the final end-to-end hero integration and can revisit this with the
+full agent loop in hand.
+
+### The beat, if you show it
+
+1. Orkestr proves it is pointed at the sandbox -- **before every single call**,
+   because Atlas defaults to production and offers no way to read the current
+   environment.
+2. Search returns two offers: one direct, one connecting via Seoul.
+3. **Orkestr** picks the candidate. Not Atlas's first result.
+4. Atlas re-checks that one offer; the screen shows verified, changed or gone.
+
+The line worth landing: searching is not holding. Orkestr can find a fare and
+re-check it. It creates no order and reserves no seat, and the provider-capacity
+row says so on every screen regardless of what else went live.

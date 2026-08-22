@@ -498,11 +498,13 @@ separate `orkestr_luc` startup repository is out of scope and untouched; see
 | UI provenance for Atlas | `IMPLEMENTED` | every Atlas label contains "sandbox" |
 | **Atlas authorization** | **`HUMAN CONFIGURED / VERIFIED`** | `DOCTOR_OK`, `AUTHORIZED`, `search_available: true` |
 | **Atlas Sandbox environment setter** | **`LIVE VERIFIED`** | set-then-confirm, proven in 1,076ms and 1,265ms |
-| **Atlas Sandbox search** | **`LIVE ATTEMPTED — PROVIDER FAULT`** | 4 searches, 2 routes, 4 dates: all `INTERNAL_ERROR` server-side |
-| **Atlas Sandbox offer list** | **`LIVE UNVERIFIED`** | never reached; search never succeeded |
-| **Atlas Sandbox offer normalisation** | **`LIVE UNVERIFIED`** | real payload shape still unobserved |
-| **Atlas Sandbox verification** | **`LIVE UNVERIFIED`** | never reached |
-| **Recorded Atlas Sandbox fallback** | **`NOT CREATED`** | requires a real successful run. Deliberately not fabricated |
+| **Atlas Sandbox search** | **`LIVE VERIFIED`** | HKG-MNL, `FLIGHT_SEARCHED`, 2 offers, 2.6-3.5s, 0 rejected |
+| Atlas `offer list` | `NOT USED` | search returns offers directly; `offer list` replays a retained search |
+| **Atlas Sandbox offer normalisation** | **`LIVE VERIFIED`** | both offers normalised, direct and connecting, 0 rejected |
+| **Atlas Sandbox verification** | **`LIVE VERIFIED`** | `OFFER_VERIFIED`, unchanged at USD 101.29, 2.3-3.6s |
+| **Search-vs-verify lifecycle** | **`LIVE VERIFIED`** | searched offer stayed searched; only verify set `verifiedAt` |
+| Offer expiry guard | `IMPLEMENTED` | real offers expire ~15 min; past-expiry offers are not sent |
+| **Recorded Atlas Sandbox fallback** | **`IMPLEMENTED FROM A REAL SANDBOX RUN`** | replays through the real parser; never claims verified |
 | Search-vs-verify lifecycle | `OFFLINE VERIFIED` | 62 adapter tests |
 | Price-change handling | `OFFLINE VERIFIED` | no live change occurred |
 | Availability-change handling | `OFFLINE VERIFIED` | no live event occurred |
@@ -513,16 +515,20 @@ separate `orkestr_luc` startup repository is out of scope and untouched; see
 | Real production fares | `NEVER USED` | no authorised call reached flight services |
 | Flight inventory demo | `LOCAL FIXTURE` | unchanged until a sandbox run exists |
 
-**The honest summary, updated after the live closeout.** Authorization is done
-and the sandbox environment setter is LIVE VERIFIED. Everything beyond it is
-blocked by **Atlas's own search service**, which returns `INTERNAL_ERROR` for
-every search including the official documented example route.
+**The honest summary, after the final closeout.** The whole provider path is
+live-verified: authorization, sandbox switch, search, offer normalisation and
+verification. A recorded fallback exists and came from a real successful run.
 
-That is not our defect and it is not something this repository can fix. It is
-also not a reason to invent a recorded fixture: a fallback that did not come from
-a real successful run is a lie with a timestamp on it.
+The earlier conclusion that Sandbox search was broken server-side was **wrong**,
+and the correction is recorded in `ATLAS_INTEGRATION.md` rather than quietly
+removed. What the failures actually showed is that Sandbox has a bounded test
+dataset: HKG-MNL works, SIN-NRT and KUL-SIN do not.
 
-The adapter, parser, sandbox guard, kill switch, lifecycle and engine
-integration are real and tested. The provider-side path beyond the environment
-switch remains unproven, and will stay that way until Atlas Sandbox search
-works.
+What remains untested by reality rather than by fixture: the price-change and
+unavailable branches, because the real verification reported an unchanged price
+and a live offer that stayed available. Manufacturing either would have meant
+spamming the provider, so both are proven against Atlas-shaped fixtures and
+labelled as such.
+
+Order creation, payment and ticketing remain unimplemented on purpose --
+`ticketing_available: true` is a capability, not an authorization.

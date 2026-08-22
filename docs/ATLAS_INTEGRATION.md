@@ -314,9 +314,24 @@ Four consecutive searches, immediately after a confirmed sandbox switch:
 `KUL to SIN` is the **official documented example route** from the Skill README.
 Every response carried `retryable: false` and an empty `data`.
 
-Two routes, four dates, a healthy authorized CLI, and an identical fault. This is
-not a route problem, a date-window problem, an authorization problem or a parser
-problem. **The Atlas Sandbox search service is failing on Atlas's side.**
+Two routes, four dates, a healthy authorized CLI, and an identical fault.
+
+> **THIS CONCLUSION WAS WRONG, and it is left here because being wrong in this
+> particular way is worth remembering.**
+>
+> At the time I wrote: *"The Atlas Sandbox search service is failing on Atlas's
+> side."* Four failures across two routes felt like enough to generalise from.
+> It was not. A later search on **HKG to MNL succeeded**, returned two offers,
+> and established the real provider contract -- see the section below.
+>
+> What the four failures actually established is narrower and more useful:
+> **Sandbox has a bounded test dataset, and a valid IATA route is not
+> necessarily a supported one.** SIN-NRT and KUL-SIN are not in it; HKG-MNL is.
+> Atlas reports the difference as `INTERNAL_ERROR` rather than as a routing
+> message, which is unhelpful of it but is not an outage.
+>
+> The mistake was reaching for the widest explanation that fitted, when a
+> narrower one fitted equally well and was cheaper to test.
 
 Production was NOT tried, and must not be: it is not representable in this
 application and it is not authorised.
@@ -334,3 +349,116 @@ and verification. The itinerary field names remain undocumented and unobserved.
 No recorded Atlas Sandbox fixture exists, and **none has been fabricated** -- a
 recorded fallback must come from a real successful run or it is a lie with a
 timestamp on it.
+
+## The real payload, at last (22 August 2026)
+
+`HKG to MNL`, 2026-09-05, one adult. `FLIGHT_SEARCHED`, two offers, 2.6-3.5s.
+
+### Search returns offers directly
+
+```
+data.search_id, data.offer_count, data.offers[]
+```
+
+The adapter previously issued `offer list --search-id` after every search,
+because the contract lists both commands and no offer had ever been seen. It is
+now ONE call: the offers are already in the search response, and `offer list` is
+documented as replaying a RETAINED search -- a recovery path, not a step.
+`search_id` is still kept, because replay is the documented recovery when an
+offer expires.
+
+### The offer shape
+
+```
+offer:   offer_id, currency, total_price, transaction_fee_total,
+         passenger_prices[], segments[], ancillary_supported[],
+         bookable, price_status, refresh_time, expire_time
+segment: departure_airport, arrival_airport, departure_time, arrival_time,
+         carrier, operating_carrier, flight_number, duration_minutes,
+         cabin_class, direction
+```
+
+Almost none of this matched the names the previous parser guessed from the
+workflow documentation. It failed closed and named the missing field, exactly as
+designed -- but "fails safely" is not the same as "works", and the design was
+only ever a way to survive being wrong, not a substitute for being right.
+
+### Money: JSON numbers, and a real float artifact
+
+Atlas sends `101.29`, `209.6`, `0.0` as JSON **numbers**. One of the real values
+is a genuine IEEE artifact:
+
+```
+135.73 * 100 === 13572.999999999998     // the connecting offer's tax
+```
+
+Truncating that -- any `| 0`, `Math.trunc` or `parseInt` on the product -- gives
+13572, and the fare is a cent short. A later comparison then reports a price
+change that never happened, which is worse than a wrong total: it manufactures a
+decision. Amounts are rendered with `toFixed(scale)` and handled as integer
+strings. Currency comes from Atlas and is never inferred: it priced a **Hong Kong
+departure in USD**, so guessing HKD would have been wrong on the first payload.
+
+### Time: NO timezone offset anywhere
+
+```
+"departure_time": "202609051750"
+```
+
+YYYYMMDDHHMM. A wall clock, with no zone, and none available elsewhere in the
+response. The engines need real instants -- feasibility compares an arrival to a
+deadline in another country, wave planning sorts on a timeline.
+
+There were three honest options. Invent an offset (never: an eight-hour error
+would be invisible and would look perfectly well-formed). Reject every Atlas
+offer (honest, useless). Or use a real, explicit, deliberately tiny table of
+airports whose UTC offset is **fixed all year**, and reject everything else.
+
+`localTime.ts` is the third. The rule that makes it defensible:
+
+> **AN AIRPORT MAY ONLY BE LISTED IF ITS ZONE HAS NO DAYLIGHT SAVING.**
+
+For a zone that never shifts, the offset is a property of the place, not a guess
+about the date. Hong Kong is +08:00 every day of every year; London is not, and
+London must never appear there. An unlisted airport rejects the offer **by name**.
+`LHR`, `JFK`, `CDG`, `SYD` and `AKL` are asserted absent.
+
+Atlas's own `duration_minutes` is used rather than recomputed from the
+timestamps, which keeps the provider's figure and our reconstruction
+independent -- and on the real payload they agreed.
+
+### Everything else stays a provider fact
+
+* `cabin_class: 1` is carried as a **number**. The Skill documents no mapping, so
+  calling it "Economy" would be a guess printed next to a price.
+* `ancillary_supported: ["baggage"]` is preserved exactly. Baggage support says
+  nothing about seats, and neither says anything about assistance. The baggage
+  **allowance** stays unknown: "a bag can be added" and "a bag is included" are
+  different sentences.
+* `operating_carrier` was `null` and is simply absent.
+* `bookable: true` is not booked. `price_status: "current"` is not verified.
+
+### Verification, live
+
+`atlas-flight offer verify --offer-id ... --json` returned `OFFER_VERIFIED` in
+2.3-3.6s:
+
+```
+price_change: "unchanged", previous_price: 101.29, current_price: 101.29,
+currency: "USD", booking_id: "book_...", baggage_supported: true,
+seat_supported: false
+```
+
+Every field the workflow documentation described was present and correctly named,
+so the verify parser needed no change.
+
+The response also carries `requirements.required_fields` and `travelers[]`. Both
+are **deliberately not read and not recorded**: they drive order creation, which
+this application does not do, and the first is a list of passenger identity
+fields. Parsing data we have no use for is how it ends up somewhere it should not.
+
+### Offers expire in about fifteen minutes
+
+`expire_time` was ~15 minutes after `refresh_time`. The adapter now refuses to
+verify a past-expiry offer **without spending a call** -- asking would buy an
+error that reads like a provider fault rather than a stale offer.

@@ -437,3 +437,46 @@ the missing field, and the live harness now prints kind, stage and Atlas code, s
 the first successful search will diagnose itself.
 
 **Next:** Phase 8, end-to-end agent repair and hero demo. Not started.
+
+## Phase 7 CLOSED (22 August 2026)
+
+**1093 tests across 52 files.** All gates green.
+
+**Everything is live-verified:** authorization, sandbox switch (set-then-confirm,
+~1.0-2.0s), search (`FLIGHT_SEARCHED`, HKG-MNL, 2 offers, 2.6-3.5s, 0 rejected),
+offer normalisation, and verification (`OFFER_VERIFIED`, unchanged, 2.3-3.6s).
+
+**A recorded Atlas Sandbox fallback exists**, from a real verified run.
+
+### Read this before touching the adapter
+
+* **Sandbox has a bounded test dataset.** HKG-MNL works; SIN-NRT and KUL-SIN
+  return `INTERNAL_ERROR`. An earlier conclusion that Sandbox was broken
+  server-side was **wrong** and is corrected in `ATLAS_INTEGRATION.md`.
+* **Segment times carry no timezone.** `"202609051750"` is a wall clock.
+  `localTime.ts` resolves it using a tiny table of airports whose offset is
+  fixed all year, and rejects everything else BY NAME. **Never add a
+  DST-observing airport to that table** -- it would misplace every flight
+  through it for half the year, invisibly.
+* **Money arrives as JSON numbers**, and `135.73` is a genuine float artifact in
+  the real payload. Never multiply by 100.
+* **Search is ONE call.** The offers are in the search response. `offer list` is
+  a replay path, not a step.
+* **Offers expire in ~15 minutes.** The adapter refuses a past-expiry offer
+  without spending a call.
+
+### Do not
+
+* Add a fallback from live Atlas to fixtures. There is deliberately none.
+* Add a `production` mode. It is absent from the type on purpose.
+* Implement order creation, payment or ticketing. `ticketing_available: true` is
+  a capability, not an authorization.
+* Re-prove wave isolation with Atlas data. `impact.test.ts` and
+  `planRepair.test.ts` already cover it, provider-agnostically.
+
+**Untested by reality:** the price-change and unavailable branches. The real
+verification reported an unchanged price and an available offer, and
+manufacturing either would mean spamming the provider. Both are proven against
+Atlas-shaped fixtures.
+
+**Next:** Phase 8, end-to-end agent repair and hero demo. Not started.

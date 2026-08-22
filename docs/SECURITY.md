@@ -238,3 +238,24 @@ None. Phase 7 performs search and verification only, neither of which requires
 passenger identity. The adapter cannot create an order, and `stdin` is closed on
 every invocation, so there is no channel through which passenger data could
 reach the CLI even by mistake.
+
+## Atlas closeout security notes
+
+Re-checked against the real integration:
+
+* `spawn` with `shell: false` and an argv array. Values allow-listed to
+  `^[A-Z0-9]{3}$`, refused on NUL or a leading `-`. A hostile origin starts no
+  subprocess at all -- not even the environment call.
+* No credential is read, passed or stored. The CLI owns its secure store.
+* No authorization URL or token appears in source, tests, fixtures, docs or
+  commit messages. One appeared in a terminal transcript during the human
+  authorization step and was not copied anywhere.
+* Opaque identifiers are preserved byte for byte and pinned by tests.
+* **No passenger data anywhere.** The real verification response carries
+  `requirements.required_fields` and `travelers[]`; the parser deliberately does
+  not read them and the recorded fixture deliberately does not store them, with
+  a test asserting their absence. `stdin` is closed on every invocation, so
+  there is no channel through which passenger data could reach the CLI.
+* Raw provider responses are never persisted. The recorded fixture stores
+  structured facts only.
+* Production remains unrepresentable.

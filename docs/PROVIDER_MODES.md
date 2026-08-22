@@ -182,3 +182,27 @@ An Atlas failure throws. It does not return mock offers, recorded offers, or an
 empty list that reads like "no flights today". Switching to recorded data is a
 decision made above the provider, explicitly, and it renders as the recorded row
 it actually is.
+
+## `ATLAS_MODE=recorded` is now real
+
+`RecordedAtlasSandboxProvider` replays a genuine Atlas Sandbox search and
+verification from 22 August 2026: two HKG-MNL offers, one direct and one
+connecting, the first verified as unchanged at USD 101.29.
+
+**It replays through the same parser and normaliser as the live path.** A
+hand-built list of `FlightOffer` objects would keep working after a parser
+regression, and the demo would look healthy while the real integration was
+broken -- the exact failure a fallback exists to prevent, inverted.
+
+**It takes no clock.** Every other provider does. This one has nothing to ask
+one: a recording's timestamps are the ones it was recorded with, and the only
+thing a current clock could do is make old data look newer. The absence of the
+parameter is the guarantee.
+
+**It never reports verified.** Atlas really did verify that offer -- in the past.
+`verifyOffer` returns the recorded result as `RECORDED_ATLAS_SANDBOX` with no
+`verifiedAt`, and the capability report says `verifyOffer: UNSUPPORTED`, so replay
+cannot be mistaken for a freshness check.
+
+**It answers only the route it holds.** A search for anywhere else returns
+nothing rather than the wrong flights.
