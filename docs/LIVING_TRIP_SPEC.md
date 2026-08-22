@@ -65,6 +65,14 @@ than creating a traveller called "more time on Saturday".
 
 ## Explore and ideas
 
+**Discovery first.** The screen used to open on a form — *What is it? · Kind of
+thing · Link · Why?* — which is a database entry screen, and it asks somebody to
+supply the content before the product has shown them anything. Adding your own
+is still there; it is no longer the first thing.
+
+The order is: category chips, what the group keeps coming back to, one featured
+place, then the grid, then **+ Add your own**.
+
 An idea has a title, a category, an optional link and a note, and a list of who
 saved it. **Saving is the only signal.** There is no voting, no ranking anybody
 agreed to, no majority rule.
@@ -82,12 +90,32 @@ is countable from state on another screen:
 * *"Everyone has arrived by this day"* — from the reunion date.
 * *"1 stated requirement to check against this place"* — from the group.
 
-That last one is phrased as an open question on purpose. Orkestr has not
-researched the venue, so *"no conflict"* would be a verification nobody
-performed. **Cautions appear beside the positives**, because a card showing only
-good news is an advert and gets read as one.
+The requirements caution is phrased as an open question on purpose — Orkestr has
+not researched the venue, so *"no conflict"* would be a verification nobody
+performed.
+
+It is stated **once, for the group**, not on every card. It does not depend on
+the place, so it used to render word for word on all six: six copies of one
+sentence, which reads as noise and buries the reasons that ARE about the place.
+Same truth, stated once, more likely to be read.
 
 ## Plan
+
+**One day at a time**, chosen from a strip along the top.
+
+The first version rendered every day of the trip at full height. An eighteen-day
+trip with nothing on it produced eighteen identical empty blocks, each repeating
+the same apology and the same three suggestions — seven thousand pixels of a
+product telling somebody, over and over, that they have not done anything. The
+information was accurate and the effect was demoralising.
+
+A trip is long. A day is what a person actually plans.
+
+The strip is the only place the whole trip is visible at once, and each day
+carries a dot for how full it is — **plus a hidden label**, so the state does not
+depend on colour. A day holding only a flight is *travel only*, not *planned*:
+arriving somewhere is not the same as having a day there, and a navigator that
+calls it planned hides the day you should be looking at.
 
 Real days, real times, real items. Each carries a kind, a status, an area and —
 where it matters — **whose it is**, so a flight belonging to one departure group
@@ -100,6 +128,12 @@ worse than a select that works on a phone.
 set `BOOKED`, and `setPlanItemStatus` refuses it outright. The status exists so
 that when a booking path arrives, "planned" and "booked" are already different
 words rather than a migration.
+
+### An open day
+
+Framed as room, not as a gap. *"Saturday is open — 3 places your group saved
+could fit here."* When nothing has been saved it says what would unblock it
+rather than offering something it cannot do.
 
 ### Filling a day
 

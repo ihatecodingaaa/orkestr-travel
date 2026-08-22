@@ -184,6 +184,25 @@ what-if preview writes nothing until somebody applies it.
 Full detail, including what each feature refuses to do: **[The living
 trip](LIVING_TRIP_SPEC.md)**.
 
+## Stage 2.5: delight and visual intelligence
+
+Stage 2 was interactive and still looked like a productivity dashboard. Stage
+2.5 is presentation only — no new domain logic, no new engine, no new provider.
+
+The plan stopped rendering every day of the trip at full height and became a day
+navigator over one focused day, with a real travel timeline. Explore leads with
+discovery instead of a data-entry form. The two navigation rows became one plus
+a **More** menu, and What-if was promoted onto the Overview. The destination
+hero is drawn from the destination's own name. Zero-heavy tiles were replaced by
+words that mean something.
+
+**Nothing about truth moved.** Provenance labels, private values, unverified
+claims and "not estimated" all read exactly as they did. The one caution that
+was identical on every idea card is now stated once for the group — the same
+fact, more likely to be read.
+
+How it is put together: **[The Orkestr visual system](VISUAL_SYSTEM.md)**.
+
 ## What the next stage needs
 
 Real shared trips need, roughly in order: traveller identity (magic links are

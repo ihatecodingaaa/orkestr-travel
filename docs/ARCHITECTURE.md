@@ -397,3 +397,47 @@ can offer to switch off the two guarantees the product rests on.
 `src/core` may not touch `Date` — a repo guard test enforces it. Weekday names
 come from Sakamoto's algorithm over the civil date, which is pure, testable, and
 immune to the machine's timezone.
+
+## Presentation (Consumer Rebuild, Stage 2.5)
+
+No new layer. Stage 2.5 moved decisions that had leaked into components back
+into `core`, and left the components rendering.
+
+```
+core/trips/living.ts
+  planShape          every day with one fact: how full it is
+  describeOpenDay    how to introduce a day with nothing on it
+  groupWideCaution   the requirements note, which belongs to the group
+  nextAction         now names the day or the person
+core/trips/commands.ts
+  suggestedCommands  chips, chosen from the trip's own state
+ui/trip/DestinationHero.tsx
+  paletteFor         a stable palette from the destination name
+```
+
+**`planShape` exists because the plan screen was making the decision itself.**
+It rendered every day at full height, so an eighteen-day trip with nothing on it
+produced eighteen identical empty blocks. How full a day is, and which day to
+open on, are facts about the trip; the component should only decide how much of
+it to draw.
+
+**`suggestedCommands` is guarded by a test** asserting every chip it returns is
+something `recognise` accepts. A suggestion the product then refuses would
+demonstrate, in one click, that the box does not understand its own prompts.
+
+**`paletteFor` is deterministic and decorative.** It hashes the destination name
+to one of six palettes, so a trip looks the same on every device with nothing
+stored, and the colour carries no meaning to lose.
+
+### Two class-name collisions, and the rule they produced
+
+Both were silent, both cost real time, and both were one name doing two jobs:
+
+* `.timeline li` in the demo layer beat `.plan-row` on specificity and forced
+  every itinerary title into a 4.5rem column, one word per line.
+* `.chip` in the demo layer sets `text-transform: uppercase`, so every suggested
+  question in the command bar rendered as shouting.
+
+**A class name that already exists in `globals.css` or `product.css` belongs to
+the demo layer.** The product's are `.day-timeline` and `.chip` (the demo's
+status label became `.state-chip`).

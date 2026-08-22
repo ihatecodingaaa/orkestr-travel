@@ -604,3 +604,69 @@ button and no model call on trip creation.
 
 **Next:** unchanged — infrastructure (identity, a server-side store, real invite
 links). Still explicitly not started.
+
+## Consumer rebuild, Stage 2.5 — delight and visual intelligence (23 August 2026)
+
+**1,251 tests across 58 files.** All gates green: secrets, lint, typecheck,
+build, and every route serving.
+
+**Presentation only.** No domain engine, provider, persistence or deployment
+status changed. No dependency was added.
+
+### What changed
+
+* **Plan** stopped rendering every day at full height. It is a day navigator
+  over one focused day, with a real travel timeline. An eighteen-day trip with
+  nothing on it was 7,312 pixels of identical empty blocks repeating the same
+  three suggestions; it is now about 900.
+* **Explore** leads with discovery — a featured place, a group-favourites strip,
+  saver faces — and the manual form became a secondary "+ Add your own".
+* **Navigation** is one row plus **More**. What-if is promoted onto the Overview.
+* **The hero** is drawn from the destination name: map grid, dashed route, one
+  of six palettes, deterministic and offline.
+* **Zeros** are gone from the stat row unless they are good news.
+* **`nextAction`** names the day or the person: "Shape Saturday", "Ask Zen".
+
+### Verified in a real browser, not by reading CSS
+
+Chrome was driven over the DevTools Protocol with no new dependency (Node 24 has
+a built-in WebSocket). Screenshots at 1440 / 1024 / 768 / 390 on a seeded local
+Seoul trip, an empty Lisbon trip, and the Tokyo example. No horizontal overflow
+at any width; all six destinations fit at 390px.
+
+**If you reuse that script: kill `chrome.exe` before each run.** Chrome spawns
+child processes, so killing the launcher leaves the browser alive and the next
+run ATTACHES to the stale instance and reports the previous build's layout. That
+cost an hour of chasing a CSS bug that was already fixed.
+
+### Five defects found by looking at the screen
+
+1. `.timeline li` (demo layer, specificity 0,1,1) beat `.plan-row` and wrapped
+   every itinerary title one word per line.
+2. `.chip` (demo layer) uppercased every suggested question.
+3. `.avatar-stack` was white-on-white for the dark hero and reused on light
+   travel-group cards, rendering as faint clipped rings.
+4. "About 2 hour here" — the plural was decided from raw minutes, not the
+   printed figure.
+5. `ul.stack` kept the browser's 40px indent, misaligning decision cards.
+
+**The rule that came out of 1 and 2:** a class name that already exists in
+`globals.css` or `product.css` belongs to the demo layer. Pick a different one.
+
+### Do not
+
+* Reintroduce a second navigation row.
+* Render every day of a trip at full height.
+* Add a remote image, map or weather service for decoration. The hero is drawn
+  for a reason.
+* Let a suggestion chip say something `recognise` would refuse — a test guards
+  this, and it is the whole point of the chips.
+* Use colour as the only signal. Day fullness, travel groups and truth states
+  each carry a word as well.
+* Move truth for the sake of polish. Nothing hides "not verified", "unknown",
+  "local example", "recorded", "private" or "tentative".
+
+**Everything from Stage 1 and Stage 2's "Do not" lists still applies.**
+
+**Next:** unchanged — infrastructure (identity, a server-side store, real invite
+links). Still explicitly not started.

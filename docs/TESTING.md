@@ -53,6 +53,9 @@
 | `routeActions.test.ts` | 17 | The server actions end to end, and what may cross to a client |
 | `jsonMode.test.ts` | 16 | The serialised request contract, including `enable_thinking` |
 | `contextDegradation.test.ts` | 32 | Optional context degrades; the authority boundary does not |
+| `consumerTrip.test.ts` | — | The consumer schema, storage and pulse |
+| `livingTrip.test.ts` | 61 | Ideas, plan shape, commands, what-if, money, autopilot |
+| `navigationIntegrity.test.ts` | 4 | Every linked section resolves, for a trip and the example |
 
 There are no tests against a real provider, because no test may call one. Every
 adapter is tested against recorded response bodies through an injectable
@@ -317,3 +320,33 @@ Others worth knowing:
   "cheaper".
 * An unresolved requirement is asserted to survive all the way to the screen. An
   unknown that vanishes on the way to a summary is the dangerous kind.
+
+
+## Two guards worth knowing about
+
+Both were written after a bug that nothing else would have caught, and both were
+checked to FAIL on the original defect rather than passing vacuously.
+
+**`navigationIntegrity`** extracts every `${base}/section` any screen or view
+model can produce and asserts each one resolves — for a real trip and for the
+Tokyo example. The example once shipped with links to routes it did not serve,
+so "Add or edit people" and the Overview's primary call to action were 404s.
+Nothing caught it: the components were right, the routes were right, and the
+combination was broken.
+
+**Suggested commands must be recognised.** Every chip `suggestedCommands`
+returns is asserted to be something `recognise` accepts. A chip the product then
+refuses would demonstrate, in one click, that the box does not understand its
+own prompts.
+
+## What the browser QA does and does not cover
+
+Stage 2.5 drove Chrome over the DevTools Protocol — screenshots and layout
+measurements at 1440 / 1024 / 768 / 390 against a seeded local trip, an empty
+trip and the Tokyo example. That is how the class-name collisions, the invisible
+avatars and the misaligned decision list were found.
+
+It is **not** in the test suite. It needs a running server and a real browser,
+and a screenshot diff would fail on font rendering long before it caught
+anything real. Layout regressions are guarded by the structural tests above and
+by looking at the screen.

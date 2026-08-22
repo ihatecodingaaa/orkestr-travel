@@ -66,6 +66,21 @@ The what-if preview lists the reunion as *kept* when it does not move. Padding a
 consequence list would make the one feature that proves the product honest into
 the one that isn't.
 
+**14. A zero is only worth showing when it is good news.**
+A new trip opened on "0 ideas · 0/18 planned · 0 need a person" — three zeros
+reading as a report card nobody had passed. "Nothing needs you" earns its tile.
+"0 ideas saved" does not.
+
+**15. Never show the whole trip when a person is planning one day.**
+Eighteen empty days, each repeating the same apology and the same three
+suggestions, is seven thousand pixels of a product telling somebody they have
+not done anything. Show the day; keep the trip in a strip above it.
+
+**16. Say a thing once.**
+The requirements caution did not depend on the place, so it rendered word for
+word on every card. Six copies of one sentence is noise, and it buried the
+reasons that were actually about the place.
+
 ---
 
 ## Copy translations
@@ -88,6 +103,9 @@ the left.
 | `STEP_LIMIT_REACHED` | Orkestr stopped safely before changing more |
 | Structured extraction | What Orkestr understood |
 | Idea saved by N travellers | N people have saved this |
+| `DayState.LIGHT` | Travel only |
+| `planShape.untouched` | Yours to shape |
+| Departure grouping | What Orkestr worked out |
 | `PlanItemStatus.FIXED` | Locked in |
 | Autopilot rule | What Orkestr does on its own |
 | Hypothetical trip diff | What would change · What would stay |
@@ -105,5 +123,9 @@ Every one has a purpose and a next step.
 * Nothing on a day → *"Nothing planned. Orkestr can suggest from what people
   already saved."*
 * No budget entered → *"Nobody has worked this out yet."* — never a zero.
+* Nothing planned at all → *"Seoul is yours to shape."* — never "18 of 18 days
+  still empty."
+* An open day → *"Saturday is open. 3 places your group saved could fit here."*
+* Nothing needs you → *"Clear."* as a stat, not a `0`.
 
 Never `[]`, never `undefined`, never "No records found".

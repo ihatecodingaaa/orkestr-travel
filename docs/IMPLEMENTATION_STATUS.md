@@ -695,3 +695,45 @@ required.
 
 See **[The living trip](LIVING_TRIP_SPEC.md)** for what each feature refuses to
 do and why.
+
+## CONSUMER REBUILD — Stage 2.5 (delight and visual intelligence)
+
+Presentation only. No domain engine, provider, persistence or deployment status
+above changes.
+
+| Capability | Status |
+| --- | --- |
+| Plan as a day navigator over one focused day | IMPLEMENTED |
+| Travel timeline with kind-coded stops | IMPLEMENTED |
+| Compact trip skeleton instead of N empty days | IMPLEMENTED |
+| Open-day framing with suggestions from saved ideas | IMPLEMENTED |
+| Add-to-day confirmation | IMPLEMENTED |
+| Explore leads with discovery, manual entry secondary | IMPLEMENTED |
+| Featured place, group-favourites strip, saver faces | IMPLEMENTED |
+| Group-wide caution stated once, not per card | IMPLEMENTED |
+| Command-bar suggestion chips from real state | IMPLEMENTED — every chip test-guarded as recognised |
+| Next action names the day or the person | IMPLEMENTED |
+| Destination hero drawn from the destination name | IMPLEMENTED — local, deterministic, no remote asset |
+| Single navigation row plus More | IMPLEMENTED |
+| What-if promoted onto the Overview | IMPLEMENTED |
+| Zero-heavy stat tiles | REMOVED — a zero shows only when it is good news |
+| All six destinations fit at 390px without a swipe | VERIFIED IN A REAL BROWSER |
+| No horizontal overflow at 1440 / 1024 / 768 / 390 | VERIFIED IN A REAL BROWSER |
+| Private budget value hidden from the group | RE-VERIFIED ON ALL NINE EXAMPLE ROUTES |
+| **Remote images, map or weather APIs** | **NOT INTRODUCED** |
+| **New dependencies** | **NONE ADDED** |
+
+**Tests: 1,251 across 58 files.** 10 added for Stage 2.5. No network access
+required.
+
+### Defects found and fixed during Stage 2.5
+
+1. `.timeline li` from the demo layer beat `.plan-row`, wrapping every itinerary
+   title one word per line.
+2. `.chip` from the demo layer uppercased every suggested question.
+3. `.avatar-stack` was styled white-on-white for the dark hero and reused on
+   light travel-group cards, where it rendered as faint clipped rings.
+4. "About 2 hour here" — 90 minutes rounds to 2, but the plural was decided from
+   the raw minutes rather than from the printed figure.
+5. `ul.stack` kept the browser's 40px indent, so decision cards sat further
+   right than the rest of the page.

@@ -326,6 +326,7 @@ Start with `docs/PRODUCT_SPEC.md` for what the product does, and
 | `HACKATHON_MASTER_PLAN.md` | Phase plan and judging alignment |
 | `CONSUMER_PRODUCT_SPEC.md` | **The canonical product document. Read this first** |
 | `LIVING_TRIP_SPEC.md` | The Stage 2 interaction model, and what each screen refuses to do |
+| `VISUAL_SYSTEM.md` | Typography, colour, spacing, cards, motion and the responsive rules |
 | `UX_PRINCIPLES.md` | Ten rules the interface is held to |
 | `PRODUCT_SPEC.md` | Original product principles and behaviour |
 | `ARCHITECTURE.md` | Layers, boundaries and data flow |
