@@ -268,9 +268,14 @@ export function repairPlan(
     return {
       tripId: options.tripId,
       status: "NO_FEASIBLE_REPAIR",
+      /**
+       * No newPlan exists, so previousPlan must not be passed either.
+       * Impact compares before vs after: an absent after with a present before
+       * would read every wave as removed, which is a different claim from
+       * "nothing works" and would show both waves as affected on screen.
+       */
       impact: analyseImpact({
         event: options.event,
-        ...(previousPlan === undefined ? {} : { previousPlan }),
         decisionDiff: emptyDiff,
       }),
       ...(previousPlan === undefined ? {} : { previousPlan }),
@@ -327,6 +332,7 @@ export function repairPlan(
     return {
       tripId: options.tripId,
       status: "NO_FEASIBLE_REPAIR",
+      // Same guard as above: no newPlan, so no previousPlan in impact.
       impact: analyseImpact({ event: options.event, decisionDiff: emptyDiff }),
       decisionDiff: emptyDiff,
       decisionsPreserved: decisionsPreserved(emptyDiff),

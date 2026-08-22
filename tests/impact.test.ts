@@ -131,4 +131,24 @@ describe("impact radius", () => {
     const b = impactBetween(planOf(heroGroupSix(), shared2), planOf(heroGroupSeven(), shared2));
     expect(JSON.stringify(a)).toBe(JSON.stringify(b));
   });
+
+  it("whatChanged always begins with an uppercase letter, because it appears as a numbered step", () => {
+    /**
+     * Regression: describeChange used to return lowercase strings
+     * ("one wave changed…") which looked wrong next to the other capitalised
+     * step notes in the audit trail. Every radius must start with a capital.
+     */
+    resetFixtureCounters();
+    const offers = heroOffers();
+    const plan = planOf(heroGroupSix(), offers);
+    const impact = impactBetween(plan, plan);
+    expect(impact.whatChanged).toMatch(/^[A-Z]/);
+
+    resetFixtureCounters();
+    const shared = heroOffers();
+    const before = planOf(heroGroupSix(), shared);
+    const after = planOf(heroGroupSeven(), shared);
+    const changed = impactBetween(before, after);
+    expect(changed.whatChanged).toMatch(/^[A-Z]/);
+  });
 });

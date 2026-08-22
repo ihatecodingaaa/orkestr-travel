@@ -305,4 +305,24 @@ describe("traveller leaves", () => {
     });
     expect(result.status).toBe("NO_FEASIBLE_REPAIR");
   });
+
+  it("NO_FEASIBLE_REPAIR does not report waves as affected when no new plan was produced", () => {
+    /**
+     * Regression: the impact analysis used to receive previousPlan without
+     * newPlan, which made every wave look removed. A repair that found
+     * nothing should not claim everything changed — it should claim nothing
+     * was touched, because nothing was replaced.
+     */
+    const s = scenario({ withdraw: ["T-003"] });
+    const result = repairPlan(s.group, s.offers, {
+      tripId: TRIP,
+      event: { type: "TRAVELLER_LEFT", travellerId: asTravellerId("T-003") },
+      previousPlan: s.previousPlan,
+      planningTravellerIds: s.group.map((t) => asTravellerId(t.id)),
+    });
+    expect(result.status).toBe("NO_FEASIBLE_REPAIR");
+    expect(result.impact.affectedWaveIds).toHaveLength(0);
+    expect(result.impact.radius).toBe("NO_IMPACT");
+    expect(result.impact.reasonCodes).toContain("NOTHING_CHANGED");
+  });
 });

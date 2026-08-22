@@ -197,17 +197,17 @@ function decideRadius(input: {
 function describeChange(radius: ImpactRadius, waves: number, travellers: number): string {
   switch (radius) {
     case "NO_IMPACT":
-      return "nothing in the plan depends on what changed";
+      return "Nothing in the plan depends on what changed";
     case "PERSON_ONLY":
-      return "only this traveller's own record changed; the plan is untouched";
+      return "Only this traveller's own record changed; the plan is untouched";
     case "WAVE_ONLY":
-      return `one wave changed, affecting ${travellers} traveller(s); every other wave stands`;
+      return `One wave changed, affecting ${travellers} traveller(s); every other wave stands`;
     case "ACTIVITY_ONLY":
-      return "only destination activities changed";
+      return "Only destination activities changed";
     case "JOURNEY_WIDE":
       return `${waves} waves changed, affecting ${travellers} traveller(s)`;
     case "COMMITMENT_INVALID":
-      return "a confirmed hard requirement is now violated, so the agreed plan can no longer be honoured";
+      return "A confirmed hard requirement is now violated, so the agreed plan can no longer be honoured";
   }
 }
 
