@@ -5,6 +5,7 @@ import { categoryLabel } from "../../domain/livingTrip";
 import type { IsoDate } from "../../domain/time";
 import { asIsoDate } from "../../domain/time";
 import { addDays, compareIsoDate, daysBetween } from "../time/civilDate";
+import { weekdayName } from "./calendar";
 import { groupByDeparture } from "./pulse";
 
 /**
@@ -153,32 +154,46 @@ export function fitReasons(
     );
   }
 
-  /**
-   * Requirements are surfaced as an OPEN QUESTION, never as a clearance.
-   *
-   * Orkestr has not checked whether this venue is step-free -- there is no
-   * research running here -- so the honest line is that somebody stated a
-   * requirement and it still needs checking against this place. Saying "no
-   * conflict" would be a verification nobody performed.
-   */
-  const required = trip.travellers.flatMap((traveller) =>
-    traveller.requirements.filter((r) => r.strength === "REQUIRED" && !r.private),
-  );
-  if (required.length > 0) {
-    reasons.push({
-      text: `${String(required.length)} stated requirement${required.length === 1 ? "" : "s"} to check against this place`,
-      positive: false,
-    });
-  }
-
   if (idea.minutes !== undefined) {
+    /**
+     * Pluralise off the number actually printed. Ninety minutes rounds to 2
+     * and read "About 2 hour here", because the test was against the raw
+     * minutes rather than the rounded figure beside it.
+     */
+    const hours = Math.max(1, Math.round(idea.minutes / 60));
     reasons.push({
-      text: `About ${String(Math.round(idea.minutes / 60))} ${idea.minutes >= 120 ? "hours" : "hour"} here`,
+      text: `About ${String(hours)} ${hours === 1 ? "hour" : "hours"} here`,
       positive: true,
     });
   }
 
   return reasons;
+}
+
+/**
+ * The requirements note, which belongs to the GROUP rather than to any place.
+ *
+ * Surfaced as an OPEN QUESTION, never as a clearance. Orkestr has not checked
+ * whether a venue is step-free -- there is no research running here -- so the
+ * honest line is that somebody stated a requirement and it still needs checking
+ * against these places. Saying "no conflict" would be a verification nobody
+ * performed.
+ *
+ * It used to sit on every card, where it was word-for-word identical on all of
+ * them: six copies of one sentence, which reads as noise and buries the reasons
+ * that ARE about the place. One statement, once, is the same truth and is more
+ * likely to be read.
+ */
+export function groupWideCaution(trip: ConsumerTrip): FitReason | undefined {
+  const required = trip.travellers.flatMap((traveller) =>
+    traveller.requirements.filter((r) => r.strength === "REQUIRED" && !r.private),
+  );
+  if (required.length === 0) return undefined;
+
+  return {
+    text: `${String(required.length)} stated requirement${required.length === 1 ? "" : "s"} to check against these places`,
+    positive: false,
+  };
 }
 
 /* -------------------------------------------------------------------------- */
@@ -232,6 +247,130 @@ export function suggestForDay(
     });
   }
   return suggestions;
+}
+
+/* -------------------------------------------------------------------------- */
+/*  The shape of the plan                                                     */
+/* -------------------------------------------------------------------------- */
+
+export type DayState =
+  /** Nothing on it. */
+  | "EMPTY"
+  /** Something on it, but nothing anchoring the day. */
+  | "LIGHT"
+  /** A day with a real shape to it. */
+  | "PLANNED";
+
+export interface DayShape {
+  readonly day: IsoDate;
+  readonly weekday: string;
+  readonly items: readonly PlanItem[];
+  readonly state: DayState;
+  /** Somebody has not landed yet. Whole-group items on such a day are wrong. */
+  readonly beforeReunion: boolean;
+  readonly isReunion: boolean;
+  readonly fixedCount: number;
+}
+
+export interface PlanShape {
+  readonly days: readonly DayShape[];
+  readonly plannedDays: number;
+  readonly emptyDays: number;
+  readonly itemCount: number;
+  readonly fixedCount: number;
+  /**
+   * The day to open on: the first that still has room, else the first day.
+   *
+   * A plan screen that opens on day one of eighteen when day one is full and
+   * day two is empty has made the person do the searching.
+   */
+  readonly focusDay: IsoDate | undefined;
+  /** True when the trip has dates but nothing on any of them. */
+  readonly untouched: boolean;
+}
+
+/**
+ * Every day of the trip with the one fact a navigator needs: how full it is.
+ *
+ * This exists because the plan screen used to render every day at full size.
+ * An eighteen-day trip with nothing in it produced eighteen identical empty
+ * blocks -- seven thousand pixels telling somebody, repeatedly, that they have
+ * not done anything yet. The state belongs in one place so the interface can
+ * decide how much of it to draw.
+ */
+export function planShape(trip: ConsumerTrip): PlanShape {
+  const reunion = reunionDay(trip);
+
+  const days = tripDays(trip).map((day): DayShape => {
+    const items = itemsOnDay(trip, day);
+    const fixedCount = items.filter((item) => item.status === "FIXED").length;
+    /**
+     * LIGHT rather than PLANNED when the only thing on a day is a flight or a
+     * check-in. Arriving somewhere is not the same as having a day there, and
+     * a navigator that calls it planned hides the day people should look at.
+     */
+    const substantive = items.filter(
+      (item) => item.kind !== "FLIGHT" && item.kind !== "STAY" && item.kind !== "FREE",
+    ).length;
+
+    return {
+      day,
+      weekday: weekdayName(day),
+      items,
+      state: items.length === 0 ? "EMPTY" : substantive === 0 ? "LIGHT" : "PLANNED",
+      beforeReunion: reunion !== undefined && (compareIsoDate(day, reunion) ?? 0) < 0,
+      isReunion: reunion !== undefined && day === reunion,
+      fixedCount,
+    };
+  });
+
+  const withRoom = days.find((d) => d.state !== "PLANNED");
+  const first = days[0];
+
+  return {
+    days,
+    plannedDays: days.filter((d) => d.state === "PLANNED").length,
+    emptyDays: days.filter((d) => d.state === "EMPTY").length,
+    itemCount: trip.plan.length,
+    fixedCount: days.reduce((total, d) => total + d.fixedCount, 0),
+    focusDay: withRoom?.day ?? first?.day,
+    untouched: days.length > 0 && trip.plan.length === 0,
+  };
+}
+
+/**
+ * How a day should be introduced when it has nothing on it.
+ *
+ * "Nothing planned yet" is a true sentence that gives somebody nothing to do.
+ * What they need is whether Orkestr can help right now, which depends entirely
+ * on whether the group has saved anything.
+ */
+export interface OpenDay {
+  readonly headline: string;
+  readonly detail: string;
+  readonly canShape: boolean;
+}
+
+export function describeOpenDay(trip: ConsumerTrip, day: IsoDate): OpenDay {
+  const suggestions = suggestForDay(trip, day);
+  const weekday = weekdayName(day);
+
+  if (suggestions.length > 0) {
+    return {
+      headline: `${weekday} is open`,
+      detail: `${String(suggestions.length)} ${suggestions.length === 1 ? "place" : "places"} your group saved could fit here.`,
+      canShape: true,
+    };
+  }
+
+  const savedButPlanned = trip.ideas.length > 0;
+  return {
+    headline: `${weekday} is open`,
+    detail: savedButPlanned
+      ? "Everything your group saved is already on the plan. Find a few more and Orkestr can shape this day."
+      : "Save a few places and Orkestr can shape this day from them.",
+    canShape: false,
+  };
 }
 
 /* -------------------------------------------------------------------------- */
@@ -350,37 +489,55 @@ export function nextAction(trip: ConsumerTrip): NextAction {
   }
 
   const unanswered = trip.travellers.filter((t) => readinessOf(t) !== "READY");
-  if (unanswered.length > 0) {
-    const names = unanswered.map((t) => t.name);
+  const firstMissing = unanswered[0];
+  if (firstMissing !== undefined) {
     return {
-      label: names.length === 1 ? `Ask ${names[0] ?? ""} for their dates` : "Chase the missing dates",
+      label: unanswered.length === 1 ? `Ask ${firstMissing.name}` : "Chase the missing dates",
       href: `${base}/inbox`,
-      why: `${names.join(", ")} ${names.length === 1 ? "has" : "have"} not said when they can travel.`,
+      why:
+        unanswered.length === 1
+          ? `${firstMissing.name} has not said when they can travel. Everything else is ready.`
+          : `${unanswered.map((t) => t.name).join(", ")} have not said when they can travel.`,
     };
   }
 
   if (trip.ideas.length === 0) {
     return {
-      label: "Save some places",
+      label: `Explore ${trip.destination}`,
       href: `${base}/explore`,
-      why: "Orkestr suggests days from what your group has actually saved.",
+      why: `Your group is ready. Now make ${trip.destination} feel like your trip.`,
     };
   }
 
-  if (trip.plan.length === 0) {
+  const shape = planShape(trip);
+
+  /**
+   * Name the day. "Fill in the empty days" is a chore; "Build Saturday" is a
+   * thing somebody can picture doing, and it is the same instruction.
+   */
+  const openDay = shape.days.find((d) => d.state === "EMPTY" && suggestForDay(trip, d.day).length > 0);
+
+  if (shape.untouched) {
     return {
-      label: "Build our first plan",
+      label: openDay === undefined ? "Build the first day" : `Build ${openDay.weekday}`,
       href: `${base}/plan`,
-      why: "Everyone is ready and there are ideas to work from.",
+      why: `You have saved enough to shape ${openDay === undefined ? "a first day" : "your first day"}.`,
     };
   }
 
-  const emptyDays = tripDays(trip).filter((day) => itemsOnDay(trip, day).length === 0);
-  if (emptyDays.length > 0) {
+  if (openDay !== undefined) {
     return {
-      label: "Fill in the empty days",
+      label: `Shape ${openDay.weekday}`,
       href: `${base}/plan`,
-      why: `${String(emptyDays.length)} ${emptyDays.length === 1 ? "day has" : "days have"} nothing on them yet.`,
+      why: `${openDay.weekday} still has room, and your group has saved places that would fit.`,
+    };
+  }
+
+  if (shape.emptyDays > 0) {
+    return {
+      label: `Find more for ${trip.destination}`,
+      href: `${base}/explore`,
+      why: `${String(shape.emptyDays)} ${shape.emptyDays === 1 ? "day is" : "days are"} still open, and everything saved is already on the plan.`,
     };
   }
 

@@ -65,6 +65,39 @@ const EXAMPLES = [
 ];
 
 /**
+ * Chips to put under the command bar, chosen from the trip's own state.
+ *
+ * DISCOVERABILITY IS THE PROBLEM THIS SOLVES. A free-text box that answers
+ * eight questions and refuses everything else is only usable if somebody can
+ * see what the eight are. Guessing at a blank input and being refused twice is
+ * how a person decides a feature does not work.
+ *
+ * Every chip here must be something `recognise` accepts -- a suggestion the
+ * product then refuses would be worse than showing nothing. A test asserts it.
+ */
+export function suggestedCommands(trip: ConsumerTrip): readonly string[] {
+  const chips: string[] = [];
+
+  const departures = new Set(
+    trip.travellers
+      .map((traveller) => traveller.availableFrom)
+      .filter((date): date is NonNullable<typeof date> => date !== undefined),
+  );
+  if (departures.size > 1) chips.push("Why are there two travel groups?");
+
+  const waiting = trip.travellers.some((traveller) => readinessOf(traveller) !== "READY");
+  if (waiting) chips.push("What still needs deciding?");
+
+  if (departures.size > 0) chips.push("When is everyone together?");
+  if (trip.plan.length > 0) chips.push("Show the plan");
+  if (trip.ideas.length === 0) chips.push("Show explore");
+
+  chips.push("Who is coming?");
+
+  return chips.slice(0, 4);
+}
+
+/**
  * Match text against the intents this build can actually satisfy.
  *
  * Matching is deliberately narrow. A loose matcher that catches "add" in
