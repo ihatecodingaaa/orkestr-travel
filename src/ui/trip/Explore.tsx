@@ -2,9 +2,15 @@
 
 import { useState } from "react";
 import type { ConsumerTrip } from "@/domain/consumerTrip";
-import type { IdeaCategory } from "@/domain/livingTrip";
+import type { IdeaCategory, TripIdea } from "@/domain/livingTrip";
 import { IDEA_CATEGORIES, categoryLabel } from "@/domain/livingTrip";
-import { byPopularity, fitReasons, tripDays } from "@/core/trips/living";
+import {
+  byPopularity,
+  fitReasons,
+  groupWideCaution,
+  initialsOf,
+  tripDays,
+} from "@/core/trips/living";
 import { addIdea, addPlanItem, removeIdea, toggleSave } from "@/core/trips/mutate";
 import { newId, nowIso } from "./TripsClient";
 import { formatWithWeekday } from "./format";
@@ -16,11 +22,17 @@ import { formatWithWeekday } from "./format";
  * their trip and that was all -- and this is the answer: find things, save
  * them, put them on a day.
  *
+ * DISCOVERY FIRST. The screen used to open on a form: "What is it?", "Kind of
+ * thing", "Link", "Why?". That is a database entry screen, and it asks somebody
+ * to supply the content before the product has shown them anything. Adding your
+ * own is still here; it is no longer the first thing.
+ *
  * WHY THIS FITS is the part that makes it Orkestr rather than a list of
  * attractions. Every reason is countable from state on another screen: "four
  * people saved food" comes from the saves, "everyone has arrived by this day"
- * comes from the reunion date. Cautions appear alongside the positives, because
- * a card showing only good news is an advert and gets read as one.
+ * comes from the reunion date. The one caution that belongs to the group rather
+ * than to any place is stated once, at the top, instead of being copied onto
+ * every card.
  */
 export function Explore({
   trip,
@@ -34,28 +46,54 @@ export function Explore({
   const [filter, setFilter] = useState<IdeaCategory | "ALL">("ALL");
   const [showAdd, setShowAdd] = useState(false);
 
-  const visible = byPopularity(
-    filter === "ALL" ? trip.ideas : trip.ideas.filter((idea) => idea.category === filter),
-  );
+  const ranked = byPopularity(trip.ideas);
+  const visible =
+    filter === "ALL" ? ranked : ranked.filter((idea) => idea.category === filter);
+
   const saved = trip.ideas.filter((idea) => idea.savedBy.includes(viewerId));
+  const favourites = ranked.filter((idea) => idea.savedBy.length > 1);
+  const caution = groupWideCaution(trip);
+
+  /**
+   * The one place to lead with: most saved, and only when the group has
+   * actually converged on something. A "featured" pick chosen from a list of
+   * one would be a layout with nothing behind it.
+   */
+  const featured = filter === "ALL" && ranked.length >= 3 ? ranked[0] : undefined;
+  const rest = featured === undefined ? visible : visible.filter((i) => i.id !== featured.id);
 
   return (
     <div className="stack gap-3">
-      <div className="section-head">
-        <div>
-          <h2>Ideas for {trip.destination}</h2>
+      <div className="explore-head">
+        <div className="stack gap-1">
+          <h2>Explore {trip.destination}</h2>
           <p className="faint">
             {trip.ideas.length === 0
-              ? "Nothing saved yet."
-              : `${String(trip.ideas.length)} saved · ${String(saved.length)} by you`}
+              ? "Nothing saved yet. Anything your group saves here shapes the plan."
+              : `${String(trip.ideas.length)} places · ${String(saved.length)} saved by you`}
           </p>
         </div>
-        <button className="btn btn-primary" onClick={() => setShowAdd(!showAdd)} type="button">
-          {showAdd ? "Close" : "Add an idea"}
+        <button
+          className="btn btn-secondary"
+          onClick={() => {
+            setShowAdd(!showAdd);
+          }}
+          type="button"
+        >
+          {showAdd ? "Close" : "+ Add your own"}
         </button>
       </div>
 
-      {showAdd && <AddIdea trip={trip} save={save} viewerId={viewerId} onDone={() => setShowAdd(false)} />}
+      {showAdd && (
+        <AddIdea
+          trip={trip}
+          save={save}
+          viewerId={viewerId}
+          onDone={() => {
+            setShowAdd(false);
+          }}
+        />
+      )}
 
       {trip.ideas.length === 0 && !showAdd ? (
         <div className="empty-panel">
@@ -64,7 +102,13 @@ export function Explore({
             Save it here. Orkestr uses what your group saves to suggest days — it never invents
             places nobody asked for.
           </p>
-          <button className="btn btn-primary" onClick={() => setShowAdd(true)} type="button">
+          <button
+            className="btn btn-primary"
+            onClick={() => {
+              setShowAdd(true);
+            }}
+            type="button"
+          >
             Save your first idea
           </button>
         </div>
@@ -74,7 +118,9 @@ export function Explore({
             <button
               type="button"
               className={filter === "ALL" ? "chip chip-on" : "chip"}
-              onClick={() => setFilter("ALL")}
+              onClick={() => {
+                setFilter("ALL");
+              }}
             >
               Everything
             </button>
@@ -83,104 +129,232 @@ export function Explore({
                 key={category}
                 type="button"
                 className={filter === category ? "chip chip-on" : "chip"}
-                onClick={() => setFilter(category)}
+                onClick={() => {
+                  setFilter(category);
+                }}
               >
                 {categoryLabel(category)}
               </button>
             ))}
           </div>
 
-          <ul className="idea-grid">
-            {visible.map((idea) => {
-              const isSaved = idea.savedBy.includes(viewerId);
-              const reasons = fitReasons(idea, trip);
-              return (
-                <li key={idea.id} className={`idea-card cat-${idea.category.toLowerCase()}`}>
-                  <div className="idea-top">
-                    <span className="idea-cat">{categoryLabel(idea.category)}</span>
-                    {idea.savedBy.length > 0 && (
-                      <span className="idea-saves">
-                        ♥ {idea.savedBy.length}
-                      </span>
-                    )}
-                  </div>
-                  <h3>{idea.title}</h3>
-                  {idea.blurb !== undefined && <p>{idea.blurb}</p>}
-                  {idea.area !== undefined && <p className="faint">{idea.area}</p>}
+          {favourites.length > 0 && (
+            <section className="favourites">
+              <h3 className="strip-title">What your group keeps coming back to</h3>
+              <ul className="favourite-strip">
+                {favourites.slice(0, 6).map((idea) => (
+                  <li key={idea.id} className={`favourite cat-${idea.category.toLowerCase()}`}>
+                    <span className="favourite-cat">{categoryLabel(idea.category)}</span>
+                    <strong>{idea.title}</strong>
+                    <Savers trip={trip} idea={idea} />
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
 
-                  {reasons.length > 0 && (
-                    <ul className="fit-list">
-                      {reasons.map((reason) => (
-                        <li key={reason.text} className={reason.positive ? "fit-yes" : "fit-check"}>
-                          {reason.text}
-                        </li>
-                      ))}
-                    </ul>
-                  )}
+          <section className="stack gap-2">
+            <div className="strip-head">
+              <h3 className="strip-title">
+                {filter === "ALL" ? "For your group" : categoryLabel(filter)}
+              </h3>
+              {caution !== undefined && (
+                <p className="caution-note">
+                  <span aria-hidden="true">?</span> {caution.text}. Orkestr has not researched any of
+                  them.
+                </p>
+              )}
+            </div>
 
-                  {/*
-                    Provenance beside the thing it describes, not in a table at
-                    the top of the page. A pasted link says plainly that nobody
-                    read it.
-                  */}
-                  <p className="source-note">
-                    {idea.source === "LOCAL_EXAMPLE"
-                      ? "Local example content"
-                      : idea.source === "USER_LINK"
-                        ? "Saved link — not analysed"
-                        : "Added by someone in your group"}
-                  </p>
+            {featured !== undefined && (
+              <FeaturedIdea
+                trip={trip}
+                idea={featured}
+                save={save}
+                viewerId={viewerId}
+              />
+            )}
 
-                  <div className="idea-actions">
-                    <button
-                      type="button"
-                      className={isSaved ? "btn btn-small btn-saved" : "btn btn-secondary btn-small"}
-                      onClick={() => save(toggleSave(trip, idea.id, viewerId))}
-                    >
-                      {isSaved ? "♥ Saved" : "♡ Save"}
-                    </button>
-                    <AddToDay trip={trip} idea={idea} save={save} />
-                    {idea.source !== "LOCAL_EXAMPLE" && (
-                      <button
-                        type="button"
-                        className="linkish"
-                        onClick={() => save(removeIdea(trip, idea.id))}
-                      >
-                        Remove
-                      </button>
-                    )}
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
-        </>
-      )}
+            {rest.length === 0 && featured === undefined && (
+              <p className="faint">Nothing saved in this category yet.</p>
+            )}
 
-      {saved.length > 0 && (
-        <section className="stack gap-1">
-          <h2>Most wanted</h2>
-          <ol className="ranked">
-            {byPopularity(trip.ideas)
-              .filter((idea) => idea.savedBy.length > 0)
-              .slice(0, 5)
-              .map((idea) => (
-                <li key={idea.id}>
-                  <strong>{idea.title}</strong>{" "}
-                  <span className="faint">
-                    saved by {idea.savedBy.length}{" "}
-                    {idea.savedBy.length === 1 ? "person" : "people"}
-                  </span>
-                </li>
+            <ul className="idea-grid">
+              {rest.map((idea) => (
+                <IdeaCard key={idea.id} trip={trip} idea={idea} save={save} viewerId={viewerId} />
               ))}
-          </ol>
+            </ul>
+          </section>
+
           <p className="faint">
             Saving is a signal, not a vote. Orkestr uses it to suggest days — nothing is decided by
             majority.
           </p>
-        </section>
+        </>
       )}
     </div>
+  );
+}
+
+/** Who saved this, as faces rather than a number. */
+function Savers({ trip, idea }: { readonly trip: ConsumerTrip; readonly idea: TripIdea }) {
+  if (idea.savedBy.length === 0) return null;
+  const people = idea.savedBy
+    .map((id) => trip.travellers.find((t) => t.id === id))
+    .filter((t): t is NonNullable<typeof t> => t !== undefined);
+
+  return (
+    <span className="savers">
+      <span className="savers-faces" aria-hidden="true">
+        {people.slice(0, 3).map((person) => (
+          <span key={person.id} className="avatar avatar-small">
+            {initialsOf(person)}
+          </span>
+        ))}
+      </span>
+      <span className="faint">
+        {people.length === 1
+          ? `${people[0]?.name ?? ""} saved this`
+          : `${String(people.length)} people saved this`}
+      </span>
+    </span>
+  );
+}
+
+/** Provenance beside the thing it describes, never in a table at the top. */
+function sourceNote(idea: TripIdea): string {
+  return idea.source === "LOCAL_EXAMPLE"
+    ? "Local example content"
+    : idea.source === "USER_LINK"
+      ? "Saved link — not analysed"
+      : "Added by someone in your group";
+}
+
+/**
+ * The lead recommendation, given room to look like a place worth going.
+ *
+ * Same data and same actions as any other card. A featured slot that showed
+ * something the smaller cards could not would be a second product.
+ */
+function FeaturedIdea({
+  trip,
+  idea,
+  save,
+  viewerId,
+}: {
+  readonly trip: ConsumerTrip;
+  readonly idea: TripIdea;
+  readonly save: (trip: ConsumerTrip) => void;
+  readonly viewerId: string;
+}) {
+  const isSaved = idea.savedBy.includes(viewerId);
+  const reasons = fitReasons(idea, trip).filter((r) => r.positive);
+
+  return (
+    <article className={`featured cat-${idea.category.toLowerCase()}`}>
+      <div className="featured-mark" aria-hidden="true">
+        {categoryLabel(idea.category).slice(0, 1)}
+      </div>
+      <div className="featured-body">
+        <p className="eyebrow">
+          {categoryLabel(idea.category)}
+          {idea.area !== undefined && ` · ${idea.area}`}
+        </p>
+        <h4>{idea.title}</h4>
+        {idea.blurb !== undefined && <p className="muted">{idea.blurb}</p>}
+
+        {reasons.length > 0 && (
+          <ul className="fit-list">
+            {reasons.map((reason) => (
+              <li key={reason.text} className="fit-yes">
+                {reason.text}
+              </li>
+            ))}
+          </ul>
+        )}
+
+        <div className="idea-actions">
+          <button
+            type="button"
+            className={isSaved ? "btn btn-small btn-saved" : "btn btn-primary btn-small"}
+            onClick={() => {
+              save(toggleSave(trip, idea.id, viewerId));
+            }}
+          >
+            {isSaved ? "♥ Saved" : "♡ Save"}
+          </button>
+          <AddToDay trip={trip} idea={idea} save={save} />
+          <span className="source-note">{sourceNote(idea)}</span>
+        </div>
+      </div>
+      <Savers trip={trip} idea={idea} />
+    </article>
+  );
+}
+
+/** One place, compactly. */
+function IdeaCard({
+  trip,
+  idea,
+  save,
+  viewerId,
+}: {
+  readonly trip: ConsumerTrip;
+  readonly idea: TripIdea;
+  readonly save: (trip: ConsumerTrip) => void;
+  readonly viewerId: string;
+}) {
+  const isSaved = idea.savedBy.includes(viewerId);
+  const reasons = fitReasons(idea, trip).filter((r) => r.positive);
+
+  return (
+    <li className={`idea-card cat-${idea.category.toLowerCase()}`}>
+      <div className="idea-top">
+        <span className="idea-cat">
+          {categoryLabel(idea.category)}
+          {idea.area !== undefined && ` · ${idea.area}`}
+        </span>
+      </div>
+      <h4>{idea.title}</h4>
+      {idea.blurb !== undefined && <p className="muted">{idea.blurb}</p>}
+
+      {reasons.length > 0 && (
+        <ul className="fit-list">
+          {reasons.map((reason) => (
+            <li key={reason.text} className="fit-yes">
+              {reason.text}
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <Savers trip={trip} idea={idea} />
+      <p className="source-note">{sourceNote(idea)}</p>
+
+      <div className="idea-actions">
+        <button
+          type="button"
+          className={isSaved ? "btn btn-small btn-saved" : "btn btn-secondary btn-small"}
+          onClick={() => {
+            save(toggleSave(trip, idea.id, viewerId));
+          }}
+        >
+          {isSaved ? "♥ Saved" : "♡ Save"}
+        </button>
+        <AddToDay trip={trip} idea={idea} save={save} />
+        {idea.source !== "LOCAL_EXAMPLE" && (
+          <button
+            type="button"
+            className="linkish"
+            onClick={() => {
+              save(removeIdea(trip, idea.id));
+            }}
+          >
+            Remove
+          </button>
+        )}
+      </div>
+    </li>
   );
 }
 
