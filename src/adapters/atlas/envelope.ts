@@ -150,6 +150,21 @@ export const AUTH_CODES: readonly string[] = [
 /** The offer or its booking hold no longer exists. Never continue with old IDs. */
 export const EXPIRED_CODES: readonly string[] = ["OFFER_EXPIRED", "BOOKING_EXPIRED"];
 
+/**
+ * Codes OBSERVED from the live service but absent from the official reference.
+ *
+ * `INTERNAL_ERROR` is not in `error-handling.md`. It was returned by the Atlas
+ * Sandbox search on 22 August 2026 for four consecutive searches across two
+ * routes and four dates, with `retryable: false`, an empty `data`, and a CLI
+ * reporting DOCTOR_OK / AUTHORIZED / search_available.
+ *
+ * It is classified as a provider failure rather than left UNRECOGNISED because
+ * the two lead somewhere different: UNRECOGNISED says "this application does not
+ * handle that", which points an operator at our code, and the fault was not
+ * ours. Both still fail closed -- nothing about this makes an operation succeed.
+ */
+export const OBSERVED_PROVIDER_FAULT_CODES: readonly string[] = ["INTERNAL_ERROR"];
+
 /** The provider is momentarily unavailable. Read-only commands may retry ONCE. */
 export const TRANSIENT_CODES: readonly string[] = [
   "SERVICE_TEMPORARILY_UNAVAILABLE",
@@ -185,8 +200,16 @@ export type AtlasFailureKind =
   | "TIMEOUT"
   /** The CLI is missing. */
   | "NOT_INSTALLED"
-  /** Sandbox could not be proven. No flight operation may proceed. */
-  | "ENVIRONMENT_NOT_PROVEN"
+  /**
+   * `ATLAS_MODE` is not `sandbox`. Nothing was started at all.
+   *
+   * Separate from SANDBOX_SET_FAILED because the fix is completely different:
+   * this one is a switch nobody turned on, and collapsing the two would send an
+   * operator hunting a provider problem that does not exist.
+   */
+  | "ATLAS_DISABLED"
+  /** The sandbox switch was issued and Atlas did not confirm it. */
+  | "SANDBOX_SET_FAILED"
   /** A code Atlas returned that this adapter does not recognise. Fails closed. */
   | "UNRECOGNISED";
 
@@ -199,6 +222,11 @@ export function classifyAtlasCode(code: string): AtlasFailureKind {
   if (code === "FLIGHT_UNAVAILABLE") return "OFFER_GONE";
   if (code === "PRICE_CHANGED" || code === "PRICE_CONFIRMATION_REQUIRED") return "PRICE_CHANGED";
   if (TRANSIENT_CODES.includes(code)) return "PROVIDER_UNAVAILABLE";
+  /**
+   * Observed, undocumented, and NOT added to TRANSIENT_CODES: Atlas reports it
+   * with `retryable: false`, so repeating the command is not sanctioned.
+   */
+  if (OBSERVED_PROVIDER_FAULT_CODES.includes(code)) return "PROVIDER_UNAVAILABLE";
   if (code === "INVALID_ARGUMENT" || code === "BOOKING_INPUT_INVALID") return "INVALID_REQUEST";
   if (code === "SERVICE_REQUEST_FAILED" || code === "SERVICE_RESPONSE_INVALID") {
     return "PROVIDER_PROTOCOL_ERROR";

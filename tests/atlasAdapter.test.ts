@@ -90,7 +90,13 @@ const okOut = (stdout: string): CliOutcome => ({
   durationMs: 12,
 });
 
-const SANDBOX_OK = okOut(envelope("ENVIRONMENT_UPDATED", "success", { environment: "sandbox" }));
+/**
+ * The REAL sandbox confirmation, captured from CLI 0.3.12.
+ *
+ * Note `data: {}`. Atlas does not echo the environment, which is exactly what
+ * broke the first version of the proof.
+ */
+const SANDBOX_OK = okOut(envelope("CONFIGURATION_UPDATED", "success", {}));
 
 const SEGMENT = {
   segment_id: "SEG-1",
@@ -355,12 +361,14 @@ describe("K/L/M. the CLI itself misbehaving", () => {
     await expect(p.searchFlights(REQUEST)).rejects.toMatchObject({ kind: "TIMEOUT" });
   });
 
-  it("reports a missing CLI as a missing CLI", async () => {
+  it("reports a missing CLI as a missing CLI, not as a sandbox problem", async () => {
     const { provider: p } = provider([
       { ok: false, kind: "NOT_INSTALLED", message: "not on PATH", durationMs: 3 },
     ]);
+    // Both mean no sandbox; only one is fixed by installing something.
     await expect(p.searchFlights(REQUEST)).rejects.toMatchObject({
-      kind: "ENVIRONMENT_NOT_PROVEN",
+      kind: "NOT_INSTALLED",
+      stage: "ENVIRONMENT",
     });
   });
 
@@ -414,6 +422,179 @@ describe("N. authorization", () => {
     expect(classifyAtlasCode("SUBSCRIPTION_REQUIRED")).toBe("ACCOUNT_NOT_ENABLED");
   });
 
+});
+
+describe("codes observed live but absent from the official reference", () => {
+  it("classifies INTERNAL_ERROR as a provider fault, not as our gap", async () => {
+    /**
+     * Observed on 22 August 2026: the Atlas Sandbox search returned
+     * `terminal_error` / `INTERNAL_ERROR` for four consecutive searches across
+     * two routes and four dates, with an empty `data`, while the CLI reported
+     * DOCTOR_OK, AUTHORIZED and `search_available: true`.
+     *
+     * It is not in `error-handling.md`. Leaving it UNRECOGNISED would render as
+     * "this application does not handle that", which points an operator at our
+     * code for a fault that was not ours.
+     */
+    expect(classifyAtlasCode("INTERNAL_ERROR")).toBe("PROVIDER_UNAVAILABLE");
+
+    const { provider: p } = provider([
+      SANDBOX_OK,
+      okOut(envelope("INTERNAL_ERROR", "terminal_error")),
+    ]);
+    await expect(p.searchFlights(REQUEST)).rejects.toMatchObject({
+      kind: "PROVIDER_UNAVAILABLE",
+      stage: "SEARCH",
+      code: "INTERNAL_ERROR",
+    });
+  });
+
+  it("does not retry it, because Atlas reports it as not retryable", () => {
+    const parsed = parseEnvelope(envelope("INTERNAL_ERROR", "terminal_error"));
+    expect(parsed.ok && mayRetryOnce(parsed.envelope)).toBe(false);
+    // Even if the provider ever flipped the flag, the code is not a known
+    // transient, so a repeat is still not authorised.
+    const flagged = parseEnvelope(
+      envelope("INTERNAL_ERROR", "terminal_error", {}, { retryable: true }),
+    );
+    expect(flagged.ok && mayRetryOnce(flagged.envelope)).toBe(false);
+  });
+
+  it("still fails closed on a genuinely unknown code", () => {
+    expect(classifyAtlasCode("SOMETHING_ATLAS_ADDS_LATER")).toBe("UNRECOGNISED");
+  });
+});
+
+describe("O. sandbox is proven by setting it, not by being told", () => {
+  /**
+   * The bug this section exists because of.
+   *
+   * The first proof required Atlas to echo `data.environment`. It never does --
+   * the real confirmation carries an empty object -- so the check could not pass
+   * and it blocked the first authorised search. A guard that can never succeed
+   * is not a safe guard; it is a broken one that happens to fail in the safe
+   * direction, and it invites being ripped out by whoever is next under time
+   * pressure.
+   */
+  it("A. accepts the real confirmation, which carries no environment field", async () => {
+    const proof = await proveSandbox({ runner: scriptedRunner([SANDBOX_OK]) });
+    expect(proof.proven).toBe(true);
+    if (!proof.proven) return;
+    expect(proof.environment).toBe("sandbox");
+    // That word came from the command we issued, not from the response.
+    expect(proof.proofMethod).toBe("EXPLICIT_SET_CONFIRMED");
+  });
+
+  it("B. refuses a terminal error even though the CLI exits ZERO", async () => {
+    const proof = await proveSandbox({
+      runner: scriptedRunner([
+        {
+          ok: true,
+          stdout: envelope("INVALID_ARGUMENT", "terminal_error"),
+          exitCode: 0,
+          durationMs: 4,
+        },
+      ]),
+    });
+    expect(proof.proven).toBe(false);
+  });
+
+  it("C. refuses output that is not JSON", async () => {
+    const proof = await proveSandbox({
+      runner: scriptedRunner([{ ok: true, stdout: "Traceback...", exitCode: 0, durationMs: 4 }]),
+    });
+    expect(proof.proven).toBe(false);
+  });
+
+  it("D. fails closed on a success carrying an unrecognised code", async () => {
+    /**
+     * Not a catch-all for "did not error". A code this adapter has never seen
+     * means the CLI's behaviour moved, and the right answer to that is to stop.
+     */
+    const proof = await proveSandbox({
+      runner: scriptedRunner([okOut(envelope("SOMETHING_NEW", "success", {}))]),
+    });
+    expect(proof.proven).toBe(false);
+    if (proof.proven) return;
+    expect(proof.reason).toMatch(/unrecognised code/i);
+  });
+
+  it("E. never constructs a command that could select production", async () => {
+    const runner = scriptedRunner([SANDBOX_OK]);
+    await proveSandbox({ runner });
+    expect(runner.calls[0]?.args).toEqual(["environment", "use", "sandbox", "--json"]);
+    expect(runner.calls.flatMap((c) => c.args).join(" ")).not.toMatch(/production/i);
+  });
+
+  it("F. takes no caller input, so nothing can replace the sandbox argument", async () => {
+    // The only parameters are a runner and a timeout. There is no environment
+    // parameter to poison, by construction.
+    const runner = scriptedRunner([SANDBOX_OK]);
+    await proveSandbox({ runner, timeoutMs: 5_000 });
+    expect(runner.calls[0]?.args).toContain("sandbox");
+    expect(runner.calls[0]?.timeoutMs).toBe(5_000);
+  });
+
+  it("G. proves the environment again for a later independent operation", async () => {
+    const { provider: p, runner } = provider([
+      ...searchScript({ offers: [OFFER] }),
+      SANDBOX_OK,
+      okOut(
+        envelope("PRICE_CONFIRMED", "success", {
+          price_change: "unchanged",
+          current_price: "1289.40",
+          currency: "SGD",
+        }),
+      ),
+    ]);
+    const offers = await p.searchFlights(REQUEST);
+    const first = offers[0];
+    if (first === undefined) throw new Error("expected an offer");
+    await p.verifyOffer(first.id);
+
+    const envCalls = runner.calls.filter((c) => c.args[0] === "environment");
+    // Once before the search, once before the verification. Never cached.
+    expect(envCalls).toHaveLength(2);
+  });
+
+  it("H. a successful search does not itself prove sandbox", async () => {
+    const { provider: p, runner } = provider([
+      okOut(envelope("INVALID_ARGUMENT", "terminal_error")),
+      okOut(envelope("SEARCH_COMPLETED", "success", { search_id: "S" })),
+    ]);
+    await expect(p.searchFlights(REQUEST)).rejects.toMatchObject({
+      kind: "SANDBOX_SET_FAILED",
+      stage: "ENVIRONMENT",
+    });
+    // The search command was never issued.
+    expect(runner.calls).toHaveLength(1);
+  });
+
+  it("I. being authorised does not prove sandbox", async () => {
+    /**
+     * Authorization and environment are different facts. `authenticated: true`
+     * says who you are, not which service you are pointed at -- and Atlas
+     * defaults to production.
+     */
+    const proof = await proveSandbox({
+      runner: scriptedRunner([okOut(envelope("AUTHORIZED", "success", { authenticated: true }))]),
+    });
+    expect(proof.proven).toBe(false);
+  });
+
+  it("J. ATLAS_MODE=sandbox alone does not prove sandbox", async () => {
+    const { provider: p, runner } = provider([
+      okOut(envelope("AUTHORIZATION_REQUIRED", "action_required")),
+    ]);
+    /**
+     * The mode is `sandbox` and the environment still has to be established.
+     * Whatever the reason it could not be, it failed at the ENVIRONMENT stage
+     * and no search was issued -- which is the property that matters here.
+     */
+    await expect(p.searchFlights(REQUEST)).rejects.toMatchObject({ stage: "ENVIRONMENT" });
+    expect(runner.calls).toHaveLength(1);
+  });
+
   it("says authorization is missing rather than blaming the environment", async () => {
     const proof = await proveSandbox({
       runner: scriptedRunner([okOut(envelope("AUTHORIZATION_REQUIRED", "action_required"))]),
@@ -422,79 +603,23 @@ describe("N. authorization", () => {
     if (proof.proven) return;
     expect(proof.reason).toMatch(/authorization/i);
   });
-});
 
-describe("O. sandbox must be proven before anything is asked", () => {
-  it("proves sandbox from Atlas's own confirmation", async () => {
-    const proof = await proveSandbox({ runner: scriptedRunner([SANDBOX_OK]) });
-    expect(proof.proven).toBe(true);
-    if (!proof.proven) return;
-    expect(proof.environment).toBe("sandbox");
-  });
-
-  it("refuses when Atlas reports production", async () => {
-    const proof = await proveSandbox({
-      runner: scriptedRunner([
-        okOut(envelope("ENVIRONMENT_UPDATED", "success", { environment: "production" })),
-      ]),
-    });
-    expect(proof.proven).toBe(false);
-    if (proof.proven) return;
-    expect(proof.reason).toMatch(/Only sandbox is authorised/);
-  });
-
-  it("refuses when Atlas does not say which environment is active", async () => {
-    // Silence is not agreement. Atlas defaults to production.
-    const proof = await proveSandbox({
-      runner: scriptedRunner([okOut(envelope("ENVIRONMENT_UPDATED", "success", {}))]),
-    });
-    expect(proof.proven).toBe(false);
-  });
-
-  it("never constructs a command that could select production", async () => {
-    const runner = scriptedRunner([SANDBOX_OK]);
-    await proveSandbox({ runner });
-    const all = runner.calls.flatMap((call) => call.args);
-    expect(all).toContain("sandbox");
-    expect(all).not.toContain("production");
-    expect(all.join(" ")).not.toMatch(/production/i);
-  });
-
-  it("proves the environment before every flight operation, not once", async () => {
-    const { provider: p, runner } = provider(searchScript({ offers: [OFFER] }));
-    await p.searchFlights(REQUEST);
-    const first = runner.calls[0];
-    // The very first thing that happens is the sandbox proof.
-    expect(first?.args).toEqual(["environment", "use", "sandbox", "--json"]);
-  });
-
-  it("asks Atlas nothing at all when the environment cannot be proven", async () => {
-    const runner = scriptedRunner([
-      okOut(envelope("ENVIRONMENT_UPDATED", "success", { environment: "production" })),
-    ]);
-    const p = new AtlasFlightProvider({
-      config: readAtlasConfig({ ATLAS_MODE: "sandbox" }),
-      runner,
-      now: () => NOW,
-    });
-    await expect(p.searchFlights(REQUEST)).rejects.toMatchObject({
-      kind: "ENVIRONMENT_NOT_PROVEN",
-    });
-    // One call: the environment attempt. No search was issued.
-    expect(runner.calls).toHaveLength(1);
-  });
-
-  it("contacts nothing when Atlas is switched off", async () => {
+  it("distinguishes a switched-off Atlas from a failed sandbox switch", async () => {
     const runner = scriptedRunner([SANDBOX_OK]);
     const p = new AtlasFlightProvider({
       config: readAtlasConfig({}),
       runner,
       now: () => NOW,
     });
-    await expect(p.searchFlights(REQUEST)).rejects.toMatchObject({
-      kind: "ENVIRONMENT_NOT_PROVEN",
-    });
+    await expect(p.searchFlights(REQUEST)).rejects.toMatchObject({ kind: "ATLAS_DISABLED" });
+    // Nothing was started, so there is no provider problem to go hunting for.
     expect(runner.calls).toHaveLength(0);
+  });
+
+  it("proves the environment before every flight operation, not once", async () => {
+    const { provider: p, runner } = provider(searchScript({ offers: [OFFER] }));
+    await p.searchFlights(REQUEST);
+    expect(runner.calls[0]?.args).toEqual(["environment", "use", "sandbox", "--json"]);
   });
 
   it("defaults closed, and a typo does not enable anything", () => {

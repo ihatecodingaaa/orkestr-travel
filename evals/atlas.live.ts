@@ -72,13 +72,43 @@ describe("Atlas sandbox", () => {
       now: () => asIsoDateTime(new Date().toISOString().replace("Z", "+00:00")),
     });
 
+    /**
+     * Every failure is reported with its kind, stage and Atlas code BEFORE it is
+     * rethrown.
+     *
+     * Added because the first authorised run failed and the report said only
+     * "Atlas returned a result this application does not handle" -- true, and
+     * useless. Diagnosing it meant running the CLI by hand to read the code. A
+     * live harness that cannot say which stage failed and why is a harness that
+     * sends you to a terminal.
+     */
+    const describe = (error: unknown): Record<string, string> => {
+      const e = error as { kind?: string; stage?: string; code?: string; message?: string };
+      return {
+        kind: e.kind ?? "unknown",
+        stage: e.stage ?? "unknown",
+        atlasCode: e.code ?? "(none returned)",
+        detail: e.message ?? String(error),
+      };
+    };
+
     const searchStart = Date.now();
-    const offers = await provider.searchFlights({
-      originCode: ROUTE.origin,
-      destinationCode: ROUTE.destination,
-      departureDate: asIsoDate(ROUTE.depart),
-      travellerCount: 1,
-    });
+    let offers;
+    try {
+      offers = await provider.searchFlights({
+        originCode: ROUTE.origin,
+        destinationCode: ROUTE.destination,
+        departureDate: asIsoDate(ROUTE.depart),
+        travellerCount: 1,
+      });
+    } catch (error) {
+      report("search", {
+        outcome: "FAILED",
+        durationMs: String(Date.now() - searchStart),
+        ...describe(error),
+      });
+      throw error;
+    }
     const searchMs = Date.now() - searchStart;
 
     report("search", {
@@ -172,8 +202,8 @@ describe("Atlas sandbox", () => {
        */
       report("verify", {
         outcome: "FAILED",
-        kind: (error as { kind?: string }).kind ?? "unknown",
-        detail: error instanceof Error ? error.message : String(error),
+        durationMs: String(Date.now() - verifyStart),
+        ...describe(error),
       });
       throw error;
     }
