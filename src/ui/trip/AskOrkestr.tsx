@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { ConsumerTrip } from "@/domain/consumerTrip";
-import { answer, recognise, toAction } from "@/core/trips/commands";
+import { answer, recognise, suggestedCommands, toAction } from "@/core/trips/commands";
 import type { Answer } from "@/core/trips/commands";
 import { addIdea, addTraveller } from "@/core/trips/mutate";
 import { newId, nowIso } from "./TripsClient";
@@ -41,11 +41,15 @@ export function AskOrkestr({
 
   function submit(event: React.FormEvent) {
     event.preventDefault();
+    run(text);
+  }
+
+  function run(input: string) {
     setReply(undefined);
     setRefusal(undefined);
     setDone(undefined);
 
-    const recognised = recognise(text);
+    const recognised = recognise(input);
     if (!recognised.ok) {
       setRefusal({ reason: recognised.reason, examples: recognised.examples });
       return;
@@ -100,7 +104,9 @@ export function AskOrkestr({
             className="ask-input"
             placeholder="Ask Orkestr — why are there two travel groups?"
             value={text}
-            onChange={(e) => setText(e.target.value)}
+            onChange={(e) => {
+              setText(e.target.value);
+            }}
             autoComplete="off"
           />
           <button className="btn btn-primary btn-small" type="submit">
@@ -108,6 +114,31 @@ export function AskOrkestr({
           </button>
         </div>
       </form>
+
+      {/*
+        What the box can actually do, drawn from this trip's state. A free-text
+        input that answers eight things and refuses the rest is only usable if
+        somebody can see what the eight are -- two refusals in a row and people
+        decide the feature is broken. Every chip is checked by a test to be
+        something `recognise` accepts.
+      */}
+      {reply === undefined && refusal === undefined && done === undefined && (
+        <div className="ask-chips">
+          {suggestedCommands(trip).map((chip) => (
+            <button
+              key={chip}
+              type="button"
+              className="chip"
+              onClick={() => {
+                setText(chip);
+                run(chip);
+              }}
+            >
+              {chip}
+            </button>
+          ))}
+        </div>
+      )}
 
       {reply !== undefined && (
         <div className="ask-reply" role="status">

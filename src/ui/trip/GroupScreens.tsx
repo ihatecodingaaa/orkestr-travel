@@ -249,10 +249,25 @@ export function Inbox({
 
   return (
     <div className="stack gap-3">
+      <div>
+        <h2>
+          {mine.length === 0
+            ? "Nothing needs you"
+            : mine.length === 1
+              ? "One thing needs you"
+              : `${String(mine.length)} things need you`}
+        </h2>
+        <p className="faint">
+          {mine.length > 0
+            ? "Orkestr only asks when the answer would change something."
+            : "The rest is waiting on other people. Orkestr will not answer for them."}
+        </p>
+      </div>
+
       {mine.length > 0 && (
         <section className="stack gap-2">
-          <h2>Needs you · {mine.length}</h2>
-          <ul className="stack gap-1">
+          <h3 className="strip-title">Needs you · {mine.length}</h3>
+          <ul className="decision-list">
             {mine.map(({ item, owner }) => (
               <li key={item.id} className="decision decision-mine">
                 <strong>{item.text}</strong>
@@ -271,11 +286,16 @@ export function Inbox({
 
       {others.length > 0 && (
         <section className="stack gap-2">
-          <h2 className="faint">Waiting on other people · {others.length}</h2>
-          <ul className="stack gap-1">
-            {others.map(({ item }) => (
+          <h3 className="strip-title">Waiting on other people · {others.length}</h3>
+          <ul className="decision-list">
+            {others.map(({ item, owner }) => (
               <li key={item.id} className="decision">
-                <span>{item.text}</span>
+                <strong>{item.text}</strong>
+                <p className="faint">
+                  {owner === undefined
+                    ? "Until this is answered, Orkestr will not assume anything about it."
+                    : `Until ${owner.name} answers, Orkestr will not place them in a travel group — it does not assume somebody is free.`}
+                </p>
               </li>
             ))}
           </ul>
