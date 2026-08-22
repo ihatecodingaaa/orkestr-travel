@@ -12,9 +12,23 @@ import {
   resetFixtureCounters,
   sgd,
 } from "@/fixtures/builders";
+import { asCurrencyCode } from "@/domain/money";
+import type { Money } from "@/domain/money";
 import { asIsoDateTime } from "@/domain/time";
+import { decisionsPreserved } from "@/core/decisions/inventory";
 
 const TRIP = asTripId("TRIP-ATLAS");
+
+/**
+ * US dollars in exact minor units.
+ *
+ * The fixture helper builds SGD; Atlas priced these real offers in USD, so the
+ * figures below are the ones the provider actually returned rather than a
+ * convenient local equivalent.
+ */
+function usd(amountMinor: number): Money {
+  return { amountMinor, currency: asCurrencyCode("USD"), minorUnitScale: 2 };
+}
 
 beforeEach(() => {
   resetFixtureCounters();
@@ -182,5 +196,63 @@ describe("W/X. Atlas reports the fare; Orkestr decides what it means", () => {
     expect(offer).not.toHaveProperty("feasible");
     expect(offer).not.toHaveProperty("withinBudget");
     expect(evaluateOffer(offer, travellers).feasible).toBe(false);
+  });
+});
+
+describe("Y/Z. an Atlas change enters the existing machinery unchanged", () => {
+  /**
+   * WHAT IS NOT DUPLICATED HERE, deliberately.
+   *
+   * "Only the affected wave is repaired" and "unchanged waves are listed
+   * explicitly" are already proven in `impact.test.ts` and `planRepair.test.ts`.
+   * Re-proving them with Atlas-shaped offers would test the wave engine twice
+   * and Atlas zero times -- and the reason they need no Atlas variant is the
+   * architectural point of this whole phase: the engines cannot tell which
+   * provider a fact came from.
+   *
+   * What IS Atlas-specific is the seam: that a real verification produces the
+   * exact event those engines already consume, carrying real money.
+   */
+  it("Y. produces the same OFFER_PRICE_CHANGED event the impact engine consumes", () => {
+    const offer = searched(101, "2026-09-05T17:50:00+08:00", "2026-09-05T20:10:00+08:00");
+    const result = verificationToEvent({
+      offer: { ...offer, pricePerTraveller: usd(20960), evidenceState: "PRICE_CHANGED" },
+      unchanged: false,
+      // The two real sandbox fares, in exact minor units.
+      previousPrice: usd(10129),
+    });
+
+    expect(result.kind).toBe("EVENT");
+    if (result.kind !== "EVENT") return;
+    if (result.event.type !== "OFFER_PRICE_CHANGED") throw new Error("wrong event");
+    /**
+     * The event carries the offer id and both totals, which is exactly what
+     * `analyseImpact` needs to decide which wave moved -- no Atlas field, no
+     * provider name, nothing to translate.
+     */
+    expect(result.event.offerId).toBe(offer.id);
+    expect(result.event.previousPrice.amountMinor).toBe(10129);
+    expect(result.event.newPrice.amountMinor).toBe(20960);
+    expect(result.event.newPrice.currency as string).toBe("USD");
+  });
+
+  it("Z. counts preservation against OLD decisions only", () => {
+    /**
+     * The denominator is preserved + changed + removed. Decisions ADDED by a
+     * repair are excluded on purpose: counting them would make a repair that
+     * raises new questions look like it preserved a smaller share of the plan,
+     * which punishes the system for being thorough. 18 of 20 old decisions is
+     * 90%, not 18 of 24.
+     */
+    const preserved = decisionsPreserved({
+      preserved: Array.from({ length: 18 }, (_, i) => `p${String(i)}`),
+      changed: ["c1"],
+      removed: ["r1"],
+      added: ["a1", "a2", "a3", "a4"],
+    } as unknown as Parameters<typeof decisionsPreserved>[0]);
+
+    expect(preserved.oldCount).toBe(20);
+    expect(preserved.addedCount).toBe(4);
+    expect(preserved.preservedPercent).toBe(90);
   });
 });

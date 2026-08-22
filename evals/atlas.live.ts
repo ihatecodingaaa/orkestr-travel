@@ -30,8 +30,15 @@ import { report } from "./harness";
 const config = readAtlasConfig();
 const enabled = config.mode === "sandbox";
 
-/** Fictional. Far enough out that a sandbox route plausibly exists. */
-const ROUTE = { origin: "SIN", destination: "NRT", depart: "2026-11-17" };
+/**
+ * A route the Sandbox actually serves.
+ *
+ * Sandbox has a BOUNDED test dataset, which the earlier attempts established the
+ * hard way: SIN-NRT and KUL-SIN both returned INTERNAL_ERROR while HKG-MNL
+ * returned two offers. A valid IATA pair is not a supported one, and Atlas
+ * reports the difference as a provider error rather than a routing message.
+ */
+const ROUTE = { origin: "HKG", destination: "MNL", depart: "2026-09-05" };
 
 describe("Atlas sandbox", () => {
   it("reports configuration before contacting anybody", () => {
@@ -137,7 +144,9 @@ describe("Atlas sandbox", () => {
         route: `${offer.originCode} to ${offer.destinationCode}`,
         segments: String(offer.segments.length),
         stops: String(offer.stops),
-        carrier: offer.segments.map((s) => `${s.carrierCode}${s.flightNumber}`).join(" + "),
+        // Atlas's flight_number already carries the carrier prefix ("UO534"),
+        // so concatenating the two produced "UOUO534" in the first real run.
+        flights: offer.segments.map((s) => s.flightNumber).join(" + "),
         departure: offer.departureAt,
         arrival: offer.arrivalAt,
         durationMinutes: String(offer.totalDurationMinutes),
