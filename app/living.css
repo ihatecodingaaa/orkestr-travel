@@ -87,28 +87,34 @@
 
 .hero-trip {
   position: relative;
-  border-radius: var(--radius);
-  padding: clamp(1.5rem, 5vw, 3rem);
   overflow: hidden;
+  padding: clamp(1.75rem, 5vw, 3.25rem);
+  border-radius: var(--radius);
   color: #fff;
-  /*
-    A destination identity built from gradients and shape rather than a remote
-    image. No network dependency, nothing to break, nothing licensed from
-    anybody -- and it still reads as somewhere rather than as a header.
-  */
   background:
     radial-gradient(120% 90% at 88% 8%, rgba(255, 255, 255, 0.22) 0%, transparent 55%),
     radial-gradient(80% 70% at 8% 100%, rgba(255, 255, 255, 0.14) 0%, transparent 60%),
-    linear-gradient(135deg, #17384a 0%, #2c5468 45%, #b0451f 140%);
+    linear-gradient(135deg, var(--hero-deep, #17384a) 0%, var(--hero-mid, #2c5468) 48%,
+      var(--hero-warm, #b0451f) 145%);
 }
-
 .hero-trip::after {
-  /* A horizon line. Suggests distance without pretending to be a photograph. */
   content: "";
   position: absolute;
-  inset: auto 0 -40% 0;
+  inset: auto 0 -40%;
   height: 70%;
-  background: radial-gradient(60% 100% at 50% 0%, rgba(255, 255, 255, 0.1), transparent 70%);
+  pointer-events: none;
+  background: radial-gradient(60% 100% at 50% 0, rgba(255, 255, 255, 0.1), transparent 70%);
+}
+
+/* Drawn, not photographed: a map grid and a route with two stops. No remote
+   image host, no licensing question, about two kilobytes, and it works
+   offline. Decorative only -- it carries no meaning to lose. */
+.hero-art {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  color: rgba(255, 255, 255, 0.16);
   pointer-events: none;
 }
 
@@ -135,13 +141,31 @@
   gap: 0.4rem;
   flex-wrap: wrap;
 }
-.avatar-stack {
+/* Scoped to the hero. Unscoped, these white-on-white circles were reused on
+   the light travel-group cards and rendered as faint clipped rings. */
+.hero-trip .avatar-stack {
   border: 2px solid rgba(255, 255, 255, 0.85);
   background: rgba(255, 255, 255, 0.16);
   color: #fff;
+}
+.avatar-stack {
   width: 2.1rem;
   height: 2.1rem;
   font-size: 0.8rem;
+}
+
+/* Overlapping faces on a light surface. */
+.face-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.face-row .avatar {
+  margin-right: -0.35rem;
+  border: 2px solid var(--paper-raised);
+}
+.face-row .avatar:last-child {
+  margin-right: 0;
 }
 .hero-trip .faint {
   color: rgba(255, 255, 255, 0.85);
@@ -191,6 +215,11 @@
   outline: none;
 }
 
+.ask-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
 .ask-reply {
   padding: 0.9rem 1.1rem;
   border-radius: var(--radius-sm);
@@ -300,28 +329,199 @@
   display: none;
 }
 
+/* ---------------------------------------------------------------- explore */
+
+/*
+   Discovery first. The screen used to open on a form; the form is now a button.
+   Variety here is deliberate: a featured place, a strip of what the group keeps
+   saving, then a grid. Six identical white rectangles is a spreadsheet.
+*/
+
+.explore-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: flex-end;
+  justify-content: space-between;
+}
+.explore-head h2 {
+  margin: 0;
+}
+
+/* Section labels are sans and small. The serif is for the destination and for
+   moments, not for every heading on the page. */
+.strip-title {
+  font-family: var(--font);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  margin: 0;
+}
+
+.strip-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem var(--space-2);
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+/* Stated once for the group, not copied onto every card. */
+.caution-note {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--tone-pending);
+}
+.caution-note span {
+  font-weight: 700;
+}
+
+.favourites {
+  display: grid;
+  gap: 0.6rem;
+}
+.favourite-strip {
+  list-style: none;
+  margin: 0;
+  padding: 0 0 0.3rem;
+  display: flex;
+  gap: 0.6rem;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+.favourite {
+  flex: 0 0 14rem;
+  display: grid;
+  gap: 0.3rem;
+  align-content: start;
+  padding: 0.85rem 1rem;
+  border-radius: var(--radius-sm);
+  background: var(--paper-raised);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--ink-faint);
+}
+.favourite-cat {
+  font-size: 0.7rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+/* The lead place. Same data and same actions as the small cards. */
+.featured {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--space-2);
+  align-items: start;
+  padding: var(--space-3);
+  border-radius: var(--radius);
+  background: var(--paper-raised);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow);
+}
+.featured-mark {
+  display: grid;
+  place-items: center;
+  width: 3rem;
+  height: 3rem;
+  border-radius: var(--radius-sm);
+  background: var(--paper-sunken);
+  color: var(--ink-faint);
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+}
+.featured-body {
+  display: grid;
+  gap: 0.4rem;
+  min-width: 0;
+}
+.featured h4 {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  margin: 0;
+}
+.featured .savers {
+  grid-column: 1 / -1;
+}
+
+.featured.cat-food .featured-mark {
+  background: color-mix(in srgb, var(--cat-food) 12%, transparent);
+  color: var(--cat-food);
+}
+.featured.cat-shopping .featured-mark {
+  background: color-mix(in srgb, var(--cat-shopping) 12%, transparent);
+  color: var(--cat-shopping);
+}
+.featured.cat-culture .featured-mark {
+  background: color-mix(in srgb, var(--cat-culture) 12%, transparent);
+  color: var(--cat-culture);
+}
+.featured.cat-night .featured-mark {
+  background: color-mix(in srgb, var(--cat-night) 12%, transparent);
+  color: var(--cat-night);
+}
+.featured.cat-nature .featured-mark {
+  background: color-mix(in srgb, var(--cat-nature) 12%, transparent);
+  color: var(--cat-nature);
+}
+.featured.cat-fun .featured-mark {
+  background: color-mix(in srgb, var(--cat-fun) 12%, transparent);
+  color: var(--cat-fun);
+}
+.featured.cat-relax .featured-mark {
+  background: color-mix(in srgb, var(--cat-relax) 12%, transparent);
+  color: var(--cat-relax);
+}
+
+/* Saves as faces. Social, and still just a count underneath. */
+.savers {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+}
+.savers-faces {
+  display: flex;
+}
+.savers-faces .avatar {
+  margin-right: -0.4rem;
+  border: 2px solid var(--paper-raised);
+}
+.savers-faces .avatar:last-child {
+  margin-right: 0.35rem;
+}
+
 .idea-grid {
   list-style: none;
   margin: 0;
   padding: 0;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr));
   gap: var(--space-2);
+  grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr));
 }
-
 .idea-card {
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
+  gap: 0.45rem;
   padding: 1.1rem 1.2rem;
   border-radius: var(--radius);
   background: var(--paper-raised);
   border: 1px solid var(--line);
   border-top: 3px solid var(--ink-faint);
+  transition: box-shadow 140ms ease, transform 140ms ease;
 }
-.idea-card h3 {
+.idea-card:hover {
+  box-shadow: var(--shadow);
+  transform: translateY(-2px);
+}
+.idea-card h4 {
   margin: 0;
-  font-size: 1.1rem;
+  font-family: var(--font);
+  font-size: 1.05rem;
+  font-weight: 600;
+  line-height: 1.3;
 }
 .idea-card p {
   margin: 0;
@@ -349,13 +549,35 @@
   border-top-color: var(--cat-relax);
 }
 
+.favourite.cat-food {
+  border-left-color: var(--cat-food);
+}
+.favourite.cat-shopping {
+  border-left-color: var(--cat-shopping);
+}
+.favourite.cat-culture {
+  border-left-color: var(--cat-culture);
+}
+.favourite.cat-night {
+  border-left-color: var(--cat-night);
+}
+.favourite.cat-nature {
+  border-left-color: var(--cat-nature);
+}
+.favourite.cat-fun {
+  border-left-color: var(--cat-fun);
+}
+.favourite.cat-relax {
+  border-left-color: var(--cat-relax);
+}
+
 .idea-top {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  font-size: 0.75rem;
-  text-transform: uppercase;
+  justify-content: space-between;
+  font-size: 0.72rem;
   letter-spacing: 0.05em;
+  text-transform: uppercase;
   color: var(--ink-faint);
 }
 .idea-saves {
@@ -364,15 +586,15 @@
 
 .fit-list {
   list-style: none;
-  margin: 0.3rem 0 0;
+  margin: 0.2rem 0 0;
   padding: 0;
   display: grid;
   gap: 0.2rem;
-  font-size: 0.88rem;
+  font-size: 0.86rem;
 }
 .fit-list li {
-  padding-left: 1.2rem;
   position: relative;
+  padding-left: 1.2rem;
 }
 .fit-yes::before {
   content: "✓";
@@ -384,13 +606,13 @@
   content: "?";
   position: absolute;
   left: 0;
-  color: var(--tone-pending);
   font-weight: 700;
+  color: var(--tone-pending);
 }
 
 .source-note {
   margin-top: auto;
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   color: var(--ink-faint);
 }
 
@@ -408,87 +630,218 @@
   color: var(--brand);
 }
 
-.ranked {
-  margin: 0;
-  padding-left: 1.2rem;
-}
-.ranked li {
-  padding: 0.15rem 0;
-}
+/* ------------------------------------------------------------------ plan */
 
-/* ---------------------------------------------------------------- days */
+/*
+   A trip is long; a day is what somebody plans. The strip carries the whole
+   trip, the panel carries one day, and only the panel is ever full height.
+*/
 
-.days {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: grid;
-  gap: var(--space-3);
-}
-
-.day {
-  display: grid;
-  gap: 0.6rem;
-}
-.day-head {
+.plan-start {
   display: flex;
-  align-items: baseline;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-3);
+  border-radius: var(--radius);
+  background: linear-gradient(135deg, var(--sky-soft), var(--brand-soft));
+  border: 1px solid var(--brand-line);
+}
+.plan-start h2 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+}
+
+.day-strip {
+  display: flex;
+  gap: 0.4rem;
+  overflow-x: auto;
+  padding: 0.25rem 0.1rem 0.6rem;
+  scrollbar-width: thin;
+  scroll-snap-type: x proximity;
+}
+
+.day-chip {
+  flex: 0 0 auto;
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 0.1rem;
+  min-width: 3.4rem;
+  padding: 0.5rem 0.4rem 0.7rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--line);
+  background: var(--paper-raised);
+  font: inherit;
+  color: var(--ink-soft);
+  cursor: pointer;
+  scroll-snap-align: start;
+  transition: border-color 120ms ease, background 120ms ease, transform 120ms ease;
+}
+.day-chip:hover {
+  border-color: var(--brand-line);
+  transform: translateY(-1px);
+}
+.day-chip[aria-current="date"] {
+  border-color: var(--brand);
+  background: var(--brand-soft);
+  color: var(--ink);
+  box-shadow: inset 0 0 0 1px var(--brand);
+}
+
+.day-chip-weekday {
+  font-size: 0.68rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.day-chip-number {
+  font-size: 1.15rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  color: var(--ink);
+}
+
+/* Fullness as a dot. Never the only signal -- the button also carries a
+   visually hidden label, so this survives greyscale and colour blindness. */
+.day-chip-state {
+  position: absolute;
+  bottom: 0.32rem;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--line-strong);
+}
+.day-chip.state-light .day-chip-state {
+  background: var(--sky);
+}
+.day-chip.state-planned .day-chip-state {
+  background: var(--cat-nature);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--cat-nature) 22%, transparent);
+}
+
+.day-chip-mark {
+  position: absolute;
+  top: 0.15rem;
+  right: 0.25rem;
+  font-size: 0.5rem;
+  color: var(--brand);
+}
+
+.day-panel {
+  display: grid;
+  gap: var(--space-2);
+}
+.day-panel-head {
+  display: flex;
+  flex-wrap: wrap;
   gap: 0.75rem;
-  padding-bottom: 0.4rem;
+  align-items: baseline;
+  justify-content: space-between;
+  padding-bottom: 0.5rem;
   border-bottom: 2px solid var(--line);
 }
-.day-head h3 {
+.day-panel-head h3 {
   margin: 0;
-  font-size: 1.15rem;
+  font-family: var(--font-display);
+  font-size: 1.35rem;
 }
-.day-flag {
-  font-size: 0.8rem;
-  color: var(--tone-pending);
+.day-panel-head p {
+  margin: 0.15rem 0 0;
 }
 
-.day-items {
+/* A day as a journey: one rule down the left, times hanging off it.
+
+   Named day-timeline, not timeline: the Stage 1 demo screens style `.timeline
+   li` at specificity (0,1,1), which silently beat `.plan-row` and forced every
+   row back into a 4.5rem first column -- one word per line. Two different
+   things had the same name. */
+.day-timeline {
   list-style: none;
   margin: 0;
-  padding: 0;
+  padding: 0 0 0 0.2rem;
   display: grid;
-  gap: 0.4rem;
+  gap: 0;
+  position: relative;
 }
 
 .plan-row {
-  display: grid;
-  grid-template-columns: 4rem 1fr auto;
-  gap: 0.75rem;
-  align-items: start;
-  padding: 0.7rem 0.9rem;
-  border-radius: var(--radius-sm);
-  background: var(--paper-raised);
-  border-left: 3px solid var(--line-strong);
+  position: relative;
+  /* Flex, not grid. The time is absolutely positioned into the gutter, which
+     left the row with two in-flow children and a track sizing that kept
+     collapsing the title to one word per line. Two children in a row is what
+     flex is for, and `flex: 1 1 auto` with `min-width: 0` says exactly what is
+     meant: the body takes the room, the control takes what it needs. */
+  display: flex;
+  gap: 0.9rem;
+  align-items: flex-start;
+  padding: 0.55rem 0.6rem 0.55rem 0;
+  margin-left: 3.6rem;
+  border-left: 2px solid var(--line);
+  padding-left: 1.4rem;
+  background: none;
+  border-radius: 0;
 }
-.plan-row.kind-flight {
-  border-left-color: var(--sky);
+.plan-row + .plan-row {
+  border-top: none;
 }
-.plan-row.kind-food {
-  border-left-color: var(--cat-food);
+/* The dot on the rule. Kind is carried by its colour AND by the row's label. */
+.plan-row::before {
+  content: "";
+  position: absolute;
+  left: -6px;
+  top: 0.85rem;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--paper);
+  border: 2px solid var(--line-strong);
 }
-.plan-row.kind-activity {
-  border-left-color: var(--cat-culture);
+.plan-row .plan-time {
+  position: absolute;
+  left: -3.6rem;
+  top: 0.55rem;
+  width: 3.2rem;
+  text-align: right;
 }
-.plan-row.kind-reunion {
-  border-left-color: var(--brand);
-  background: var(--brand-soft);
+
+.plan-row.kind-flight::before {
+  border-color: var(--sky);
 }
-.plan-row.kind-stay {
-  border-left-color: var(--cat-relax);
+.plan-row.kind-food::before {
+  border-color: var(--cat-food);
+}
+.plan-row.kind-activity::before {
+  border-color: var(--cat-culture);
+}
+.plan-row.kind-transport::before {
+  border-color: var(--cat-relax);
+}
+.plan-row.kind-stay::before {
+  border-color: var(--cat-relax);
+}
+.plan-row.kind-reunion::before {
+  border-color: var(--brand);
+  background: var(--brand);
+  box-shadow: 0 0 0 3px var(--brand-soft);
+}
+.plan-row.kind-reunion .plan-title strong {
+  color: var(--brand);
+}
+.plan-row.status-fixed::before {
+  background: var(--line-strong);
 }
 
 .plan-time {
   font-variant-numeric: tabular-nums;
-  color: var(--ink-soft);
-  font-size: 0.9rem;
-  padding-top: 0.1rem;
+  color: var(--ink-faint);
+  font-size: 0.85rem;
 }
 .plan-body {
   display: flex;
+  flex: 1 1 auto;
   flex-direction: column;
   gap: 0.15rem;
   min-width: 0;
@@ -499,8 +852,20 @@
   gap: 0.4rem;
   flex-wrap: wrap;
 }
+
+/* Editing controls stay out of the way until asked for. */
+.plan-row .linkish {
+  flex: 0 0 auto;
+  opacity: 0;
+  transition: opacity 120ms ease;
+}
+.plan-row:hover .linkish,
+.plan-row:focus-within .linkish {
+  opacity: 1;
+}
+
 .plan-edit {
-  grid-column: 1 / -1;
+  flex: 1 0 100%;
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
@@ -510,13 +875,22 @@
   border-top: 1px dashed var(--line);
 }
 
-.day-empty {
+/* An open day is room, not a gap. */
+.open-day {
   display: grid;
-  gap: 0.6rem;
-  padding: 0.9rem 1rem;
-  border: 1px dashed var(--line-strong);
-  border-radius: var(--radius-sm);
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border-radius: var(--radius);
   background: var(--paper-sunken);
+  border: 1px solid var(--line);
+}
+.open-day h4 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+}
+.open-day p {
+  margin: 0;
 }
 
 .suggestions {
@@ -533,16 +907,18 @@
   align-items: center;
   width: 100%;
   text-align: left;
-  padding: 0.55rem 0.7rem;
+  padding: 0.65rem 0.8rem;
   border-radius: var(--radius-sm);
   border: 1px solid var(--line);
   background: var(--paper-raised);
   font: inherit;
   cursor: pointer;
+  transition: border-color 120ms ease, background 120ms ease, transform 120ms ease;
 }
 .suggestion:hover {
   border-color: var(--brand-line);
   background: var(--brand-soft);
+  transform: translateX(2px);
 }
 .suggestion-time {
   font-variant-numeric: tabular-nums;
@@ -552,6 +928,24 @@
 .suggestion-add {
   color: var(--brand);
   font-size: 1.2rem;
+}
+
+/* Confirmation that something landed. Brief, and never a fake delay. */
+.flash {
+  margin: 0;
+  padding: 0.5rem 0.8rem;
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--cat-nature) 10%, var(--paper-raised));
+  border: 1px solid color-mix(in srgb, var(--cat-nature) 30%, transparent);
+  color: var(--cat-nature);
+  font-size: 0.9rem;
+  animation: flash-in 180ms ease-out;
+}
+@keyframes flash-in {
+  from {
+    opacity: 0;
+    transform: translateY(-3px);
+  }
 }
 
 /* --------------------------------------------------------------- group */
@@ -580,8 +974,18 @@
 .person-card p {
   margin: 0;
 }
+/* The tag and the sentence, as a row that indents its own wrap rather than
+   letting the second line slide back under the badge. */
 .requirement {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.4rem;
   font-size: 0.9rem;
+  line-height: 1.4;
+}
+.requirement .tag {
+  flex: 0 0 auto;
+  margin-top: 0.1rem;
 }
 .requirement.private {
   color: var(--ink-soft);
@@ -729,22 +1133,87 @@
 
 /* -------------------------------------------------------------- subnav */
 
-.trip-subnav {
+/* One navigation row, plus a menu. The second row is gone -- it read as
+   leftover utilities and cost a line of vertical space before the trip. */
+
+.trip-nav-row {
   display: flex;
-  gap: 1rem;
-  flex-wrap: wrap;
-  font-size: 0.9rem;
+  align-items: stretch;
+  gap: 0.5rem;
+  border-bottom: 1px solid var(--line);
 }
-.trip-subtab {
-  color: var(--ink-soft);
-  text-decoration: none;
+.trip-nav-row .trip-nav {
+  flex: 1 1 auto;
+  border-bottom: none;
+  min-width: 0;
 }
-.trip-subtab[aria-current="page"] {
-  color: var(--brand);
-  text-decoration: underline;
+
+.trip-more {
+  position: relative;
+  flex: 0 0 auto;
 }
-.trip-subtab:hover {
+.trip-more > summary {
+  list-style: none;
+  cursor: pointer;
+  user-select: none;
+}
+.trip-more > summary::-webkit-details-marker {
+  display: none;
+}
+.trip-tab-current {
   color: var(--ink);
+  border-bottom-color: var(--brand);
+}
+
+.trip-more-menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 0.35rem);
+  z-index: 20;
+  min-width: 12rem;
+  display: grid;
+  padding: 0.35rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--line);
+  background: var(--paper-raised);
+  box-shadow: var(--shadow);
+}
+.trip-more-menu a,
+.trip-more-menu button {
+  text-align: left;
+  border: 0;
+  background: none;
+  font: inherit;
+  cursor: pointer;
+}
+.trip-more-menu a {
+  padding: 0.55rem 0.7rem;
+  border-radius: 6px;
+  text-decoration: none;
+  color: var(--ink-soft);
+  font-size: 0.95rem;
+}
+.trip-more-menu button {
+  padding: 0.55rem 0.7rem;
+  border-radius: 6px;
+  color: var(--ink-soft);
+  font-size: 0.95rem;
+}
+.trip-more-menu button:hover {
+  background: var(--paper-sunken);
+  color: var(--ink);
+}
+.trip-more-menu button[aria-current="page"] {
+  color: var(--brand);
+  background: var(--brand-soft);
+}
+.trip-more-menu a:hover {
+  background: var(--paper-sunken);
+  color: var(--ink);
+}
+.trip-more-menu a[aria-current="page"] {
+  color: var(--brand);
+  background: var(--brand-soft);
 }
 
 .trip-nav button.trip-tab {
@@ -762,12 +1231,21 @@
 /* -------------------------------------------------------------- mobile */
 
 @media (max-width: 640px) {
+  /* The timeline keeps its rule on mobile but gives up the time gutter. */
   .plan-row {
-    grid-template-columns: 3.2rem 1fr;
+    flex-wrap: wrap;
+    margin-left: 0.4rem;
+    padding-left: 1rem;
   }
-  .plan-row > .linkish {
-    grid-column: 2;
-    justify-self: start;
+  .plan-row .plan-time {
+    position: static;
+    width: auto;
+    text-align: left;
+    flex: 1 0 100%;
+    order: -1;
+  }
+  .plan-row .linkish {
+    opacity: 1;
   }
   .suggestion {
     grid-template-columns: 3rem 1fr auto;
@@ -786,10 +1264,153 @@
   .stat-row {
     grid-template-columns: repeat(2, 1fr);
   }
+
+  /* One row, thumb-sized, and the trip is visible without scrolling past a
+     stack of navigation. The second row is gone; More holds the rest. */
+  .trip-nav-row {
+    gap: 0;
+  }
+  .trip-tab {
+    padding: 0.7rem 0.7rem;
+    font-size: 0.9rem;
+  }
+  .trip-more-menu {
+    min-width: 11rem;
+  }
+
+  .explore-head,
+  .plan-start,
+  .day-panel-head {
+    align-items: stretch;
+  }
+  .featured {
+    grid-template-columns: 1fr;
+  }
+  .favourite {
+    flex-basis: 12rem;
+  }
+  .whatif-invite {
+    align-items: flex-start;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .milestone {
     animation: none;
+  }
+}
+
+/* --------------------------------------------------------------- what if */
+
+/* Promoted out of the overflow menu: showing what a change would break, and
+   how much it would not, is the thing a shared document cannot do. */
+.whatif-invite {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 1.1rem 1.35rem;
+  border-radius: var(--radius);
+  text-decoration: none;
+  color: inherit;
+  background: var(--sky-soft);
+  border: 1px solid #cfe3e9;
+  transition: border-color 140ms ease, transform 140ms ease;
+}
+.whatif-invite:hover {
+  border-color: var(--sky);
+  transform: translateY(-1px);
+}
+.whatif-invite > span {
+  display: grid;
+  gap: 0.15rem;
+}
+.whatif-mark {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 2.4rem;
+  height: 2.4rem;
+  border-radius: 999px;
+  background: #fff;
+  color: var(--sky);
+  font-size: 1.2rem;
+}
+
+/* A zero is only worth a tile when it is good news. */
+.stat-clear {
+  background: var(--tone-verified-bg);
+}
+.stat-word {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+}
+
+/* ------------------------------------------------------- travel groups */
+
+/* These carried only a top border and nothing else, so they read as loose
+   text with a coloured line above it rather than as two distinct groups. */
+.group-card {
+  display: grid;
+  gap: 0.35rem;
+  align-content: start;
+  padding: 1.1rem 1.25rem;
+  border-radius: var(--radius);
+  background: var(--paper-raised);
+  border: 1px solid var(--line);
+  border-top: 3px solid var(--wave-a);
+}
+.group-card h4 {
+  margin: 0;
+  font-family: var(--font);
+  font-size: 1rem;
+  font-weight: 600;
+}
+.group-card p {
+  margin: 0;
+}
+.group-card .reason {
+  margin-top: 0.5rem;
+}
+
+/* People as people. The strip used to be four identical white boxes. */
+.person-chip {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+  padding: 0.9rem 1rem;
+  border-radius: var(--radius-sm);
+  background: var(--paper-raised);
+  border: 1px solid var(--line);
+}
+.person-chip .status-ready {
+  color: var(--tone-verified);
+}
+.person-chip .status-needs_dates,
+.person-chip .status-not_replied {
+  color: var(--tone-pending);
+}
+
+/* A list of questions, not a bulleted list. `ul.stack` kept the browser's
+   40px indent, so every decision card sat further right than the page. */
+.decision-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.5rem;
+}
+
+/* Below ~430px all six destinations have to fit without a swipe. Inbox is the
+   screen that tells somebody they are needed; discovering it by scrolling a
+   nav sideways is the same as not having it. */
+@media (max-width: 430px) {
+  .trip-tab {
+    padding: 0.65rem 0.4rem;
+    font-size: 0.82rem;
+  }
+  .tab-count {
+    margin-left: 0.2rem;
+    min-width: 1.05rem;
+    font-size: 0.7rem;
   }
 }

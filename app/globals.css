@@ -277,14 +277,17 @@ a { color: inherit; }
 /* ---------- change diff ---------- */
 .change { display: flex; gap: 0.75rem; align-items: baseline; padding: 0.6rem 0; }
 .change + .change { border-top: 1px solid var(--paper-sunken); }
-.chip {
+/* A STATE LABEL, not a control. Named `state-chip` because `.chip` is the
+   product's interactive filter/suggestion button, and one class doing both
+   meant the uppercase from this rule shouted every suggested question. */
+.state-chip {
   font-size: 0.72rem; font-weight: 700; letter-spacing: 0.06em;
   padding: 0.15rem 0.5rem; border-radius: 5px; text-transform: uppercase; white-space: nowrap;
 }
-.chip-UNCHANGED { background: var(--tone-neutral-bg); color: var(--tone-neutral); }
-.chip-CHANGED { background: var(--accent-soft); color: var(--accent); }
-.chip-ADDED { background: var(--tone-verified-bg); color: var(--tone-verified); }
-.chip-NEEDS_REVERIFICATION { background: var(--tone-pending-bg); color: var(--tone-pending); }
+.state-chip-UNCHANGED { background: var(--tone-neutral-bg); color: var(--tone-neutral); }
+.state-chip-CHANGED { background: var(--accent-soft); color: var(--accent); }
+.state-chip-ADDED { background: var(--tone-verified-bg); color: var(--tone-verified); }
+.state-chip-NEEDS_REVERIFICATION { background: var(--tone-pending-bg); color: var(--tone-pending); }
 
 .preservation { background: var(--paper-sunken); border-radius: var(--radius); padding: 1.1rem 1.25rem; }
 .preservation-primary { font-size: 1.15rem; font-weight: 600; }

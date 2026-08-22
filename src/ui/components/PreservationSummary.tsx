@@ -39,7 +39,7 @@ export function ChangeList({ rows }: { readonly rows: readonly ChangeRowModel[] 
       <h3>What changed</h3>
       {rows.map((row, index) => (
         <div className="change" key={index}>
-          <span className={`chip chip-${row.state}`}>{STATE_WORDING[row.state]}</span>
+          <span className={`state-chip state-chip-${row.state}`}>{STATE_WORDING[row.state]}</span>
           <div>
             <strong>{row.label}</strong>
             {row.detail !== undefined && <p className="faint">{row.detail}</p>}

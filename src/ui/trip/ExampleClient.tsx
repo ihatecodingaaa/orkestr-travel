@@ -31,6 +31,10 @@ const TABS = [
   { key: "plan", label: "Plan" },
   { key: "group", label: "Group" },
   { key: "inbox", label: "Inbox" },
+] as const;
+
+/** Behind More, exactly as a real trip has them. */
+const SECONDARY = [
   { key: "whatif", label: "What if?" },
   { key: "money", label: "Money" },
   { key: "activity", label: "Activity" },
@@ -40,7 +44,10 @@ const TABS = [
  * "people" is reachable but not a tab. The Group and Inbox screens link to it
  * for editing; it does not need a ninth button competing with the six verbs.
  */
-export type ExampleSection = (typeof TABS)[number]["key"] | "people";
+export type ExampleSection =
+  | (typeof TABS)[number]["key"]
+  | (typeof SECONDARY)[number]["key"]
+  | "people";
 
 export function ExampleClient({
   initialTab = "overview",
@@ -51,6 +58,7 @@ export function ExampleClient({
   const [trip, setTrip] = useState<ConsumerTrip>(initial);
   const [tab, setTab] = useState<ExampleSection>(initialTab);
   const [viewerId, setViewerId] = useState("ex-mum");
+  const [moreOpen, setMoreOpen] = useState(false);
 
   const base = "/examples/tokyo-family";
 
@@ -89,19 +97,55 @@ export function ExampleClient({
         </section>
       )}
 
-      <nav className="trip-nav" aria-label="Example sections">
-        {TABS.map((entry) => (
-          <button
-            key={entry.key}
-            type="button"
-            className="trip-tab"
-            onClick={() => setTab(entry.key)}
-            {...(tab === entry.key ? { "aria-current": "page" as const } : {})}
+      <div className="trip-nav-row">
+        <nav className="trip-nav" aria-label="Example sections">
+          {TABS.map((entry) => (
+            <button
+              key={entry.key}
+              type="button"
+              className="trip-tab"
+              onClick={() => {
+                setTab(entry.key);
+              }}
+              {...(tab === entry.key ? { "aria-current": "page" as const } : {})}
+            >
+              {entry.label}
+            </button>
+          ))}
+        </nav>
+
+        <details
+          className="trip-more"
+          open={moreOpen}
+          onToggle={(event) => {
+            setMoreOpen((event.currentTarget as HTMLDetailsElement).open);
+          }}
+        >
+          <summary
+            className={
+              SECONDARY.some((entry) => entry.key === tab) ? "trip-tab trip-tab-current" : "trip-tab"
+            }
           >
-            {entry.label}
-          </button>
-        ))}
-      </nav>
+            More
+            <span aria-hidden="true"> ▾</span>
+          </summary>
+          <nav className="trip-more-menu" aria-label="More example sections">
+            {SECONDARY.map((entry) => (
+              <button
+                key={entry.key}
+                type="button"
+                onClick={() => {
+                  setTab(entry.key);
+                  setMoreOpen(false);
+                }}
+                {...(tab === entry.key ? { "aria-current": "page" as const } : {})}
+              >
+                {entry.label}
+              </button>
+            ))}
+          </nav>
+        </details>
+      </div>
 
       {tab === "overview" && <Overview trip={trip} base={base} save={setTrip} />}
       {tab === "explore" && <Explore trip={trip} save={setTrip} viewerId={viewerId} />}

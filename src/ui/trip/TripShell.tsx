@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import type { ConsumerTrip } from "@/domain/consumerTrip";
 import { countReadiness, outstanding } from "@/core/trips/pulse";
@@ -25,6 +26,11 @@ import { formatRange } from "./format";
  * backlog rather than a short list of things waiting on somebody. "People"
  * became "Group" because a group trip is a group before it is a set of records.
  * Activity moved out of the primary row: it is worth having and is not a task.
+ *
+ * FIVE, and then a menu. What-if, Money and Activity used to sit on a second
+ * row under the first, which read as leftover utilities and cost a whole line
+ * of vertical space on a phone before anything about the trip appeared. Five
+ * destinations fit one row at 390px; the rest live behind More.
  */
 const TABS = [
   { key: "overview", label: "Overview", suffix: "" },
@@ -68,12 +74,40 @@ export function TripShell({
         </div>
       </header>
 
+      <TripNav tripId={trip.id} current={current} needs={needs} />
+
+      {children}
+    </div>
+  );
+}
+
+/**
+ * One row, plus a menu.
+ *
+ * The menu is a details/summary rather than a scripted dropdown: it opens
+ * without JavaScript, closes on Escape for free, and keeps its contents in the
+ * document for a screen reader to find.
+ */
+function TripNav({
+  tripId,
+  current,
+  needs,
+}: {
+  readonly tripId: string;
+  readonly current: string;
+  readonly needs: number;
+}) {
+  const [open, setOpen] = useState(false);
+  const inMore = SECONDARY.some((tab) => tab.key === current);
+
+  return (
+    <div className="trip-nav-row">
       <nav className="trip-nav" aria-label="Trip sections">
         {TABS.map((tab) => (
           <Link
             key={tab.key}
             className="trip-tab"
-            href={`/trip/${trip.id}${tab.suffix}`}
+            href={`/trip/${tripId}${tab.suffix}`}
             {...(current === tab.key ? { "aria-current": "page" as const } : {})}
           >
             {tab.label}
@@ -86,20 +120,35 @@ export function TripShell({
         ))}
       </nav>
 
-      <nav className="trip-subnav" aria-label="More">
-        {SECONDARY.map((tab) => (
-          <Link
-            key={tab.key}
-            className="trip-subtab"
-            href={`/trip/${trip.id}${tab.suffix}`}
-            {...(current === tab.key ? { "aria-current": "page" as const } : {})}
-          >
-            {tab.label}
+      <details
+        className="trip-more"
+        open={open}
+        onToggle={(event) => {
+          setOpen((event.currentTarget as HTMLDetailsElement).open);
+        }}
+      >
+        <summary className={inMore ? "trip-tab trip-tab-current" : "trip-tab"}>
+          More
+          <span aria-hidden="true"> ▾</span>
+        </summary>
+        <nav className="trip-more-menu" aria-label="More trip sections">
+          {SECONDARY.map((tab) => (
+            <Link
+              key={tab.key}
+              href={`/trip/${tripId}${tab.suffix}`}
+              onClick={() => {
+                setOpen(false);
+              }}
+              {...(current === tab.key ? { "aria-current": "page" as const } : {})}
+            >
+              {tab.label}
+            </Link>
+          ))}
+          <Link href="/sources" onClick={() => { setOpen(false); }}>
+            How Orkestr works
           </Link>
-        ))}
-      </nav>
-
-      {children}
+        </nav>
+      </details>
     </div>
   );
 }
