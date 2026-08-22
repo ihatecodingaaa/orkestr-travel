@@ -1,148 +1,80 @@
 # Qoder Usage
 
-**Status:** `PLANNED` (Phase 11). **No Qoder activity has occurred. Every table
-below is an empty template.**
+**Status:** `PERFORMED` — one final hardening pass, 22 August 2026.
 
-Qoder is a real judging criterion. Claude is the main engineering agent, and
-Qoder must perform genuine, recorded work. Fabricating Qoder activity would be
-both dishonest and trivially detectable, so this document records only what has
-actually happened, which so far is nothing.
-
-## How to use this document
-
-When a Qoder stage is performed, fill in the corresponding table with what was
-actually run, what it found, and what changed as a result. Leave a stage empty
-until it happens. An empty stage is an accurate record; a plausible-looking
-invented one is not.
+This document records only what actually happened. An earlier version of this
+file was an honest empty template, because at that point nothing had happened;
+the tables below replace it with a real record.
 
 ---
 
-## Stage 1: Architecture and specification review
+## What Qoder did
 
 | Field | Record |
 | --- | --- |
-| Date performed | *not yet performed* |
-| Scope reviewed | |
-| Findings | |
-| Actions taken | |
-| Evidence location | |
+| Date performed | 22 August 2026 |
+| Mode | Spec-driven Quest generated the hardening specification; the audit continued in Qoder Agent mode |
+| Model | BYOK Alibaba Cloud Model Studio, Qwen-3.7-Max, after native Qoder credits were exhausted |
+| Scope | Runtime audit of the repair and impact path, exercising `/demo/agent` live |
+| Output | Local commit `e716ccd`, produced before independent review |
+| Files touched | `src/core/repair/impact.ts`, `src/core/repair/repair.ts`, `tests/impact.test.ts`, `tests/planRepair.test.ts` |
 
----
+## Defects Qoder found
 
-## Stage 2: Adversarial engine test generation
+**1. Impact descriptions were not capitalised.** `describeChange` returned
+lowercase sentences ("one wave changed…") which read wrongly beside the
+capitalised step notes in the audit trail. Fixed, with a regression test
+asserting every radius description begins with a capital letter.
 
-Target: the deterministic engines, especially boundary values in the feasibility
-and wave engines.
+**2. `NO_FEASIBLE_REPAIR` reported every wave as removed.** The repair path
+passed `previousPlan` into `analyseImpact` without a `newPlan`. Impact compares
+before against after, so an absent after with a present before made every wave
+look deleted — a *failed* repair claiming it had changed *everything*. On the
+hero screen at `HARD_BREACH` this showed both travel groups as affected.
 
-| Field | Record |
-| --- | --- |
-| Date performed | *not yet performed* |
-| Engines targeted | |
-| Tests generated | |
-| Defects found | |
-| Tests retained in the repository | |
+This was a genuine defect, found by exercising the running application, and it
+had survived every prior review.
 
----
+## What independent review changed afterwards
 
-## Stage 3: Browser and end-to-end QA
+Reviewed as commit `bc45132`. **Qoder's diagnosis was correct; its fix was
+incomplete.**
 
-| Field | Record |
-| --- | --- |
-| Date performed | *not yet performed* |
-| Flows tested | |
-| Defects found | |
-| Fixes applied | |
+Removing `previousPlan` stopped the phantom wave removals and is kept. But with
+no plans and no violations left to compare, the radius fell through to
+`NO_IMPACT`, whose description reads *"nothing in the plan depends on what
+changed"* — rendered directly beneath a headline of *"No arrangement works"*.
+Two contradictory sentences, and the reassuring one was false: two confirmed
+hard requirements were violated and the agreed plan was dead.
 
----
+One false claim had been swapped for another.
 
-## Stage 4: Final repository code review
+The correction passes the hard blockers into the impact analysis so the radius
+becomes `COMMITMENT_INVALID` — an existing concept that already outranks every
+other radius and already carries the right description. No new domain concept
+was introduced.
 
-| Field | Record |
-| --- | --- |
-| Date performed | *not yet performed* |
-| Scope | |
-| Findings by severity | |
-| Actions taken | |
+Qoder's regression test also asserted `radius === "NO_IMPACT"`, which froze one
+branch as though it were the general rule. Its wave-count assertion is the real
+regression and was kept; the radius assertions were replaced by a second test
+covering the case that actually reaches a screen.
 
----
+The capitalisation fix and its test were kept unchanged.
 
-## PLANNED WORK
+## What may and may not be claimed
 
-**Nothing below has been performed.** These are task briefs, written so that
-whoever runs a Qoder stage knows what it is for and what would count as a
-result. Each stays here, unfilled, until it actually happens; the tables above
-are where completed work is recorded.
+**True:**
 
-Deliberately no date, no finding and no accepted fix appears in this section.
+* Qoder performed a genuine final hardening pass in Spec-driven Quest and Agent
+  modes, using BYOK Model Studio Qwen-3.7-Max.
+* It exercised `/demo/agent` live.
+* It found two confirmed defects that prior review had missed, including one
+  that put a false claim on the hero screen.
+* It added regression tests and produced commit `e716ccd`.
 
-### A. Adversarial review of the deterministic invariants
+**Not true, and must never be claimed:**
 
-**Goal.** Attack the core engines' guarantees rather than read them.
-
-**Scope.** `src/core/feasibility/`, `src/core/waves/`, `src/core/compromise/`,
-`src/core/repair/`, `src/core/decisions/`.
-
-**Expected output.** Concrete counter-examples, or a statement that none was
-found, for each of: a hard constraint relaxed without approval; an `UNKNOWN`
-collapsing into `SATISFIED`; a must-travel-with pair separated; a wave ranking
-that is not a total order; a plan repair that changes more than it needed to; a
-Decisions Preserved figure inflated by its denominator; money compared
-inexactly; a group size assumed.
-
-**Acceptance.** Every counter-example is either reproduced as a failing test and
-fixed, or explained as not-a-defect with reasoning recorded here.
-
-### B. Model Studio integration security review
-
-**Goal.** Review the external boundary. **Only meaningful after live
-verification** — reviewing an unexercised adapter reviews an assumption.
-
-**Scope.** `src/adapters/`, `scripts/checkSecrets.mjs`, `scripts/preflight.mjs`,
-the server actions in `app/`.
-
-**Expected output.** Findings on: any path where a credential could reach a log,
-a client bundle or an error message; any path where `MODEL_STUDIO_MODE` could be
-bypassed; any way an unvalidated model response could reach the domain; SSRF
-gaps in `core/research/url.ts`; and whether the recorded/live distinction can be
-subverted.
-
-**Acceptance.** Every finding fixed or recorded with a reason for not fixing.
-
-### C. Browser QA of the hero flow
-
-**Goal.** Exercise the demo as a person, not as a test runner.
-
-**Scope.** `/`, `/demo`, `/demo/waves`, `/demo/journey`, `/demo/decisions`,
-`/demo/participant/[id]`, `/understand`, `/research`.
-
-**Expected output.** Anything that reads as more certain than it is; any private
-figure on a group surface; keyboard and screen-reader problems; layout failures
-at narrow widths; any place a fixture looks live.
-
-**Acceptance.** Honesty and accessibility defects fixed. Cosmetic findings
-recorded and triaged.
-
-### D. Atlas adapter contract review
-
-**Goal.** Check a real integration against real documentation.
-
-**Scope.** `AtlasFlightProvider` and its fixtures, once Phase 7 exists.
-
-**Expected output.** Any invented field, guessed status value or assumption not
-supported by the documentation; any vendor field escaping the boundary; any
-fixture that does not match a real recorded response.
-
-**Acceptance.** No unsupported assumption survives.
-
-### E. Final repository audit
-
-**Goal.** One pass over the whole repository before submission.
-
-**Scope.** Everything, including all Markdown.
-
-**Expected output.** Any document claiming a capability that does not exist; any
-stale test count or phase number; any `IMPLEMENTED` that has not been run; any
-remaining reference to the startup repository as if it were this one.
-
-**Acceptance.** `IMPLEMENTATION_STATUS.md` is true, and every other document
-agrees with it.
+* That Orkestr Travel was built with Qoder.
+* That Qoder produced a majority, or any stated percentage, of the work.
+* That Qoder designed the architecture — all of it predates this pass.
+* That Qoder's fixes shipped unmodified. One was corrected on review.

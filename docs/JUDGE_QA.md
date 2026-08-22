@@ -118,8 +118,11 @@ live-verified. It is on the `/demo/agent` architecture card and the home
 provenance board.
 
 **Where is Qoder used?**
-It is not. See `docs/JUDGING_RUBRIC_AUDIT.md` — this is a known scoring risk that
-has not been papered over.
+One final hardening pass. It exercised the running `/demo/agent` and found two
+real defects that prior review had missed — one of which put a false claim on
+the hero screen. It added regression tests. One of its two fixes was incomplete
+and was corrected afterwards on review. It did not build the architecture, and
+we do not claim it did. Full record in `docs/QODER_USAGE.md`.
 
 ---
 

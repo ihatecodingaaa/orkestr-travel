@@ -144,7 +144,7 @@ Target **2:45–2:55**. Hard limit 3:00.
 * **Atlas, live-verified**: sandbox search and offer verification against the
   real `atlas-flight` CLI, with the sandbox environment re-proven before every
   single call because Atlas defaults to production.
-* **1,146 automated tests across 55 files**, no network access required.
+* **1,150 automated tests across 55 files**, no network access required.
 * **Bounded agent**: one step-counting site, no recursion, and
   `STEP_LIMIT_REACHED` is a distinct terminal state that never becomes success.
 * **Postcondition checking**: a repair engine reporting success is not the same
@@ -169,8 +169,20 @@ from the account is treated as a capability, not an authorisation.
 
 ## Qoder usage
 
-**None.** See `docs/JUDGING_RUBRIC_AUDIT.md` — this is a known scoring risk and
-has not been papered over.
+One genuine final hardening pass, 22 August 2026. Spec-driven Quest generated
+the specification; the audit continued in Agent mode, running on BYOK Alibaba
+Cloud Model Studio (Qwen-3.7-Max) after native Qoder credits were exhausted.
+
+It exercised `/demo/agent` live and found two confirmed defects that prior
+review had missed — including one that made a failed repair report every travel
+group as affected. It added regression tests and produced commit `e716ccd`.
+
+One of the two fixes was incomplete and was corrected on independent review
+(`bc45132`). Full record, including what may and may not be claimed, in
+`docs/QODER_USAGE.md`.
+
+**Not claimed:** that this project was built with Qoder, or any percentage of
+it. The architecture predates this pass.
 
 ## Known limitations
 

@@ -58,7 +58,7 @@ together for the video.
 | Exact money | Integer minor units; a real float artifact in the live payload is pinned by test |
 | Bounded agent | One counting site; `STEP_LIMIT_REACHED` never becomes success |
 | False-success protection | Postconditions can contradict the engine's own status |
-| Test suite | **1,146 tests across 55 files**, no network required |
+| Test suite | **1,150 tests across 55 files**, no network required |
 | Runs with zero credentials | Verified against a production build; every route 200 |
 
 **Weakness.** No booking, no payment, no persistence, no deployment yet.
@@ -74,25 +74,39 @@ route came from a provider.
 
 ## Qoder — 20%
 
-### SCORING RISK — QODER EVIDENCE ABSENT
+**Qoder was used, once, for a genuine final hardening pass on 22 August 2026.**
+Full record in `docs/QODER_USAGE.md`.
 
-**Qoder was not used.** `docs/QODER_USAGE.md` is an honest empty template and has
-been since it was written.
+An earlier version of this audit said the evidence was absent and flagged it as
+the largest scoring exposure in the submission. That was true when written and
+is no longer true.
 
-On a 20% criterion this is the single largest scoring exposure in the submission.
+**What it actually did:**
 
-**What was NOT done, deliberately:** no fabricated commits, no invented
-screenshots, no backdated evidence, no Qoder branding added to compensate.
-Fabricating it would be dishonest and trivially detectable — a judge can read
-the git history.
+* Spec-driven Quest generated the hardening specification; the audit continued
+  in Agent mode.
+* Ran on BYOK Alibaba Cloud Model Studio (Qwen-3.7-Max) after native Qoder
+  credits were exhausted.
+* Exercised `/demo/agent` in a running browser.
+* Found **two confirmed defects** that every prior review had missed, including
+  one that put a false claim on the hero screen: a failed repair reported every
+  travel group as affected.
+* Added regression tests and produced commit `e716ccd`.
 
-**Founder decision required.** If there is time before submission, a genuine
-Qoder pass (an architecture review, or a real code review producing real
-changes) would convert an automatic zero into a real score. That is a founder
-call, and it must be actual work with actual recorded findings.
+**Honest qualification.** One of its two fixes was incomplete and was corrected
+on independent review (`bc45132`) — it removed a false "everything changed" and
+left behind a false "nothing happened". That is worth stating plainly: it makes
+the record credible, and finding a real defect on a live screen is the harder
+half of the work.
 
-**If it is not done:** say nothing about Qoder rather than implying use. An
-unanswered criterion scores zero; a fabricated one risks the whole submission.
+**Strength:** a real defect, in real running code, found by a tool doing what it
+claims to do — not a decorative integration.
+
+**Weakness:** one pass, late in the project. Qoder did not shape the
+architecture, and the record says so.
+
+**Do not claim:** built with Qoder, a majority built with Qoder, any percentage,
+or that Qoder produced architecture predating this pass.
 
 ---
 
@@ -129,9 +143,11 @@ or claim a live price change occurred.
 | Criterion | Confidence | Note |
 |---|---|---|
 | Innovation 30% | **Strong** | Three sharp claims, all demonstrable |
-| Feasibility 30% | **Strong** | Two live integrations, 1,146 tests, runs with no credentials |
-| Qoder 20% | **Zero** | Not used. Founder decision required |
+| Feasibility 30% | **Strong** | Two live integrations, 1,150 tests, runs with no credentials |
+| Qoder 20% | **Modest but real** | One genuine pass; found two live defects |
 | Demo 20% | **Strong** | Deterministic, honest, climaxes on the differentiator |
 
-**The single highest-leverage remaining action is a genuine Qoder pass.**
-Everything else is polish; that one is a fifth of the score sitting at zero.
+Qoder is no longer a zero. It is a modest, truthful entry: one pass, two real
+defects found on a running screen, one of which needed correcting afterwards.
+That is a far better story than a fabricated one, and it is the only story the
+git history supports.

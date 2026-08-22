@@ -597,10 +597,10 @@ as dated history.
 | Payment | NOT IMPLEMENTED |
 | Ticketing | NOT IMPLEMENTED |
 | Persistence / database | NOT IMPLEMENTED |
-| Qoder | **NOT USED** — see `JUDGING_RUBRIC_AUDIT.md` |
+| Qoder | USED ONCE — final hardening pass, 22 Aug 2026; see `QODER_USAGE.md` |
 | Deployment | **NOT PERFORMED** — see `DEPLOYMENT_PLAN.md` |
 
-**Tests: 1,146 across 55 files.** Lint, typecheck, build, check, verify and the
+**Tests: 1,150 across 55 files.** Lint, typecheck, build, check, verify and the
 secret check are all green, with no network access required.
 
 ### The three things not to overclaim
