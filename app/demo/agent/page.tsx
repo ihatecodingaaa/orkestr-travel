@@ -105,7 +105,7 @@ export default async function AgentPage({
           <div className="stack gap-1">
             <h3 className="faint">What this affected</h3>
             {change.affected.length === 0 ? (
-              <p>Nothing. The change did not reach any part of the agreed plan.</p>
+              <p>{change.affectedNote}</p>
             ) : (
               <ul>
                 {change.affected.map((label) => (

@@ -6,6 +6,7 @@ import type { AcceptedCompromise } from "../../domain/compromise";
 import type { TripWindow } from "../../domain/tripWindow";
 import type { PlanRepairResult, HardBlocker, RepairQuestion } from "../../domain/planRepair";
 import type { ConstraintId, TravellerId, TripId } from "../../domain/ids";
+import { asConstraintId } from "../../domain/ids";
 import { enumerateCandidatePlans } from "../waves/engine";
 import { deriveReunionAnchor } from "../waves/reunion";
 import { buildDecisionInventory, decisionsPreserved, diffDecisions } from "../decisions/inventory";
@@ -273,10 +274,26 @@ export function repairPlan(
        * Impact compares before vs after: an absent after with a present before
        * would read every wave as removed, which is a different claim from
        * "nothing works" and would show both waves as affected on screen.
+       *
+       * But dropping both is not enough on its own. With no plans and no
+       * violations to compare, the radius falls through to NO_IMPACT, whose
+       * description reads "nothing in the plan depends on what changed" -- said
+       * on a screen whose headline is "no arrangement works". Two contradictory
+       * sentences, and the reassuring one is the lie.
+       *
+       * The blockers are the missing input. NO_FEASIBLE_REPAIR means nothing
+       * works without breaking something the group confirmed, which is exactly
+       * COMMITMENT_INVALID: the agreed plan can no longer be honoured. That
+       * radius already exists and already outranks every other, so the honest
+       * result needs no new concept -- only the facts it was never given.
        */
       impact: analyseImpact({
         event: options.event,
         decisionDiff: emptyDiff,
+        // HardBlocker carries a plain string; the impact input wants the brand.
+        hardViolationConstraintIds: hardBlockers.map((blocker) =>
+          asConstraintId(blocker.constraintId),
+        ),
       }),
       ...(previousPlan === undefined ? {} : { previousPlan }),
       decisionDiff: emptyDiff,

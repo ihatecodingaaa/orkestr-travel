@@ -125,6 +125,35 @@ describe("what changed, and what did not", () => {
     expect(summary.untouched).toEqual(["Tuesday group"]);
   });
 
+
+  it("explains an empty affected list differently depending on how the run ended", () => {
+    /**
+     * "Nothing was affected" and "nothing was replaced because nothing works"
+     * are opposite claims that produce an identical empty list. Rendering the
+     * reassuring one under a headline of "no arrangement works" is half of a
+     * contradiction, and the reassuring half is the false one.
+     */
+    const labels = new Map<string, string>();
+
+    const dead = changeSummary(
+      buildRun({ status: "UNRESOLVED", impact: { ...buildRun().impact, affectedWaveIds: [] } }),
+      labels,
+    );
+    expect(dead.affectedNote).toMatch(/no arrangement works/i);
+    expect(dead.affectedNote).toMatch(/can no longer be honoured/i);
+    expect(dead.affectedNote).not.toMatch(/did not reach/i);
+
+    const gone = changeSummary(buildRun({ status: "PROVIDER_UNAVAILABLE" }), labels);
+    expect(gone.affectedNote).toMatch(/could not be reached/i);
+
+    const waiting = changeSummary(buildRun({ status: "WAITING_FOR_HUMAN" }), labels);
+    expect(waiting.affectedNote).toMatch(/needs to decide/i);
+
+    // The ordinary case keeps the ordinary sentence.
+    const fine = changeSummary(buildRun({ status: "COMPLETED" }), labels);
+    expect(fine.affectedNote).toMatch(/did not reach any part/i);
+  });
+
   it("falls back to the id rather than inventing a label", () => {
     const summary = changeSummary(buildRun(), new Map());
     expect(summary.affected).toEqual([WAVE_B as string]);

@@ -165,6 +165,17 @@ export interface ChangeSummary {
   readonly affected: readonly string[];
   /** The point of the exercise. Empty is a legitimate answer. */
   readonly untouched: readonly string[];
+  /**
+   * What to say when `affected` is empty, which is NOT always the same thing.
+   *
+   * "Nothing was affected" and "nothing was replaced because nothing works" are
+   * opposite claims that produce an identical empty list. A run that found no
+   * feasible arrangement has an empty list precisely because the plan is dead,
+   * and reading "the change did not reach any part of the agreed plan" under a
+   * headline of "no arrangement works" is the reassuring half of a
+   * contradiction.
+   */
+  readonly affectedNote: string;
 }
 
 /**
@@ -183,7 +194,26 @@ export function changeSummary(
     whatChanged: run.trigger.summary,
     affected: run.impact.affectedWaveIds.map((id) => name(id as string)),
     untouched: run.impact.unaffectedWaveIds.map((id) => name(id as string)),
+    affectedNote: emptyAffectedNote(run.status),
   };
+}
+
+/** Why the affected list is empty, which depends entirely on how the run ended. */
+function emptyAffectedNote(status: RunStatus): string {
+  switch (status) {
+    case "UNRESOLVED":
+      return "Nothing was replaced, because no arrangement works. The plan the group agreed can no longer be honoured.";
+    case "PROVIDER_UNAVAILABLE":
+      return "Nothing was changed, because the flight provider could not be reached.";
+    case "OUTCOME_NOT_CONFIRMED":
+      return "Nothing was changed, because the result could not be confirmed.";
+    case "WAITING_FOR_HUMAN":
+      return "Nothing has been changed yet. One person needs to decide first.";
+    case "FAILED":
+      return "Nothing was attempted.";
+    default:
+      return "Nothing. The change did not reach any part of the agreed plan.";
+  }
 }
 
 /**

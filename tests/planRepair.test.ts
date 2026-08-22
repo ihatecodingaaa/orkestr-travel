@@ -309,9 +309,13 @@ describe("traveller leaves", () => {
   it("NO_FEASIBLE_REPAIR does not report waves as affected when no new plan was produced", () => {
     /**
      * Regression: the impact analysis used to receive previousPlan without
-     * newPlan, which made every wave look removed. A repair that found
-     * nothing should not claim everything changed — it should claim nothing
-     * was touched, because nothing was replaced.
+     * newPlan, which made every wave look removed — a failed repair claiming
+     * it had changed everything.
+     *
+     * The assertion that matters is the wave count. What the RADIUS should be
+     * depends on whether a confirmed requirement can be named as the blocker,
+     * which is the next test; asserting a radius here would freeze one branch
+     * of that as though it were the general rule.
      */
     const s = scenario({ withdraw: ["T-003"] });
     const result = repairPlan(s.group, s.offers, {
@@ -322,7 +326,39 @@ describe("traveller leaves", () => {
     });
     expect(result.status).toBe("NO_FEASIBLE_REPAIR");
     expect(result.impact.affectedWaveIds).toHaveLength(0);
-    expect(result.impact.radius).toBe("NO_IMPACT");
-    expect(result.impact.reasonCodes).toContain("NOTHING_CHANGED");
+    // Nothing was replaced, so nothing may be reported as replaced.
+    expect(result.impact.affectedOfferIds).toHaveLength(0);
+  });
+
+  it("a failed repair with a named blocker reports the commitment as invalid", () => {
+    /**
+     * The other half, and the one a screen actually shows.
+     *
+     * Removing previousPlan stopped the false "every wave changed", but on its
+     * own it left the radius falling through to NO_IMPACT, whose description
+     * reads "nothing in the plan depends on what changed". Rendered under a
+     * headline of "no arrangement works", that is two contradictory sentences
+     * with the reassuring one being false.
+     *
+     * NO_FEASIBLE_REPAIR means nothing works without breaking something the
+     * group confirmed. That is COMMITMENT_INVALID, which already exists and
+     * already outranks every other radius.
+     */
+    const s = scenario({ joiner: impossibleJoiner });
+    const result = repairPlan(s.group, s.offers, {
+      tripId: TRIP,
+      event: { type: "TRAVELLER_JOINED", travellerId: asTravellerId("T-007") },
+      previousPlan: s.previousPlan,
+      planningTravellerIds: s.planningIds,
+    });
+
+    expect(result.status).toBe("NO_FEASIBLE_REPAIR");
+    expect(result.hardBlockers.length).toBeGreaterThan(0);
+    expect(result.impact.radius).toBe("COMMITMENT_INVALID");
+    // The blockers are named, so a person can see which requirement broke.
+    expect(result.impact.affectedConstraintIds.length).toBeGreaterThan(0);
+    // And still no phantom churn: nothing was replaced.
+    expect(result.impact.affectedWaveIds).toHaveLength(0);
+    expect(result.impact.whatChanged).toMatch(/no longer be honoured/);
   });
 });
