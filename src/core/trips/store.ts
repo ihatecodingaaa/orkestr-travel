@@ -4,7 +4,18 @@ import type {
   TravellerRequirement,
   TripUpdate,
 } from "../../domain/consumerTrip";
-import { CONSUMER_TRIP_SCHEMA_VERSION } from "../../domain/consumerTrip";
+import { CONSUMER_TRIP_SCHEMA_VERSION, READABLE_SCHEMA_VERSIONS } from "../../domain/consumerTrip";
+import type {
+  BudgetCategory,
+  BudgetLine,
+  IdeaCategory,
+  IdeaSource,
+  PlanItem,
+  PlanItemKind,
+  PlanItemStatus,
+  TripIdea,
+} from "../../domain/livingTrip";
+import { BUDGET_CATEGORIES, DEFAULT_AUTOPILOT, IDEA_CATEGORIES } from "../../domain/livingTrip";
 import type { IsoDate, IsoDateTime } from "../../domain/time";
 import { asIsoDate } from "../../domain/time";
 import { compareIsoDate, isValidIsoDate } from "../time/civilDate";
@@ -109,6 +120,145 @@ function parseTraveller(value: unknown): ConsumerTraveller | undefined {
   };
 }
 
+
+const PLAN_KINDS: readonly PlanItemKind[] = [
+  "FLIGHT",
+  "STAY",
+  "ACTIVITY",
+  "FOOD",
+  "TRANSPORT",
+  "REUNION",
+  "FREE",
+];
+const PLAN_STATUSES: readonly PlanItemStatus[] = ["IDEA", "PLANNED", "FIXED", "BOOKED"];
+const IDEA_SOURCES: readonly IdeaSource[] = ["LOCAL_EXAMPLE", "USER_ADDED", "USER_LINK"];
+
+/** "09:20" and nothing else. A malformed time is dropped rather than guessed at. */
+const CLOCK = /^([01]\d|2[0-3]):[0-5]\d$/;
+
+function parseIdeas(value: unknown): TripIdea[] {
+  if (!Array.isArray(value)) return [];
+  const ideas: TripIdea[] = [];
+  for (const entry of value) {
+    if (!isRecord(entry)) continue;
+    const id = readString(entry["id"]);
+    const title = readString(entry["title"]);
+    const category = entry["category"];
+    const source = entry["source"];
+    const addedAt = readString(entry["addedAt"]);
+    if (id === undefined || title === undefined || addedAt === undefined) continue;
+    if (typeof category !== "string") continue;
+    if (!IDEA_CATEGORIES.includes(category as IdeaCategory)) continue;
+    if (typeof source !== "string" || !IDEA_SOURCES.includes(source as IdeaSource)) continue;
+
+    const blurb = readString(entry["blurb"]);
+    const area = readString(entry["area"]);
+    const url = readString(entry["url"]);
+    const addedBy = readString(entry["addedBy"]);
+    const minutes = entry["minutes"];
+    ideas.push({
+      id,
+      title,
+      category: category as IdeaCategory,
+      source: source as IdeaSource,
+      ...(blurb === undefined ? {} : { blurb }),
+      ...(area === undefined ? {} : { area }),
+      ...(url === undefined ? {} : { url }),
+      ...(addedBy === undefined ? {} : { addedBy }),
+      ...(typeof minutes === "number" && Number.isSafeInteger(minutes) && minutes > 0
+        ? { minutes }
+        : {}),
+      savedBy: Array.isArray(entry["savedBy"])
+        ? entry["savedBy"].filter((v): v is string => typeof v === "string")
+        : [],
+      addedAt: addedAt as IsoDateTime,
+    });
+  }
+  return ideas;
+}
+
+function parsePlan(value: unknown): PlanItem[] {
+  if (!Array.isArray(value)) return [];
+  const items: PlanItem[] = [];
+  for (const entry of value) {
+    if (!isRecord(entry)) continue;
+    const id = readString(entry["id"]);
+    const title = readString(entry["title"]);
+    const day = readDate(entry["day"]);
+    const kind = entry["kind"];
+    const status = entry["status"];
+    if (id === undefined || title === undefined || day === undefined) continue;
+    if (typeof kind !== "string" || !PLAN_KINDS.includes(kind as PlanItemKind)) continue;
+    if (typeof status !== "string" || !PLAN_STATUSES.includes(status as PlanItemStatus)) continue;
+
+    const startTime = readString(entry["startTime"]);
+    const area = readString(entry["area"]);
+    const note = readString(entry["note"]);
+    const fromIdeaId = readString(entry["fromIdeaId"]);
+    const minutes = entry["minutes"];
+    items.push({
+      id,
+      day,
+      title,
+      kind: kind as PlanItemKind,
+      status: status as PlanItemStatus,
+      ...(startTime !== undefined && CLOCK.test(startTime) ? { startTime } : {}),
+      ...(area === undefined ? {} : { area }),
+      ...(note === undefined ? {} : { note }),
+      ...(fromIdeaId === undefined ? {} : { fromIdeaId }),
+      ...(typeof minutes === "number" && Number.isSafeInteger(minutes) && minutes > 0
+        ? { minutes }
+        : {}),
+      travellerIds: Array.isArray(entry["travellerIds"])
+        ? entry["travellerIds"].filter((v): v is string => typeof v === "string")
+        : [],
+    });
+  }
+  return items;
+}
+
+function parseBudget(value: unknown): ConsumerTrip["budget"] {
+  if (!isRecord(value)) return { lines: [] };
+  const currency = readString(value["currency"]);
+  const raw = Array.isArray(value["lines"]) ? value["lines"] : [];
+  const lines: BudgetLine[] = [];
+  for (const entry of raw) {
+    if (!isRecord(entry)) continue;
+    const category = entry["category"];
+    if (typeof category !== "string") continue;
+    if (!BUDGET_CATEGORIES.includes(category as BudgetCategory)) continue;
+    const perPerson = entry["perPerson"];
+    lines.push({
+      category: category as BudgetCategory,
+      ...(typeof perPerson === "number" && Number.isFinite(perPerson) && perPerson >= 0
+        ? { perPerson }
+        : {}),
+    });
+  }
+  return {
+    ...(currency !== undefined && /^[A-Za-z]{3}$/.test(currency)
+      ? { currency: currency.toUpperCase() }
+      : {}),
+    lines,
+  };
+}
+
+/**
+ * Autopilot, defaulting ON.
+ *
+ * `!== false` rather than `=== true`: a setting absent from an older record
+ * means it was never turned off, and every one of these describes behaviour the
+ * engines already had.
+ */
+function parseAutopilot(value: unknown): ConsumerTrip["autopilot"] {
+  if (!isRecord(value)) return DEFAULT_AUTOPILOT;
+  return {
+    flagStaleFacts: value["flagStaleFacts"] !== false,
+    suggestRepairs: value["suggestRepairs"] !== false,
+    preserveFixedItems: value["preserveFixedItems"] !== false,
+  };
+}
+
 export type TripParse =
   | { readonly ok: true; readonly trip: ConsumerTrip }
   | { readonly ok: false; readonly reason: string };
@@ -125,10 +275,16 @@ export function parseTrip(value: unknown): TripParse {
   if (!isRecord(value)) return { ok: false, reason: "not an object" };
 
   const version = value["schemaVersion"];
-  if (version !== CONSUMER_TRIP_SCHEMA_VERSION) {
+  if (typeof version !== "number" || !READABLE_SCHEMA_VERSIONS.includes(version)) {
     /**
      * A version we do not understand is refused rather than migrated hopefully.
      * Reading new fields with old rules is how a trip ends up subtly wrong.
+     *
+     * Version 1 IS readable. Everything version 2 added is an empty collection
+     * or a documented default, so the migration invents nothing -- an empty
+     * list of ideas is genuinely what a trip made before ideas existed had. A
+     * migration that had to guess at a value nobody supplied would be refused
+     * like any other unknown version.
      */
     return { ok: false, reason: `unsupported schema version ${String(version)}` };
   }
@@ -188,6 +344,10 @@ export function parseTrip(value: unknown): TripParse {
       createdAt: createdAt as IsoDateTime,
       updatedAt: updatedAt as IsoDateTime,
       ...(value["isExample"] === true ? { isExample: true } : {}),
+      ideas: parseIdeas(value["ideas"]),
+      plan: parsePlan(value["plan"]),
+      budget: parseBudget(value["budget"]),
+      autopilot: parseAutopilot(value["autopilot"]),
     },
   };
 }
@@ -275,6 +435,10 @@ export function createTrip(
       updates: [{ id: newId(), at: now, summary: "Trip created" }],
       createdAt: now,
       updatedAt: now,
+      ideas: [],
+      plan: [],
+      budget: { lines: [] },
+      autopilot: DEFAULT_AUTOPILOT,
     },
   };
 }

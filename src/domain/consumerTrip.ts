@@ -1,4 +1,5 @@
 import type { IsoDate, IsoDateTime } from "./time";
+import type { AutopilotSettings, PlanItem, TripBudget, TripIdea } from "./livingTrip";
 
 /**
  * A trip as a person actually creates one.
@@ -28,7 +29,18 @@ import type { IsoDate, IsoDateTime } from "./time";
  * a half-migrated trip is worse than an absent one, because the person cannot
  * see which half is wrong.
  */
-export const CONSUMER_TRIP_SCHEMA_VERSION = 1;
+export const CONSUMER_TRIP_SCHEMA_VERSION = 2;
+
+/**
+ * Versions this build can still read.
+ *
+ * Version 1 predates ideas, the itinerary, the budget and autopilot. It is
+ * accepted and MIGRATED, because every one of those additions is an empty
+ * collection or a documented default -- migrating invents nothing. That is the
+ * line: an additive migration is safe, and one that has to guess at a value
+ * somebody never supplied is not.
+ */
+export const READABLE_SCHEMA_VERSIONS: readonly number[] = [1, 2];
 
 /**
  * How ready one traveller is, from what they have actually told us.
@@ -131,6 +143,17 @@ export interface ConsumerTrip {
    * for their own trip is worse than no example.
    */
   readonly isExample?: boolean;
+
+  /* --------------------------------------------------------- the living trip */
+
+  /** Places somebody wants to go. Saving is the only signal; there is no vote. */
+  readonly ideas: readonly TripIdea[];
+  /** The itinerary. Empty is the normal starting state, not a failure. */
+  readonly plan: readonly PlanItem[];
+  /** Hand-entered estimates. Nothing here is derived from pricing data. */
+  readonly budget: TripBudget;
+  /** What Orkestr may do without being asked. */
+  readonly autopilot: AutopilotSettings;
 }
 
 /* -------------------------------------------------------------------------- */
