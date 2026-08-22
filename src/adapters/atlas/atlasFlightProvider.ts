@@ -49,10 +49,21 @@ import { proveSandbox } from "./environment";
  */
 
 /** Thrown for every Atlas failure. Carries a kind the UI can branch on. */
+/**
+ * Which provider operation failed.
+ *
+ * Carried separately from `kind` so that "the search failed" and "the
+ * verification failed" stay distinguishable even when Atlas returns the same
+ * code for both. Losing that distinction would make a verification problem look
+ * like a search problem, which points debugging at the wrong end of the flow.
+ */
+export type AtlasStage = "ENVIRONMENT" | "SEARCH" | "OFFER_LIST" | "VERIFY" | "REQUEST";
+
 export class AtlasProviderError extends Error {
   constructor(
     readonly kind: AtlasFailureKind,
     message: string,
+    readonly stage: AtlasStage = "REQUEST",
     /** Atlas's own stable code, when there was one. Never shown to a traveller. */
     readonly code?: string,
   ) {
@@ -221,11 +232,11 @@ export class AtlasFlightProvider implements FlightProvider {
     this.requireSandboxMode();
 
     const built = buildSearchArgs(request);
-    if (!built.ok) throw new AtlasProviderError("INVALID_REQUEST", built.reason);
+    if (!built.ok) throw new AtlasProviderError("INVALID_REQUEST", built.reason, "REQUEST");
 
     await this.requireProvenSandbox();
 
-    const searchEnvelope = await this.invoke(built.args, this.config.searchTimeoutMs);
+    const searchEnvelope = await this.invoke(built.args, this.config.searchTimeoutMs, "SEARCH");
 
     if (classifyAtlasCode(searchEnvelope.code) === "NO_OFFERS") {
       this.lastSearch.clear();
@@ -233,7 +244,7 @@ export class AtlasFlightProvider implements FlightProvider {
       // An empty search is a real, successful answer, not a failure.
       return [];
     }
-    this.failUnlessSuccess(searchEnvelope);
+    this.failUnlessSuccess(searchEnvelope, "SEARCH");
 
     /**
      * Atlas splits search into two commands: `search` returns a `search_id`,
@@ -245,6 +256,7 @@ export class AtlasFlightProvider implements FlightProvider {
       throw new AtlasProviderError(
         "PROVIDER_PROTOCOL_ERROR",
         "Atlas accepted the search but returned no search id.",
+        "SEARCH",
         searchEnvelope.code,
       );
     }
@@ -253,12 +265,13 @@ export class AtlasFlightProvider implements FlightProvider {
       // The search id is OPAQUE and goes back exactly as received.
       ["offer", "list", "--search-id", searchId, "--json"],
       this.config.searchTimeoutMs,
+      "OFFER_LIST",
     );
     if (classifyAtlasCode(listEnvelope.code) === "NO_OFFERS") {
       this.lastSearch.clear();
       return [];
     }
-    this.failUnlessSuccess(listEnvelope);
+    this.failUnlessSuccess(listEnvelope, "OFFER_LIST");
 
     const parsed = parseOfferList(listEnvelope.data);
     const searchedAt = this.now();
@@ -318,6 +331,7 @@ export class AtlasFlightProvider implements FlightProvider {
       throw new AtlasProviderError(
         "OFFER_GONE",
         "That offer is not from the current Atlas search, so it cannot be verified.",
+        "VERIFY",
       );
     }
 
@@ -332,6 +346,7 @@ export class AtlasFlightProvider implements FlightProvider {
       throw new AtlasProviderError(
         "OFFER_GONE",
         "Atlas offered this fare for comparison only, so its price cannot be verified.",
+        "VERIFY",
       );
     }
 
@@ -340,6 +355,7 @@ export class AtlasFlightProvider implements FlightProvider {
     const envelope = await this.invoke(
       ["offer", "verify", "--offer-id", raw.offerId, "--json"],
       this.config.verifyTimeoutMs,
+      "VERIFY",
     );
 
     const kind = classifyAtlasCode(envelope.code);
@@ -356,7 +372,7 @@ export class AtlasFlightProvider implements FlightProvider {
         ...(payload.previousPrice === undefined ? {} : { previousPrice: payload.previousPrice }),
       };
     }
-    this.failUnlessSuccess(envelope);
+    this.failUnlessSuccess(envelope, "VERIFY");
 
     const payload = parseVerification(envelope.data);
 
@@ -373,6 +389,7 @@ export class AtlasFlightProvider implements FlightProvider {
       throw new AtlasProviderError(
         "PROVIDER_PROTOCOL_ERROR",
         "Atlas did not state whether the price changed, so it is not verified.",
+        "VERIFY",
         envelope.code,
       );
     }
@@ -395,7 +412,7 @@ export class AtlasFlightProvider implements FlightProvider {
       verifiedAt,
     });
     if (!normalised.ok) {
-      throw new AtlasProviderError("PROVIDER_PROTOCOL_ERROR", normalised.reason, envelope.code);
+      throw new AtlasProviderError("PROVIDER_PROTOCOL_ERROR", normalised.reason, "VERIFY", envelope.code);
     }
     return { offer: normalised.offer, unchanged: true };
   }
@@ -415,7 +432,7 @@ export class AtlasFlightProvider implements FlightProvider {
       evidenceState: state,
     });
     if (!normalised.ok) {
-      throw new AtlasProviderError("PROVIDER_PROTOCOL_ERROR", normalised.reason);
+      throw new AtlasProviderError("PROVIDER_PROTOCOL_ERROR", normalised.reason, "VERIFY");
     }
     // Note: no `verifiedAt`. The offer was re-checked, and the answer was that
     // it is not usable as it stands. That is not a verified price.
@@ -425,8 +442,9 @@ export class AtlasFlightProvider implements FlightProvider {
   private requireSandboxMode(): void {
     if (this.config.mode !== "sandbox") {
       throw new AtlasProviderError(
-        "ENVIRONMENT_NOT_PROVEN",
+        "ATLAS_DISABLED",
         `Atlas is switched off (ATLAS_MODE=${this.config.mode}). No call was made.`,
+        "ENVIRONMENT",
       );
     }
   }
@@ -435,11 +453,7 @@ export class AtlasFlightProvider implements FlightProvider {
     const proof = await proveSandbox({ runner: this.runner });
     this.diagnostics = { ...this.diagnostics, environmentProven: proof.proven };
     if (!proof.proven) {
-      throw new AtlasProviderError(
-        "ENVIRONMENT_NOT_PROVEN",
-        proof.reason,
-        proof.proven ? undefined : proof.code,
-      );
+      throw new AtlasProviderError(proof.kind, proof.reason, "ENVIRONMENT", proof.code);
     }
   }
 
@@ -450,14 +464,22 @@ export class AtlasFlightProvider implements FlightProvider {
    * code as well as the `retryable` flag, so adding a mutating command later
    * cannot accidentally inherit a retry.
    */
-  private async invoke(args: readonly string[], timeoutMs: number): Promise<AtlasEnvelope> {
-    const first = await this.runOnce(args, timeoutMs);
-    if (mayRetryOnce(first)) return this.runOnce(args, timeoutMs);
+  private async invoke(
+    args: readonly string[],
+    timeoutMs: number,
+    stage: AtlasStage,
+  ): Promise<AtlasEnvelope> {
+    const first = await this.runOnce(args, timeoutMs, stage);
+    if (mayRetryOnce(first)) return this.runOnce(args, timeoutMs, stage);
     return first;
   }
 
   /** One invocation: run, parse, or throw. Never returns a half-result. */
-  private async runOnce(args: readonly string[], timeoutMs: number): Promise<AtlasEnvelope> {
+  private async runOnce(
+    args: readonly string[],
+    timeoutMs: number,
+    stage: AtlasStage,
+  ): Promise<AtlasEnvelope> {
     const outcome = await this.runner.run({ args, timeoutMs });
     if (!outcome.ok) {
       const kind: AtlasFailureKind =
@@ -466,18 +488,18 @@ export class AtlasFlightProvider implements FlightProvider {
           : outcome.kind === "NOT_INSTALLED"
             ? "NOT_INSTALLED"
             : "PROVIDER_PROTOCOL_ERROR";
-      throw new AtlasProviderError(kind, outcome.message);
+      throw new AtlasProviderError(kind, outcome.message, stage);
     }
     const parsed = parseEnvelope(outcome.stdout);
-    if (!parsed.ok) throw new AtlasProviderError("PROVIDER_PROTOCOL_ERROR", parsed.reason);
+    if (!parsed.ok) throw new AtlasProviderError("PROVIDER_PROTOCOL_ERROR", parsed.reason, stage);
     return parsed.envelope;
   }
 
   /** Success is decided by the envelope, never by the process exit code. */
-  private failUnlessSuccess(envelope: AtlasEnvelope): void {
+  private failUnlessSuccess(envelope: AtlasEnvelope, stage: AtlasStage): void {
     if (envelope.status !== "terminal_error" && envelope.status !== "action_required") return;
     const kind = classifyAtlasCode(envelope.code);
-    throw new AtlasProviderError(kind, describeFailure(kind), envelope.code);
+    throw new AtlasProviderError(kind, describeFailure(kind), stage, envelope.code);
   }
 }
 
@@ -511,8 +533,10 @@ export function describeFailure(kind: AtlasFailureKind): string {
       return "Atlas did not respond in time.";
     case "NOT_INSTALLED":
       return "The Atlas CLI is not installed on this machine.";
-    case "ENVIRONMENT_NOT_PROVEN":
-      return "The Atlas sandbox environment could not be proven, so nothing was requested.";
+    case "ATLAS_DISABLED":
+      return "Atlas is switched off, so nothing was requested.";
+    case "SANDBOX_SET_FAILED":
+      return "The Atlas sandbox environment could not be established, so nothing was requested.";
     case "UNRECOGNISED":
       return "Atlas returned a result this application does not handle.";
   }
