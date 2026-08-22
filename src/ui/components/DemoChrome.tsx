@@ -26,6 +26,8 @@ export function DemoChrome({
     { href: "/demo/waves", label: "Travel groups", key: "waves" },
     { href: "/demo/journey", label: "The journey", key: "journey" },
     { href: "/demo/decisions", label: "Needs attention", key: "decisions" },
+    // The screen that answers "when the plan breaks, what does it leave alone?"
+    { href: "/demo/agent", label: "What changed", key: "agent" },
   ];
 
   return (

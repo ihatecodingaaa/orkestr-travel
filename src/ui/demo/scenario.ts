@@ -2,7 +2,11 @@ import type { FlightOffer, Journey, JourneyPackage, Traveller } from "../../doma
 import type { AcceptedCompromise, TravelWavePlan } from "../../domain/index";
 import type { PlanRepairResult } from "../../domain/planRepair";
 import type { CompromiseProposal } from "../../domain/compromise";
-import { asTravellerId } from "../../domain/index";
+import { asTravellerId, asFlightOfferId } from "../../domain/index";
+import { asCurrencyCode } from "../../domain/money";
+import { asIsoDateTime } from "../../domain/time";
+import type { AgentRun, RunTrigger } from "../../domain/agentRun";
+import { runAgent } from "../../core/agent/run";
 import { planLegs } from "../../core/journey/legPlanner";
 import { composeJourneyPackage, resetComposerCounters } from "../../core/journey/composer";
 import { LOCAL_FIXTURE_ASSUMPTIONS } from "../../core/journey/assumptions";
@@ -28,6 +32,9 @@ import * as F from "../../fixtures/journeyScenarios";
  */
 
 /** Where the demo has got to. Advancing is always an explicit user action. */
+/** Fixed, so the demo renders identically every time it is recorded. */
+const DEMO_RUN_STARTED_AT = asIsoDateTime("2026-08-22T09:00:00+08:00");
+
 export type DemoStage = "BASELINE" | "RYAN_JOINED";
 
 /**
@@ -317,4 +324,80 @@ export function currentProposals(world: DemoWorld): readonly CompromiseProposal[
     planningTravellerIds: outbound.planningTravellerIds,
   });
   return result.ok ? result.proposals : [];
+}
+
+/**
+ * The agent run for the current demo state.
+ *
+ * Built from the SAME repair the rest of the demo renders, so the run's account
+ * of what happened cannot drift from the plan on screen. If they could drift,
+ * the audit trail would be a second story about the same events -- which is
+ * exactly the kind of plausible narration this product exists to refuse.
+ *
+ * Returns undefined at baseline: nothing has happened yet, and inventing a run
+ * to fill the space would be a run about nothing.
+ */
+export function buildAgentRun(world: DemoWorld, state: DemoState): AgentRun | undefined {
+  // A fare verification is a more specific change than "Ryan joined", so it wins
+  // when both are present -- it is the one the screen is currently about.
+  const repair = world.fare?.repair ?? world.repair;
+  if (repair === undefined) return undefined;
+
+  const fromFare = world.fare !== undefined;
+  const trigger: RunTrigger = fromFare
+    ? {
+        event: {
+          type: "OFFER_PRICE_CHANGED",
+          offerId: asFlightOfferId(world.fare?.offerId ?? "OFFER"),
+          previousPrice: {
+            amountMinor: world.fare?.previousMinor ?? 0,
+            currency: asCurrencyCode(world.fare?.currency ?? "SGD"),
+            minorUnitScale: 2,
+          },
+          newPrice: {
+            amountMinor: world.fare?.newMinor ?? 0,
+            currency: asCurrencyCode(world.fare?.currency ?? "SGD"),
+            minorUnitScale: 2,
+          },
+        },
+        summary: fareSummary(world),
+      }
+    : {
+        event: { type: "TRAVELLER_JOINED", travellerId: asTravellerId("T-007") },
+        summary: "Ryan joined the trip after the plan was already agreed.",
+      };
+
+  return runAgent({
+    runId: `RUN-${state.stage}-${state.fareScenario}`,
+    tripId: F.TRIP_ID,
+    startedAt: DEMO_RUN_STARTED_AT,
+    trigger,
+    repair,
+    /**
+     * Counted, not guessed.
+     *
+     * A verification really is one provider call in this flow. Repair itself is
+     * deterministic, so the model is not consulted at all once a change lands --
+     * which is the honest and more interesting number.
+     */
+    providerVerifyCalls: fromFare && world.fare?.unavailable !== true ? 1 : 0,
+    modelCalls: 0,
+    ...(fromFare
+      ? {
+          providerVerified: world.fare?.unavailable !== true,
+          providerUnavailable: world.fare?.unavailable === true,
+        }
+      : {}),
+  });
+}
+
+/** One sentence describing what the provider reported. Templated, never generated. */
+function fareSummary(world: DemoWorld): string {
+  const fare = world.fare;
+  if (fare === undefined) return "A flight was re-checked.";
+  if (fare.unavailable) return "The Wednesday flight is no longer available.";
+  if (fare.unchanged) return "The Wednesday flight was re-checked and the price had not moved.";
+  const from = (fare.previousMinor / 100).toFixed(2);
+  const to = (fare.newMinor / 100).toFixed(2);
+  return `The Wednesday flight went from ${from} to ${to} ${fare.currency} per person.`;
 }

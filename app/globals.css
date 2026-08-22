@@ -422,3 +422,46 @@ a { color: inherit; }
 .shared-link:last-child { border-bottom: 0; }
 .shared-link a { color: var(--ink); word-break: break-all; }
 .shared-link code { word-break: break-all; font-size: 0.85rem; }
+
+/* ---------------------------------------------------------------------------
+   The agent run screen.
+
+   A plain definition list in a responsive grid. `auto-fit` with a `minmax`
+   floor means the figures reflow rather than shrink, so the numbers stay
+   readable at a laptop width without a media query per breakpoint.
+--------------------------------------------------------------------------- */
+
+.fact-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  gap: 1rem 1.5rem;
+  margin: 0;
+}
+
+.fact dt {
+  font-size: 0.85rem;
+  /* Provenance and counts are the point of this screen, so the label stays
+     legible rather than being shrunk into decoration. */
+  color: var(--ink-faint);
+  margin-bottom: 0.15rem;
+}
+
+.fact dd {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.fact dd strong {
+  font-variant-numeric: tabular-nums;
+}
+
+details.card > summary {
+  cursor: pointer;
+  /* Keyboard users get the same affordance as pointer users. */
+  padding: 0.25rem 0;
+}
+
+details.card > summary:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
