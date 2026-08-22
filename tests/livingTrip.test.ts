@@ -15,7 +15,10 @@ import {
   byPopularity,
   categoryInterest,
   currentMilestone,
+  describeOpenDay,
   fitReasons,
+  groupWideCaution,
+  planShape,
   itemsOnDay,
   nextAction,
   reunionDay,
@@ -24,10 +27,11 @@ import {
   summariseGroup,
   tripDays,
 } from "@/core/trips/living";
-import { answer, recognise, toAction } from "@/core/trips/commands";
+import { answer, recognise, suggestedCommands, toAction } from "@/core/trips/commands";
 import { weekdayName } from "@/core/trips/calendar";
 import { aggregate } from "@/ui/trip/GroupScreens";
 import { buildPreview } from "@/ui/trip/WhatIf";
+import type { TripIdea } from "@/domain/livingTrip";
 import { exampleTrip } from "@/ui/trip/exampleTrip";
 import { asIsoDate, asIsoDateTime } from "@/domain/time";
 import type { ConsumerTrip } from "@/domain/consumerTrip";
@@ -174,11 +178,124 @@ describe("why this fits", () => {
 
   it("never claims a requirement has been checked", () => {
     const trip = exampleTrip();
-    const reasons = fitReasons(trip.ideas[0]!, trip);
-    const requirementLine = reasons.find((reason) => reason.text.includes("requirement"));
-    // Orkestr has not researched this venue, so it says "to check", not "no conflict".
-    expect(requirementLine?.text).toMatch(/to check against this place/);
-    expect(requirementLine?.positive).toBe(false);
+    const caution = groupWideCaution(trip);
+    // Orkestr has not researched these venues, so it says "to check", not "no conflict".
+    expect(caution?.text).toMatch(/to check against these places/);
+    expect(caution?.positive).toBe(false);
+  });
+
+  it("pluralises the duration off the number it prints", () => {
+    /**
+     * Ninety minutes rounds to 2 and used to read "About 2 hour here": the
+     * plural was decided from the raw minutes rather than from the figure
+     * printed next to it.
+     */
+    const trip = exampleTrip();
+    const withMinutes = (minutes: number): TripIdea => ({
+      ...trip.ideas[0]!,
+      id: "probe",
+      minutes,
+    });
+
+    const textFor = (minutes: number): string =>
+      fitReasons(withMinutes(minutes), trip)
+        .map((reason) => reason.text)
+        .find((text) => text.startsWith("About")) ?? "";
+
+    expect(textFor(90)).toBe("About 2 hours here");
+    expect(textFor(60)).toBe("About 1 hour here");
+    expect(textFor(20)).toBe("About 1 hour here");
+    expect(textFor(180)).toBe("About 3 hours here");
+  });
+
+  it("states the requirements note once for the group, not once per place", () => {
+    /**
+     * The note does not depend on the idea, so it used to render word-for-word
+     * identically on every card. Six copies of one sentence is noise, and it
+     * buried the reasons that were actually about the place.
+     */
+    const trip = exampleTrip();
+    for (const idea of trip.ideas) {
+      expect(fitReasons(idea, trip).some((r) => r.text.includes("requirement"))).toBe(false);
+    }
+    expect(groupWideCaution(trip)).toBeDefined();
+  });
+});
+
+describe("the shape of the plan", () => {
+  it("marks a day with only a flight as travel, not as planned", () => {
+    /**
+     * Arriving somewhere is not the same as having a day there. A navigator
+     * that calls it planned hides the day somebody should look at.
+     */
+    const trip = exampleTrip();
+    const shape = planShape(trip);
+    const travelOnly = shape.days.find((day) =>
+      day.items.length > 0 && day.items.every((item) => item.kind === "FLIGHT" || item.kind === "STAY"),
+    );
+    expect(travelOnly?.state).toBe("LIGHT");
+  });
+
+  it("opens on the first day that still has room, not on day one", () => {
+    const trip = exampleTrip();
+    const shape = planShape(trip);
+    const focus = shape.days.find((day) => day.day === shape.focusDay);
+    expect(focus?.state).not.toBe("PLANNED");
+  });
+
+  it("reports an untouched trip without calling every day a failure", () => {
+    const trip = fresh();
+    const shape = planShape(trip);
+    expect(shape.untouched).toBe(true);
+    expect(shape.itemCount).toBe(0);
+    expect(shape.days.length).toBeGreaterThan(0);
+  });
+
+  it("stops being untouched as soon as anything is planned", () => {
+    const trip = exampleTrip();
+    expect(planShape(trip).untouched).toBe(false);
+  });
+
+  it("offers to shape an open day only when the group has saved something", () => {
+    const withIdeas = exampleTrip();
+    const openDay = planShape(withIdeas).days.find((day) => day.state === "EMPTY");
+    expect(openDay).toBeDefined();
+    const described = describeOpenDay(withIdeas, openDay!.day);
+    expect(described.headline).toContain(openDay!.weekday);
+    expect(described.canShape).toBe(true);
+
+    // Nothing saved: it says what would unblock it rather than offering magic.
+    const empty = fresh();
+    const first = planShape(empty).days[0]!;
+    expect(describeOpenDay(empty, first.day).canShape).toBe(false);
+    expect(describeOpenDay(empty, first.day).detail).toMatch(/save a few places/i);
+  });
+});
+
+describe("command suggestions", () => {
+  it("only ever suggests something the recogniser accepts", () => {
+    /**
+     * A chip the product then refuses would be worse than no chip at all: it
+     * would demonstrate, in one click, that the box does not understand its
+     * own suggestions.
+     */
+    for (const trip of [exampleTrip(), fresh()]) {
+      const chips = suggestedCommands(trip);
+      for (const chip of chips) {
+        expect(recognise(chip).ok, `"${chip}" is suggested but not recognised`).toBe(true);
+      }
+    }
+  });
+
+  it("suggests the two-group question only when there are two departures", () => {
+    expect(suggestedCommands(fresh()).some((c) => /two travel groups/.test(c))).toBe(false);
+    expect(suggestedCommands(exampleTrip()).some((c) => /two travel groups/.test(c))).toBe(true);
+  });
+
+  it("always offers at least one thing to try", () => {
+    for (const trip of [exampleTrip(), fresh()]) {
+      expect(suggestedCommands(trip).length).toBeGreaterThan(0);
+    }
   });
 });
 
