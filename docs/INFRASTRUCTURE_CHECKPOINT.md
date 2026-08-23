@@ -122,22 +122,39 @@ and run `npm run db:check` again.
 
 **Deployment is a separate authorisation.** None of the above deploys anything.
 
-## PRODUCTION BLOCKER: the database certificate
+## Database certificate — VERIFIED CLOSED (24 August 2026)
 
-**Status: implemented, not production-verified.**
+**Status: production TLS is verified against a real certificate.**
 
-`decideTls` makes production verify, always. The development database presents a
-**self-signed certificate chain**, so:
+`PGSSLROOTCERT` points at the provider's root certificate, stored outside the
+repository. With it:
 
 ```
-npm run db:check          -> SELF_SIGNED_CERT_IN_CHAIN
-PGSSL_ALLOW_UNVERIFIED=true npm run db:check  -> connects
+npm run db:check
+  TLS       : verified against PGSSLROOTCERT
+  connected : yes
+  server    : PostgreSQL 17.6
 ```
 
-That is correct behaviour, not a bug. It also means the verified path is proven
-by tests rather than against a real trusted certificate.
+`PGSSL_ALLOW_UNVERIFIED` is **not set anywhere** and is no longer needed. The
+database suite now runs the production trust path, and `next start` — which
+forces verification and previously could not connect at all — serves the whole
+shared product.
 
-### What is needed before production
+### What was proven, by connection attempt rather than by reading code
+
+| Claim | Evidence |
+|---|---|
+| Certificate validation is enforced | An unrelated CA is rejected (`SELF_SIGNED_CERT_IN_CHAIN`) |
+| Hostname verification is enforced | Node's identity check is invoked, receives the real host, and a failing verdict aborts the connection |
+| Production needs no relax flag | Connects with `NODE_ENV=production` and the flag unset |
+| The whole product works on it | 50/50 acceptance checks in production mode, `secure=true` cookie |
+
+One earlier "hostname not checked" result was a **flawed test, not a flawed
+configuration**: passing a wrong `servername` proves nothing because `pg` sets
+`servername` itself from the connection host and discards the override.
+
+### If the certificate ever has to be replaced
 
 **One of these two.** Both are the founder's to obtain; nothing was downloaded
 or invented.

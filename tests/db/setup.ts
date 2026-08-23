@@ -9,11 +9,17 @@ import { loadEnvLocal } from "../../scripts/loadEnv.mjs";
 loadEnvLocal();
 
 /**
- * These tests connect to a development database whose certificate chain is
- * self-signed, so they opt into the relaxed trust the development path allows.
+ * Trust the certificate if there is one.
  *
- * This CANNOT weaken production: `decideTls` ignores the flag when
- * NODE_ENV is production, and `tests/tls.test.ts` asserts that for every input.
- * Production requires either a publicly trusted certificate or PGSSLROOTCERT.
+ * With `PGSSLROOTCERT` set these tests run the PRODUCTION trust path -- full
+ * certificate and hostname verification -- which is the point: the suite should
+ * exercise what a deployment will do, not a weaker variant of it.
+ *
+ * The relaxed fallback exists only for a developer pointing at a self-signed
+ * local Postgres with no certificate to hand. It cannot weaken production:
+ * `decideTls` ignores the flag when NODE_ENV is production, and
+ * `tests/tls.test.ts` asserts that for every input.
  */
-process.env.PGSSL_ALLOW_UNVERIFIED ??= "true";
+const hasRootCert =
+  process.env.PGSSLROOTCERT !== undefined && process.env.PGSSLROOTCERT.trim() !== "";
+if (!hasRootCert) process.env.PGSSL_ALLOW_UNVERIFIED ??= "true";
