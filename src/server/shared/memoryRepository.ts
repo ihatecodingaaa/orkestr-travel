@@ -331,6 +331,20 @@ export class MemoryTripRepository implements SharedTripRepository {
     return Promise.resolve({ memberId: member.id, role: member.role });
   }
 
+  attachOrganiserSession(input: {
+    sessionId: string;
+    tripId: string;
+    memberId: string;
+    now: IsoDateTime;
+  }): Promise<void> {
+    const existing = this.memberships.get(input.sessionId) ?? [];
+    if (!existing.some((entry) => entry.tripId === input.tripId)) {
+      existing.push({ tripId: input.tripId, memberId: input.memberId });
+    }
+    this.memberships.set(input.sessionId, existing);
+    return Promise.resolve();
+  }
+
   /* --- events ------------------------------------------------------------ */
 
   appendEvent(event: Omit<TripEvent, "id">): Promise<TripEvent> {

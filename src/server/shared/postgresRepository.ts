@@ -486,6 +486,20 @@ export class PostgresTripRepository implements SharedTripRepository {
       : { memberId: rows[0].member_id, role: rows[0].role };
   }
 
+  async attachOrganiserSession(input: {
+    sessionId: string;
+    tripId: string;
+    memberId: string;
+    now: IsoDateTime;
+  }): Promise<void> {
+    await query(
+      `INSERT INTO session_membership (session_id, trip_id, member_id, created_at)
+       VALUES ($1, $2, $3, $4)
+       ON CONFLICT (session_id, trip_id) DO NOTHING`,
+      [input.sessionId, input.tripId, input.memberId, input.now],
+    );
+  }
+
   /* --- events ------------------------------------------------------------ */
 
   private async insertEvent(

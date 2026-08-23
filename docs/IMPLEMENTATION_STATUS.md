@@ -758,16 +758,16 @@ nothing here has.
 | Local -> shared migration semantics | IMPLEMENTED + TESTED |
 | URL scheme validation on pasted links | IMPLEMENTED + TESTED |
 | In-memory repository | IMPLEMENTED + TESTED |
-| **PostgreSQL repository** | **IMPLEMENTED — NOT LIVE VERIFIED** |
-| **Migrations** | **WRITTEN — NEVER RUN** |
-| Join flow and invite landing | IMPLEMENTED — not exercised against a database |
-| Share screen | IMPLEMENTED — not exercised against a database |
+| **PostgreSQL repository** | **LIVE VERIFIED** — 19 integration tests against PostgreSQL 17.6 |
+| **Migrations** | **APPLIED** — `0001_shared_trips.sql`, recorded in `schema_migration` |
+| Join flow and invite landing | **LIVE VERIFIED** — two isolated browsers, real database |
+| Share screen | **LIVE VERIFIED** — no token rendered, checked with scripts included |
 | noindex + robots for trips and invites | IMPLEMENTED |
 | Server boundary for shared modules | IMPLEMENTED + TESTED |
 | `npm run verify` checks the real browser bundle | FIXED + VERIFIED BOTH WAYS |
 | Local trips without any configuration | UNCHANGED AND WORKING |
-| **Live Postgres integration** | **NOT PERFORMED** |
-| **Multi-browser shared QA** | **NOT PERFORMED** |
+| **Live Postgres integration** | **PERFORMED** — 19/19 |
+| **Multi-browser shared QA** | **PERFORMED** — 22/22, plus 20/20 privacy checks on raw responses |
 | **Global user accounts** | **NOT IMPLEMENTED** |
 | **Email or cross-device recovery** | **NOT IMPLEMENTED** |
 | **Production deployment** | **NOT PERFORMED** |
@@ -779,13 +779,21 @@ nothing here has.
 **Tests: 1,299 across 59 files**, plus 4 browser-bundle tests in a 60th file
 that runs after the build. No network access required.
 
-### The three things not to overclaim in Stage 3
+| Local trips with a database configured | **LIVE VERIFIED** — 9/9, unaffected |
+| Optimistic concurrency, real race | **LIVE VERIFIED** — two writes, one winner |
+| Invite redeemed twice, real race | **LIVE VERIFIED** — one join, one refusal |
+| Private value in HTML / RSC payload | **VERIFIED ABSENT** for organiser and traveller |
+| **Shared Explore / Plan / Inbox screens** | **NOT BUILT** — shared mode renders the Overview only |
+| **Personal onboarding after joining** | **NOT BUILT** — a welcome, not the guided steps |
+| **Version polling wired into the UI** | **NOT BUILT** — policy is implemented and tested, nothing calls it |
 
-1. **The Postgres path has never spoken to a database.** It compiles and
-   implements the same contract as the tested in-memory store. That is not the
-   same as working.
-2. **This is not end-to-end encrypted.** Private values are access-controlled
+### The things not to overclaim in Stage 3
+
+1. **This is not end-to-end encrypted.** Private values are access-controlled
    server-side and stored in plain text. Anyone with database access can read
    them.
-3. **"Shared updates" is polling.** It is not real-time and the interface does
-   not say it is.
+2. **"Shared updates" is polling** — and it is not yet wired into the UI at all.
+   The page shows a version number and does not refresh itself.
+3. **Shared mode covers the Overview and the share/join flow.** Explore, Plan,
+   Group and Inbox still render from local state; opening them on a shared trip
+   shows the device-local product, not the group's.

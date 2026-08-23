@@ -150,6 +150,23 @@ export interface SharedTripRepository {
     sessionId: string,
     tripId: string,
   ): Promise<{ readonly memberId: string; readonly role: TripRole } | undefined>;
+  /**
+   * Give a session a membership WITHOUT an invitation.
+   *
+   * Exactly one caller: the organiser converting their own local trip. They
+   * created the trip and are already on it, so making them redeem an invite to
+   * themselves would be ceremony rather than security.
+   *
+   * It is a separate method rather than a flag on `redeemInvitation` so that
+   * the no-invitation path is impossible to reach by accident from the join
+   * flow -- it has a different name, and only one place calls it.
+   */
+  attachOrganiserSession(input: {
+    readonly sessionId: string;
+    readonly tripId: string;
+    readonly memberId: string;
+    readonly now: IsoDateTime;
+  }): Promise<void>;
 
   /* --- events ------------------------------------------------------------ */
   appendEvent(event: Omit<TripEvent, "id">): Promise<TripEvent>;
