@@ -1414,3 +1414,94 @@
     font-size: 0.7rem;
   }
 }
+
+/* ------------------------------------------------------- joining a trip */
+
+/* An invite lands on a phone, from a group chat, one-handed. This page is the
+   first thing somebody sees of Orkestr, and it has one job. */
+.join-shell {
+  max-width: 30rem;
+  padding-top: 3rem;
+}
+.join-title {
+  font-family: var(--font-display);
+  font-size: clamp(1.9rem, 7vw, 2.6rem);
+  line-height: 1.1;
+  margin: 0.3rem 0 0;
+}
+.join-card {
+  display: grid;
+  gap: 0.9rem;
+  margin-top: var(--space-3);
+  padding: var(--space-3);
+  border-radius: var(--radius);
+  background: var(--paper-raised);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow);
+}
+.join-name {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+  color: var(--brand);
+}
+.join-card p {
+  margin: 0;
+}
+
+/* --------------------------------------------------------------- sharing */
+
+.share-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.5rem;
+}
+.share-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.9rem 1.1rem;
+  border-radius: var(--radius-sm);
+  background: var(--paper-raised);
+  border: 1px solid var(--line);
+}
+.share-who {
+  display: grid;
+  gap: 0.1rem;
+}
+.share-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+.status-joined {
+  color: var(--tone-verified);
+}
+.status-invite_ready {
+  color: var(--sky);
+}
+.status-not_invited,
+.status-invite_expired,
+.status-invite_revoked {
+  color: var(--ink-faint);
+}
+
+.notice-alert {
+  background: var(--tone-alert-bg);
+  border: 1px solid color-mix(in srgb, var(--tone-alert) 30%, transparent);
+  color: var(--tone-alert);
+  border-radius: var(--radius-sm);
+  padding: 0.7rem 0.9rem;
+}
+
+/* Shared vs local, said in consumer words on the home page. */
+.trip-origin {
+  font-size: 0.72rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
