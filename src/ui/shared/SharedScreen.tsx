@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import type { ConsumerTrip } from "@/domain/consumerTrip";
 import type { MemberView } from "@/core/shared/views";
 import type { TripActor } from "@/domain/sharedTrip";
@@ -53,6 +54,7 @@ export function SharedScreen({
   readonly members: readonly MemberView[];
   readonly version: number;
 }) {
+  const router = useRouter();
   const sync = useTripSync(version);
   const [notice, setNotice] = useState<string | undefined>(undefined);
 
@@ -65,9 +67,17 @@ export function SharedScreen({
   const viewerId = you?.travellerId ?? "";
   const base = `/trip/${trip.id}`;
 
+  /**
+   * A successful change refreshes immediately.
+   *
+   * The poll would find it within a few seconds, and a few seconds is far too
+   * long to watch your own click do nothing. Polling is for changes OTHER
+   * people made; your own are already known the moment the server accepts them.
+   */
   const actions = wrap(
     sharedActions(trip.id, sync.version, () => {
       setNotice(undefined);
+      router.refresh();
     }),
     setNotice,
   );

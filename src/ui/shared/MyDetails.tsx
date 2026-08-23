@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import type { ConsumerTrip, ConsumerTraveller } from "@/domain/consumerTrip";
 import type { MemberView } from "@/core/shared/views";
 import { sharedActions } from "./sharedActions";
@@ -37,8 +38,15 @@ export function MyDetails({
   /** True when the organiser entered this person's details before they joined. */
   readonly draftFromOrganiser: boolean;
 }) {
+  const router = useRouter();
   const sync = useTripSync(version);
-  const actions = sharedActions(trip.id, sync.version, () => undefined);
+  /**
+   * Refresh as soon as the server accepts. Somebody answering four questions in
+   * a row must see each answer land, not wait for the next poll.
+   */
+  const actions = sharedActions(trip.id, sync.version, () => {
+    router.refresh();
+  });
 
   const me = trip.travellers.find((traveller) => traveller.id === you.travellerId);
   const [notice, setNotice] = useState<string | undefined>(undefined);

@@ -4,6 +4,7 @@ import { asIsoDateTime } from "../../domain/time";
 import type { ConsumerTrip } from "../../domain/consumerTrip";
 import { parseTrip } from "../../core/trips/store";
 import { buildGroupForActor, type MemberView } from "../../core/shared/views";
+import { buildActorTrip } from "../../core/shared/actorTrip";
 import type { TripActor } from "../../domain/sharedTrip";
 import { resolveActor } from "./actor";
 import { getRepository, sharedMode } from "./service";
@@ -102,10 +103,27 @@ export async function loadSharedTrip(tripId: string): Promise<SharedTripLoad> {
     return { kind: "NO_ACCESS", message: "You are not on this trip." };
   }
 
+  /**
+   * The trip AS THIS READER MAY SEE IT.
+   *
+   * Their own private requirements are merged back into their traveller record,
+   * where every existing screen already expects to find them; everybody else
+   * gets a count and nothing more. Without this the reader could not see their
+   * own budget ceiling on their own details page -- it lives in owner-only
+   * storage, so it is absent from the group payload by design.
+   */
+  const trip = buildActorTrip({
+    payload: parsed.trip,
+    members,
+    actorMemberId: actor.memberId,
+    ownPrivate: own?.requirements ?? [],
+    privateCounts: counts,
+  });
+
   return {
     kind: "OK",
     actor,
-    trip: parsed.trip,
+    trip,
     version: record.version,
     members: views,
     you,
