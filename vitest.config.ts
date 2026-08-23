@@ -17,14 +17,20 @@ export default defineConfig({
        * Aliasing it to the package's own empty module lets the server adapters
        * be tested in Node, where they legitimately run. It does NOT weaken the
        * guard: the Next build still resolves the real package, and
-       * `tests/serverBoundary.test.ts` asserts the built client bundles carry
-       * no adapter code and no credential.
+       * `tests/bundle/browserBundle.test.ts` asserts the built client bundles
+       * carry no adapter code and no credential.
        */
       "server-only": fileURLToPath(new URL("./node_modules/server-only/empty.js", import.meta.url)),
     },
   },
   test: {
     include: ["tests/**/*.test.ts", "tests/**/*.test.tsx", "src/**/*.test.ts"],
+    /**
+     * `tests/bundle` asserts things about `.next`, which only exists after a
+     * build. It runs from `vitest.bundle.config.ts` in `npm run verify`, after
+     * `next build`, so a fresh checkout can still run `npm test` and pass.
+     */
+    exclude: ["node_modules/**", "tests/bundle/**"],
     // Domain tests need no DOM; component tests do. jsdom for everything is
     // simpler than two projects and costs little at this size.
     environment: "jsdom",
