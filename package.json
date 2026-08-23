@@ -29,8 +29,10 @@
     "shared:live": "vitest run --config vitest.live.config.ts evals/sharedLinks.live.ts",
     "atlas:smoke": "vitest run --config vitest.live.config.ts evals/atlas.live.ts",
     "test:bundle": "vitest run --config vitest.bundle.config.ts",
-    "db:migrate": "node scripts/migrate.mjs",
-    "db:status": "node scripts/migrate.mjs --status"
+    "db:migrate": "node -e \"import('./scripts/loadEnv.mjs').then(m=>{m.loadEnvLocal();import('./scripts/migrate.mjs')})\"",
+    "db:status": "node -e \"import('./scripts/loadEnv.mjs').then(m=>{m.loadEnvLocal();process.argv.push('--status');import('./scripts/migrate.mjs')})\"",
+    "db:check": "node scripts/dbCheck.mjs",
+    "test:db": "vitest run --config vitest.db.config.ts"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.0",

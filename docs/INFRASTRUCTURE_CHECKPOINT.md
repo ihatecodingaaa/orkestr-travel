@@ -77,6 +77,40 @@ The thing worth protecting is that **no vendor SDK appears in persistence**.
 That property is why this decision stays reversible, and it should survive
 whichever provider is chosen.
 
+## Diagnosing a connection that will not open
+
+`npm run db:check` prints only shape facts and a SQLSTATE. It never prints the
+URL, the host, the user or the password, so its output is safe to paste
+anywhere.
+
+| Code | Meaning | Usual fix |
+|---|---|---|
+| `28P01` | Password authentication failed | See below — most often an unescaped character |
+| `28000` | The server refused this user | Check the username, or the provider's login rules |
+| `3D000` | No such database | The database name at the end of the URL is wrong |
+| `ETIMEDOUT` | The host did not answer | Firewall, or an IP allow-list that needs this machine |
+| `ENOTFOUND` | Hostname does not resolve | A typo in the host |
+| `0A000` / `XX000` | A connection option was rejected | Often a pooler URL missing a required option |
+
+### `28P01` in particular
+
+The password is usually right and the **URL** is usually wrong. In order of how
+often it turns out to be the cause:
+
+1. **A special character in the password is not percent-encoded.** `@ : / ? # &
+   %` all mean something in a URL. A password containing `@` splits the URL in
+   the wrong place and the server sees a different password. Encode it:
+   `@` -> `%40`, `#` -> `%23`, `/` -> `%2F`, `:` -> `%3A`, `%` -> `%25`.
+2. **The username needs a suffix.** Several providers require a project-scoped
+   username for pooled connections (something like `postgres.abcdefgh`) while
+   the direct connection uses plain `postgres`.
+3. **A pooled URL with a direct password, or the reverse.** Some providers issue
+   two connection strings; they are not interchangeable.
+4. **The password was rotated** and the copied string is the old one.
+
+Nothing about this needs Claude to see the value. Fix the URL in `.env.local`
+and run `npm run db:check` again.
+
 ## After "DATABASE CONFIGURED"
 
 1. Verify the variable exists and the connection succeeds — **redacted output

@@ -30,7 +30,7 @@ export default defineConfig({
      * build. It runs from `vitest.bundle.config.ts` in `npm run verify`, after
      * `next build`, so a fresh checkout can still run `npm test` and pass.
      */
-    exclude: ["node_modules/**", "tests/bundle/**"],
+    exclude: ["node_modules/**", "tests/bundle/**", "tests/db/**"],
     // Domain tests need no DOM; component tests do. jsdom for everything is
     // simpler than two projects and costs little at this size.
     environment: "jsdom",

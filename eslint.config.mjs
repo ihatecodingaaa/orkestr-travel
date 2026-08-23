@@ -51,7 +51,14 @@ export default tseslint.config(
   {
     files: ["scripts/**/*.mjs"],
     languageOptions: {
-      globals: { process: "readonly", console: "readonly" },
+      // URL and Buffer are Node globals too; declaring them is honest, and
+      // silencing no-undef for the whole directory would hide real typos.
+      globals: {
+        process: "readonly",
+        console: "readonly",
+        URL: "readonly",
+        Buffer: "readonly",
+      },
     },
     rules: {
       "no-console": "off",
