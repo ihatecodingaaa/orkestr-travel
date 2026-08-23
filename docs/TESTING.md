@@ -386,3 +386,36 @@ A missing build **fails** `test:bundle` rather than skipping it. Verified both
 ways: it fails without a build and passes with one.
 
 `npm test` on a fresh checkout excludes `tests/bundle` and still passes.
+
+
+## Shared mode (Stage 3.5)
+
+| Suite | Command | What it needs |
+|---|---|---|
+| Unit and rules | `npm test` | Nothing |
+| Browser bundle | `npm run verify` | A build — **fails** without one |
+| Live database | `npm run test:db` | `DATABASE_URL` — **fails** without one |
+
+`tests/sharedSourceOfTruth.test.ts` is architectural. It asserts that no trip
+route is a client component, that every one resolves the mode on the server, and
+that no shared component reaches for `localStorage`, the local repository or the
+local trip hook.
+
+**It found a real defect on its first run**: `/people` was still client-only,
+and the shared Group screen linked straight into it.
+
+It also asserts that `"use client"` is the first statement wherever it appears —
+added after an import slipped above one. The build did not fail; the component
+silently stopped being a client component, and the boundary tests quietly
+stopped covering it.
+
+### The acceptance test is not in the suite
+
+`scratchpad/e2e.mjs` drives two isolated Chrome profiles against a running
+server and a real database: convert, invite, join, onboard, contribute, edit,
+sync, and check privacy from three sides. It needs a server, a database and a
+browser, so it is run deliberately rather than on every commit.
+
+It has earned its keep twice — it found the missing `buildActorTrip` wiring
+(a traveller could not see their own private requirement) and the missing
+refresh after a successful write.

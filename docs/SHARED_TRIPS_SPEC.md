@@ -116,6 +116,26 @@ The interface calls this **"Shared updates"**. It does not say real-time,
 because it is not, and the architecture keeps a seam so a WebSocket or SSE
 transport can replace polling without the rest changing.
 
+## Every surface, one trip
+
+Overview, Explore, Plan, Group, Inbox, Money, Activity and What-if all read the
+same shared trip. There is no screen that quietly falls back to this device.
+
+The screens themselves are the same ones a local trip uses — see
+**[One product, two modes](SHARED_MODE_ARCHITECTURE.md)**. What differs is where
+the answers come from and where changes go.
+
+## Joining, and what happens next
+
+An invite lands, the trip is shown without the link being consumed, and pressing
+Join redeems it and cleans the URL. Then the newcomer is walked through what is
+still missing — are you coming, when can you travel, anything you need — and
+nothing else.
+
+If the organiser filled some of it in during the conversion, it is labelled
+**"filled in before you joined"** rather than presented as that person's answer.
+Orkestr does not count it until they confirm it.
+
 ## What Stage 3 is not
 
 No hotel booking, weather, maps, payments, social scraping, global accounts,

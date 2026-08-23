@@ -328,6 +328,7 @@ Start with `docs/PRODUCT_SPEC.md` for what the product does, and
 | `LIVING_TRIP_SPEC.md` | The Stage 2 interaction model, and what each screen refuses to do |
 | `VISUAL_SYSTEM.md` | Typography, colour, spacing, cards, motion and the responsive rules |
 | `SHARED_TRIPS_SPEC.md` | Shared trips: modes, roles, and what each person may see |
+| `SHARED_MODE_ARCHITECTURE.md` | How one set of screens serves local, shared and example |
 | `IDENTITY_AND_INVITES.md` | How somebody joins a trip without an account |
 | `SHARED_DATA_MODEL.md` | The seven tables and why privacy is one of them |
 | `SHARED_SECURITY_MODEL.md` | What is true, what is not, and the residual risk |

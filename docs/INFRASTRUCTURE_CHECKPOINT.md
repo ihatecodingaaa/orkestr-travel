@@ -122,6 +122,57 @@ and run `npm run db:check` again.
 
 **Deployment is a separate authorisation.** None of the above deploys anything.
 
+## PRODUCTION BLOCKER: the database certificate
+
+**Status: implemented, not production-verified.**
+
+`decideTls` makes production verify, always. The development database presents a
+**self-signed certificate chain**, so:
+
+```
+npm run db:check          -> SELF_SIGNED_CERT_IN_CHAIN
+PGSSL_ALLOW_UNVERIFIED=true npm run db:check  -> connects
+```
+
+That is correct behaviour, not a bug. It also means the verified path is proven
+by tests rather than against a real trusted certificate.
+
+### What is needed before production
+
+**One of these two.** Both are the founder's to obtain; nothing was downloaded
+or invented.
+
+**Option A — a publicly trusted certificate.** Some providers offer an endpoint
+whose certificate chains to a public root Node already trusts. If yours does,
+use that host and nothing else is required: `npm run db:check` will report
+"verified against system roots".
+
+**Option B — the provider's root certificate.** Download it from the provider's
+own console or documentation, save it outside the repository, and set:
+
+```
+PGSSLROOTCERT=/absolute/path/to/provider-root.crt
+```
+
+`npm run db:check` should then report "verified against `PGSSLROOTCERT`".
+
+**Where to find it, by provider** — check the provider's own docs; the usual
+locations are:
+
+| Provider | Where the root certificate lives |
+|---|---|
+| Supabase | Project Settings → Database → Connection info → "Download certificate" |
+| Neon | Uses publicly trusted certificates; Option A applies |
+| RDS / Aurora | AWS "rds-ca-rsa2048-g1" bundle, from the RDS SSL documentation |
+| Alibaba Cloud RDS | Console → Instance → Data Security → SSL → Download CA |
+
+**Do not paste the certificate into chat.** It is not secret, but it does not
+belong in the transcript, and it must not be committed — a test asserts no
+certificate is embedded in source.
+
+Until this is done, deployment is blocked: production will refuse to connect
+rather than connect unverified, which is the intended failure.
+
 ## Model Studio — separate, and outstanding
 
 A Model Studio credential was surfaced in `.env.local` by the IDE during an

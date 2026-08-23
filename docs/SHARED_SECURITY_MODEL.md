@@ -94,3 +94,42 @@ profiles:
 
 If something here is wrong, it is a bug in this document as much as in the code.
 Both should change together.
+
+## Transport security (Stage 3.5)
+
+**Production always verifies the database certificate.** There is no environment
+variable, flag or code path that turns verification off in production — a switch
+for "trust anything" is a switch that ends up set.
+
+| Situation | Behaviour |
+|---|---|
+| Connection to this machine | TLS off (nothing crosses a network) |
+| `PGSSLROOTCERT` set | Verified against that certificate |
+| Production, nothing set | Verified against system roots |
+| Development, `PGSSL_ALLOW_UNVERIFIED=true` | Encrypted, **not** verified, and it says so |
+| **Production, `PGSSL_ALLOW_UNVERIFIED=true`** | **Ignored — still verified** |
+
+The last row is the one that matters: a value copied out of a developer's
+environment cannot weaken a deployment. A test asserts it for every input.
+
+The earlier version passed `rejectUnauthorized: false` everywhere. That encrypts
+the connection and verifies nothing — it stops passive reading and does not stop
+an active man-in-the-middle. A comment said as much, which is not a control.
+
+**Certificate material never reaches the browser.** No certificate is embedded
+in source, only `src/server/shared/` reads the variable, and no `NEXT_PUBLIC_`
+variant of any TLS or database variable exists. All three are asserted.
+
+**Not production-verified.** The development database presents a self-signed
+chain, so the verified path is exercised by tests rather than against a real
+trusted certificate. See `INFRASTRUCTURE_CHECKPOINT.md`.
+
+## Verified across every shared surface (Stage 3.5)
+
+A sentinel private value was asserted **absent** from the organiser's and
+another traveller's HTML and RSC payloads on Overview, Explore, Plan, Group,
+Inbox, Money, Activity and What-if — and **present** only for its owner. A third
+browser with no session received nothing on any of them.
+
+No invite token appears in any activity event, and none survives in the URL,
+HTML or RSC payload after redemption.

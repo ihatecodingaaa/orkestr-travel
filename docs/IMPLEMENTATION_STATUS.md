@@ -761,6 +761,19 @@ nothing here has.
 | **PostgreSQL repository** | **LIVE VERIFIED** — 19 integration tests against PostgreSQL 17.6 |
 | **Migrations** | **APPLIED** — `0001_shared_trips.sql`, recorded in `schema_migration` |
 | Join flow and invite landing | **LIVE VERIFIED** — two isolated browsers, real database |
+| **Shared Overview** | **LIVE VERIFIED** |
+| **Shared Explore** | **LIVE VERIFIED** — ideas, saves and attribution from the server |
+| **Shared Plan** | **LIVE VERIFIED** — one canonical itinerary, organiser-owned |
+| **Shared Group** | **LIVE VERIFIED** |
+| **Shared Inbox** | **LIVE VERIFIED** |
+| **Shared Money** | **LIVE VERIFIED** |
+| **Shared Activity** | **LIVE VERIFIED** — no token, no private value |
+| **Shared What-if** | **LIVE VERIFIED** — preview is non-mutating; applying is version-guarded |
+| **Personal onboarding** | **LIVE VERIFIED** — progressive, and drafts are labelled |
+| **Owner confirmation of imported drafts** | **LIVE VERIFIED** |
+| **Shared polling** | **LIVE VERIFIED** — B saw A's change without a reload |
+| **Local → shared conversion UI** | **LIVE VERIFIED** |
+| **Source-of-truth guard** | **IMPLEMENTED + TESTED** — found a real defect |
 | Share screen | **LIVE VERIFIED** — no token rendered, checked with scripts included |
 | noindex + robots for trips and invites | IMPLEMENTED |
 | Server boundary for shared modules | IMPLEMENTED + TESTED |
@@ -783,17 +796,17 @@ that runs after the build. No network access required.
 | Optimistic concurrency, real race | **LIVE VERIFIED** — two writes, one winner |
 | Invite redeemed twice, real race | **LIVE VERIFIED** — one join, one refusal |
 | Private value in HTML / RSC payload | **VERIFIED ABSENT** for organiser and traveller |
-| **Shared Explore / Plan / Inbox screens** | **NOT BUILT** — shared mode renders the Overview only |
-| **Personal onboarding after joining** | **NOT BUILT** — a welcome, not the guided steps |
-| **Version polling wired into the UI** | **NOT BUILT** — policy is implemented and tested, nothing calls it |
+| **Production TLS trust** | **IMPLEMENTED — NOT PRODUCTION VERIFIED** (see below) |
+| **Global user accounts** | **NOT IMPLEMENTED** |
+| **Email / cross-device recovery** | **NOT IMPLEMENTED** |
 
-### The things not to overclaim in Stage 3
+### The things not to overclaim
 
 1. **This is not end-to-end encrypted.** Private values are access-controlled
    server-side and stored in plain text. Anyone with database access can read
    them.
-2. **"Shared updates" is polling** — and it is not yet wired into the UI at all.
-   The page shows a version number and does not refresh itself.
-3. **Shared mode covers the Overview and the share/join flow.** Explore, Plan,
-   Group and Inbox still render from local state; opening them on a shared trip
-   shows the device-local product, not the group's.
+2. **"Shared updates" is polling**, roughly every seven seconds while the page
+   is visible. It is wired and verified, and it is not real-time.
+3. **Production TLS is implemented and not production-verified.** The
+   development database presents a self-signed chain, so verification is
+   exercised only in tests. See the blocker below.

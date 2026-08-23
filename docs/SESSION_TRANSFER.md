@@ -754,3 +754,73 @@ The page prints a version number and does not refresh itself.
 
 **Next:** shared Explore/Plan/Group/Inbox, personal onboarding after joining,
 and wiring the sync policy. Deployment is a separate authorisation after that.
+
+## Stage 3.5 — shared experience completed (24 August 2026)
+
+**1,320 unit tests / 61 files · 32 live database tests · 4 browser-bundle
+tests.** All gates green.
+
+### The Stage 3 defect is closed
+
+Every trip surface -- Overview, Explore, Plan, Group, Inbox, Money, Activity,
+What-if and the personal details page -- now reads the same shared trip. Nothing
+falls back to this device.
+
+**Read `docs/SHARED_MODE_ARCHITECTURE.md` before touching any trip screen.** The
+short version: screens take a `TripActions`, not a `save` callback; the route
+decides the mode on the server; and `buildActorTrip` gives one reader their own
+private values back so the existing screens work unchanged.
+
+### Two real defects the acceptance test found
+
+Neither was visible in a type, a lint rule or a unit test.
+
+1. **`buildActorTrip` was never wired in.** A traveller could not see their own
+   private requirement -- it was stored correctly in owner-only storage and was
+   therefore absent from the group payload, which is right for everybody except
+   its owner.
+2. **Nothing refreshed after a successful write.** The poll would have found it
+   within seven seconds, which is far too long to watch your own click do
+   nothing.
+
+A third was found by the new architectural guard: `/people` was still
+client-only, and the shared Group screen linked straight into the device-local
+product.
+
+### TLS: production always verifies
+
+`rejectUnauthorized: false` is gone. There is no variable, flag or code path
+that relaxes verification in production -- `PGSSL_ALLOW_UNVERIFIED` is ignored
+there, and a test asserts it for every input.
+
+**The development database presents a self-signed chain**, so `npm run db:check`
+and `npm run test:db` need `PGSSL_ALLOW_UNVERIFIED=true` locally, and the
+production path is exercised by tests rather than against a real trusted
+certificate. That is the outstanding production blocker.
+
+### Running the acceptance test
+
+```
+PGSSL_ALLOW_UNVERIFIED=true npm run dev
+SHOT_OUT=... SEED_JSON="$(cat seed.json)" node scratchpad/e2e.mjs
+```
+
+Two isolated Chrome profiles, a real database, 50 checks. It is not in the suite
+because it needs a server, a database and a browser.
+
+`next start` cannot currently connect: production forces verification and the
+development certificate is self-signed. That is correct behaviour, not a bug.
+
+### Do not
+
+* Give a screen a `save: (trip) => void` prop again. Two people editing
+  different fields would each send a whole trip, and the second would erase the
+  first.
+* Read `localStorage` from anything under `src/ui/shared`. A guard fails on it.
+* Add a member id to a "my" mutation. There is nothing to forge precisely
+  because the field does not exist.
+* Relax TLS in production. There is deliberately no way to.
+* Call it real-time. It polls every seven seconds while visible.
+
+**Next:** production readiness -- database TLS trust, Model Studio key rotation,
+hosting, environment variables, domain, deployment.
