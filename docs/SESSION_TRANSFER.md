@@ -728,6 +728,29 @@ value has already been sent to the wrong browser and the fix is upstream.
 * Let migration claim that somebody confirmed something. Other people's local
   details migrate as drafts, and that is the point of the whole module.
 
-**Next:** the founder configures a database; then migrations, live integration
-tests, two-browser QA, and a privacy audit against real HTML. Deployment is a
-separate authorisation after that.
+### The database is now real (23 August 2026)
+
+PostgreSQL 17.6. `0001_shared_trips.sql` applied and recorded. **19/19 live
+integration tests**, **22/22 two-browser QA**, **20/20 privacy checks against
+raw HTTP and RSC payloads**, **9/9 local-trip regression**.
+
+Commands: `npm run db:check` (safe to paste anywhere -- shape facts and a
+SQLSTATE, never the value), `npm run db:status`, `npm run db:migrate`,
+`npm run test:db`.
+
+The `test:db` suite **fails rather than skips** when `DATABASE_URL` is missing.
+That is the lesson from the Stage 2.5 bundle checks, which skipped in exactly
+the situation they existed for while still reporting green.
+
+### What shared mode actually covers today
+
+**The Overview, the share screen and the join flow.** Explore, Plan, Group and
+Inbox still render from local state -- opening them on a shared trip shows the
+device-local product, not the group's. That is the biggest honest gap and the
+obvious next piece of work.
+
+Version polling is implemented and tested as a policy; **nothing calls it yet**.
+The page prints a version number and does not refresh itself.
+
+**Next:** shared Explore/Plan/Group/Inbox, personal onboarding after joining,
+and wiring the sync policy. Deployment is a separate authorisation after that.

@@ -70,6 +70,26 @@ Names, idea titles, notes and links are user input.
   `data:` and `vbscript:` are rejected.
 * A pasted link is **stored and never fetched**, so it is not an SSRF surface.
 
+## Verified against a real database
+
+Not reasoned about — measured, on PostgreSQL 17.6 with two isolated browser
+profiles:
+
+* The sentinel private value appears in **no** response to the organiser or to
+  another traveller — HTML and RSC payload, checked after confirming the payload
+  was real rather than an empty redirect.
+* **No 43-character token-shaped string** appears anywhere in the share page,
+  scripts included.
+* An invalid invite token reveals nothing about the trip and produces the same
+  words as a revoked one.
+* The session cookie is `HttpOnly`, `SameSite=Lax`, `Secure`, and unreadable
+  from page script.
+* Two browsers hold different sessions; a third with none is refused.
+* Redeeming the same link twice yields one join and one refusal — as a real
+  race, both issued before either resolved.
+* No `DATABASE_URL`, connection string, driver or token helper reaches any
+  browser bundle.
+
 ## Reporting
 
 If something here is wrong, it is a bug in this document as much as in the code.
