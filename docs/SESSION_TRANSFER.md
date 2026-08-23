@@ -793,10 +793,11 @@ product.
 that relaxes verification in production -- `PGSSL_ALLOW_UNVERIFIED` is ignored
 there, and a test asserts it for every input.
 
-**The development database presents a self-signed chain**, so `npm run db:check`
-and `npm run test:db` need `PGSSL_ALLOW_UNVERIFIED=true` locally, and the
-production path is exercised by tests rather than against a real trusted
-certificate. That is the outstanding production blocker.
+**The certificate is now configured.** `PGSSLROOTCERT` points at the provider's
+root, outside the repository, and `PGSSL_ALLOW_UNVERIFIED` is not set anywhere.
+`db:check` reports "verified against PGSSLROOTCERT", the database suite runs the
+production trust path, and `next start` serves the whole shared product — it
+previously could not connect at all.
 
 ### Running the acceptance test
 
@@ -808,8 +809,8 @@ SHOT_OUT=... SEED_JSON="$(cat seed.json)" node scratchpad/e2e.mjs
 Two isolated Chrome profiles, a real database, 50 checks. It is not in the suite
 because it needs a server, a database and a browser.
 
-`next start` cannot currently connect: production forces verification and the
-development certificate is self-signed. That is correct behaviour, not a bug.
+`next start` works now. The acceptance suite has been run in production mode as
+well as development, and the session cookie is `secure=true` there.
 
 ### Do not
 

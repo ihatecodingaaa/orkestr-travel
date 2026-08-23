@@ -796,7 +796,7 @@ that runs after the build. No network access required.
 | Optimistic concurrency, real race | **LIVE VERIFIED** — two writes, one winner |
 | Invite redeemed twice, real race | **LIVE VERIFIED** — one join, one refusal |
 | Private value in HTML / RSC payload | **VERIFIED ABSENT** for organiser and traveller |
-| **Production TLS trust** | **IMPLEMENTED — NOT PRODUCTION VERIFIED** (see below) |
+| **Production TLS trust** | **LIVE VERIFIED** — verified against `PGSSLROOTCERT`, no relax flag |
 | **Global user accounts** | **NOT IMPLEMENTED** |
 | **Email / cross-device recovery** | **NOT IMPLEMENTED** |
 
@@ -807,6 +807,6 @@ that runs after the build. No network access required.
    them.
 2. **"Shared updates" is polling**, roughly every seven seconds while the page
    is visible. It is wired and verified, and it is not real-time.
-3. **Production TLS is implemented and not production-verified.** The
-   development database presents a self-signed chain, so verification is
-   exercised only in tests. See the blocker below.
+3. **Production TLS is verified**, against a real provider certificate, with
+   `PGSSL_ALLOW_UNVERIFIED` unset. What remains unproven is a *deployment* —
+   nothing has been hosted.

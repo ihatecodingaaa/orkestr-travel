@@ -46,7 +46,7 @@ while the page is visible, stopping when it is hidden.
 | **Forwarded invite** | Same as above | Same. An invite is a bearer token; the product says so |
 | **Reused invite** | Redemption is claimed inside the UPDATE, so two taps yield one join | None |
 | **Session theft (XSS)** | HttpOnly cookie; no token in localStorage; React escapes by default; no `dangerouslySetInnerHTML` | An XSS could still act as the user in-page |
-| **Session theft (network)** | Secure cookie in production | A compromised TLS chain — see the `ssl` note in `db.ts` |
+| **Session theft (network)** | Secure cookie in production | Standard TLS risks only; the database connection now verifies certificate and hostname |
 | **CSRF** | Server actions are POST with an origin check; SameSite=Lax; no GET mutates | None known |
 | **Cross-trip access** | Membership is per trip; a member of A resolving against B is refused | None |
 | **Organiser reading private values** | `canReadPrivate` compares against the owner, not the role; the query for counts does not select the values | The organiser can see that a constraint exists and how many |
@@ -120,9 +120,11 @@ an active man-in-the-middle. A comment said as much, which is not a control.
 in source, only `src/server/shared/` reads the variable, and no `NEXT_PUBLIC_`
 variant of any TLS or database variable exists. All three are asserted.
 
-**Not production-verified.** The development database presents a self-signed
-chain, so the verified path is exercised by tests rather than against a real
-trusted certificate. See `INFRASTRUCTURE_CHECKPOINT.md`.
+**Verified against a real certificate.** `PGSSLROOTCERT` holds the provider's
+root, stored outside the repository, and `PGSSL_ALLOW_UNVERIFIED` is not set
+anywhere. Proven by connection attempt: an unrelated CA is rejected, Node's
+hostname check is invoked and its verdict enforced, and a production server
+(`next start`, which forces verification) serves the whole shared product.
 
 ## Verified across every shared surface (Stage 3.5)
 
