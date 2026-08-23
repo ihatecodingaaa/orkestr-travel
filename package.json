@@ -28,7 +28,9 @@
     "research:diagnose": "vitest run --config vitest.live.config.ts evals/researchDiagnostic.live.ts",
     "shared:live": "vitest run --config vitest.live.config.ts evals/sharedLinks.live.ts",
     "atlas:smoke": "vitest run --config vitest.live.config.ts evals/atlas.live.ts",
-    "test:bundle": "vitest run --config vitest.bundle.config.ts"
+    "test:bundle": "vitest run --config vitest.bundle.config.ts",
+    "db:migrate": "node scripts/migrate.mjs",
+    "db:status": "node scripts/migrate.mjs --status"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.0",
@@ -36,6 +38,7 @@
     "@testing-library/react": "^16.3.2",
     "@testing-library/user-event": "^14.6.5",
     "@types/node": "^22.10.0",
+    "@types/pg": "^8.23.1",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.4",
     "@vitejs/plugin-react": "^5.2.0",
@@ -47,6 +50,7 @@
   },
   "dependencies": {
     "next": "^16.3.1",
+    "pg": "^8.23.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "server-only": "^0.0.1"
