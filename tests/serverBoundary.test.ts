@@ -112,6 +112,57 @@ describe("no secret is exposed through the public prefix", () => {
   });
 });
 
+describe("shared-trip server modules stay on the server", () => {
+  const sharedServer = filesUnder(join(ROOT, "src", "server", "shared"), [".ts"]);
+
+  it("every one of them declares server-only", () => {
+    expect(sharedServer.length).toBeGreaterThan(0);
+    for (const file of sharedServer) {
+      expect(read(file), `${file} is missing server-only`).toMatch(/import\s+["']server-only["']/);
+    }
+  });
+
+  it("no client component imports one", () => {
+    /**
+     * `server-only` already makes the BUILD fail on this, which is the primary
+     * control. This is the second layer, because the first is a convention
+     * enforced by a bundler and the cost of it being wrong is a database URL
+     * or a token helper in a browser bundle.
+     */
+    for (const file of clientComponents()) {
+      const source = read(file);
+      expect(source, `${file} imports a shared server module`).not.toMatch(
+        /from\s+["']@\/server/,
+      );
+      expect(source, `${file} imports the postgres driver`).not.toMatch(/from\s+["']pg["']/);
+    }
+  });
+
+  it("the pure shared core imports no server module and no driver", () => {
+    /**
+     * core/shared holds the authority and privacy rules. They must be testable
+     * without a database, and reachable from anywhere -- so nothing in there
+     * may reach for a connection.
+     */
+    const core = filesUnder(join(ROOT, "src", "core", "shared"), [".ts"]);
+    expect(core.length).toBeGreaterThan(0);
+    for (const file of core) {
+      const source = read(file);
+      expect(source, `${file} imports a server module`).not.toMatch(/from\s+["'].*\/server\//);
+      expect(source, `${file} imports the postgres driver`).not.toMatch(/from\s+["']pg["']/);
+      expect(source, `${file} declares server-only`).not.toMatch(/["']server-only["']/);
+    }
+  });
+
+  it("keeps the database variable out of anything with a public prefix", () => {
+    for (const file of filesUnder(join(ROOT, "src"), [".ts", ".tsx"])) {
+      expect(read(file), `${file} exposes the database URL publicly`).not.toContain(
+        "NEXT_PUBLIC_DATABASE",
+      );
+    }
+  });
+});
+
 describe("the deterministic core knows nothing about any vendor", () => {
   const coreFiles = filesUnder(join(ROOT, "src", "core"), [".ts"]);
 
