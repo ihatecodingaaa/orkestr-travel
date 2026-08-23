@@ -737,3 +737,55 @@ required.
    the raw minutes rather than from the printed figure.
 5. `ul.stack` kept the browser's 40px indent, so decision cards sat further
    right than the rest of the page.
+
+## STAGE 3 — SHARED TRIPS (local foundation)
+
+Honest labels. "IMPLEMENTED" means the code exists and is tested; "LIVE
+VERIFIED" is reserved for things that have run against a real database, and
+nothing here has.
+
+| Capability | Status |
+| --- | --- |
+| Shared-trip domain model | IMPLEMENTED |
+| Authority rules (organiser vs traveller vs owner) | IMPLEMENTED + TESTED, 4 actors |
+| Actor-aware view models | IMPLEMENTED + TESTED with a sentinel value |
+| Invite tokens, 256-bit, hash-only storage | IMPLEMENTED + TESTED |
+| Invite lifecycle: create, redeem, expire, revoke, regenerate | IMPLEMENTED + TESTED |
+| Session model, one browser many trips | IMPLEMENTED + TESTED |
+| Session cookie flags (HttpOnly/Lax/Secure) | IMPLEMENTED + TESTED |
+| Optimistic concurrency | IMPLEMENTED + TESTED |
+| Sync policy (poll on visible, stop on hidden) | IMPLEMENTED + TESTED |
+| Local -> shared migration semantics | IMPLEMENTED + TESTED |
+| URL scheme validation on pasted links | IMPLEMENTED + TESTED |
+| In-memory repository | IMPLEMENTED + TESTED |
+| **PostgreSQL repository** | **IMPLEMENTED — NOT LIVE VERIFIED** |
+| **Migrations** | **WRITTEN — NEVER RUN** |
+| Join flow and invite landing | IMPLEMENTED — not exercised against a database |
+| Share screen | IMPLEMENTED — not exercised against a database |
+| noindex + robots for trips and invites | IMPLEMENTED |
+| Server boundary for shared modules | IMPLEMENTED + TESTED |
+| `npm run verify` checks the real browser bundle | FIXED + VERIFIED BOTH WAYS |
+| Local trips without any configuration | UNCHANGED AND WORKING |
+| **Live Postgres integration** | **NOT PERFORMED** |
+| **Multi-browser shared QA** | **NOT PERFORMED** |
+| **Global user accounts** | **NOT IMPLEMENTED** |
+| **Email or cross-device recovery** | **NOT IMPLEMENTED** |
+| **Production deployment** | **NOT PERFORMED** |
+| **Production domain / DNS** | **NOT CONFIGURED** |
+| **Model Studio production key** | **NOT CONFIGURED — ROTATION REQUIRED** |
+| Atlas production | NOT AUTHORISED |
+| Booking, payment, ticketing | NOT IMPLEMENTED |
+
+**Tests: 1,299 across 59 files**, plus 4 browser-bundle tests in a 60th file
+that runs after the build. No network access required.
+
+### The three things not to overclaim in Stage 3
+
+1. **The Postgres path has never spoken to a database.** It compiles and
+   implements the same contract as the tested in-memory store. That is not the
+   same as working.
+2. **This is not end-to-end encrypted.** Private values are access-controlled
+   server-side and stored in plain text. Anyone with database access can read
+   them.
+3. **"Shared updates" is polling.** It is not real-time and the interface does
+   not say it is.

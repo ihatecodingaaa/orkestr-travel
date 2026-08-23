@@ -40,6 +40,8 @@ import {
 import type { TripActor, TripInvitation, TripMember } from "@/domain/sharedTrip";
 import { asIsoDateTime } from "@/domain/time";
 import { exampleTrip } from "@/ui/trip/exampleTrip";
+import { isSafeUrl, safeUrl } from "@/core/trips/safeUrl";
+import { addIdea } from "@/core/trips/mutate";
 
 /**
  * Shared trips: who is who, and who may see what.
@@ -729,6 +731,57 @@ describe("local to shared migration", () => {
         expect(member.authority).toBe("ORGANISER_DRAFT");
       }
     }
+  });
+});
+
+/* -------------------------------------------------------------------------- */
+
+describe("pasted links", () => {
+  it("refuses every scheme that can execute", () => {
+    for (const dangerous of [
+      "javascript:alert(1)",
+      "JavaScript:alert(1)",
+      "  javascript:alert(1)  ",
+      "data:text/html,<script>alert(1)</script>",
+      "vbscript:msgbox(1)",
+      "blob:https://example.com/abc",
+      "file:///etc/passwd",
+    ]) {
+      expect(safeUrl(dangerous), `${dangerous} was accepted`).toBeUndefined();
+      expect(isSafeUrl(dangerous)).toBe(false);
+    }
+  });
+
+  it("keeps ordinary links, and assumes https for a bare host", () => {
+    expect(safeUrl("https://example.com/a")).toBe("https://example.com/a");
+    expect(safeUrl("http://example.com/a")).toBe("http://example.com/a");
+    // People paste "gwangjang.market" and mean a website.
+    expect(safeUrl("gwangjang.market")).toBe("https://gwangjang.market/");
+  });
+
+  it("drops nonsense rather than storing it", () => {
+    expect(safeUrl(undefined)).toBeUndefined();
+    expect(safeUrl("   ")).toBeUndefined();
+    // No host at all. (`http:///nohost` is NOT this case -- the URL parser
+    // normalises it to host "nohost", which is a real, safe http URL.)
+    expect(safeUrl("https://")).toBeUndefined();
+    expect(safeUrl("http://")).toBeUndefined();
+  });
+
+  it("never stores a dangerous link on an idea", () => {
+    const trip = exampleTrip();
+    const ctx = { now: NOW, newId: () => "idea-probe" };
+    const next = addIdea(
+      trip,
+      { title: "Somewhere", category: "FOOD", url: "javascript:alert(1)" },
+      ctx,
+    );
+
+    const idea = next.ideas.find((candidate) => candidate.id === "idea-probe")!;
+    expect(idea.url).toBeUndefined();
+    // Without a usable link it is not a link idea, and must not claim to be.
+    expect(idea.source).toBe("USER_ADDED");
+    expect(JSON.stringify(next)).not.toContain("javascript:");
   });
 });
 

@@ -327,6 +327,13 @@ Start with `docs/PRODUCT_SPEC.md` for what the product does, and
 | `CONSUMER_PRODUCT_SPEC.md` | **The canonical product document. Read this first** |
 | `LIVING_TRIP_SPEC.md` | The Stage 2 interaction model, and what each screen refuses to do |
 | `VISUAL_SYSTEM.md` | Typography, colour, spacing, cards, motion and the responsive rules |
+| `SHARED_TRIPS_SPEC.md` | Shared trips: modes, roles, and what each person may see |
+| `IDENTITY_AND_INVITES.md` | How somebody joins a trip without an account |
+| `SHARED_DATA_MODEL.md` | The seven tables and why privacy is one of them |
+| `SHARED_SECURITY_MODEL.md` | What is true, what is not, and the residual risk |
+| `SHARED_THREAT_MODEL.md` | The scenarios behind those controls |
+| `LOCAL_TO_SHARED_MIGRATION.md` | Why other people's details migrate as drafts |
+| `INFRASTRUCTURE_CHECKPOINT.md` | What the founder has to set up, and what to say back |
 | `UX_PRINCIPLES.md` | Ten rules the interface is held to |
 | `PRODUCT_SPEC.md` | Original product principles and behaviour |
 | `ARCHITECTURE.md` | Layers, boundaries and data flow |

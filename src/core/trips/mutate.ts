@@ -1,4 +1,5 @@
 import type { ConsumerTrip, ConsumerTraveller } from "../../domain/consumerTrip";
+import { safeUrl } from "./safeUrl";
 import type {
   AutopilotSettings,
   BudgetCategory,
@@ -72,15 +73,23 @@ export interface NewIdea {
 export function addIdea(trip: ConsumerTrip, input: NewIdea, ctx: Ctx): ConsumerTrip {
   const title = input.title.trim();
   if (title.length === 0) return trip;
-  const url = input.url?.trim();
+  /**
+   * Validated at the boundary, not at render.
+   *
+   * A trip is a place where people paste links from group chats without
+   * looking at them. A `javascript:` URL stored here and later rendered as an
+   * anchor is stored cross-site scripting that fires for every member of the
+   * trip. Anything that is not http(s) is dropped rather than kept and hidden.
+   */
+  const url = safeUrl(input.url);
   const note = input.note?.trim();
 
   const idea: TripIdea = {
     id: ctx.newId(),
     title,
     category: input.category,
-    source: url !== undefined && url.length > 0 ? "USER_LINK" : "USER_ADDED",
-    ...(url !== undefined && url.length > 0 ? { url } : {}),
+    source: url !== undefined ? "USER_LINK" : "USER_ADDED",
+    ...(url === undefined ? {} : { url }),
     ...(note !== undefined && note.length > 0 ? { blurb: note } : {}),
     ...(input.addedBy === undefined ? {} : { addedBy: input.addedBy }),
     // Adding something counts as wanting it. Anything else would need a second

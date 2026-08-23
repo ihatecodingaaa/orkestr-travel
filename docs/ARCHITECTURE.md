@@ -441,3 +441,50 @@ Both were silent, both cost real time, and both were one name doing two jobs:
 **A class name that already exists in `globals.css` or `product.css` belongs to
 the demo layer.** The product's are `.day-timeline` and `.chip` (the demo's
 status label became `.state-chip`).
+
+## Shared trips (Stage 3)
+
+```
+domain/sharedTrip.ts        members, invitations, sessions, private data
+core/shared/authority.ts    who may do what. ONE place
+core/shared/views.ts        what each actor is allowed to RECEIVE
+core/shared/concurrency.ts  optimistic versions and the sync policy
+core/shared/migration.ts    local -> shared, and what it refuses to claim
+server/shared/tokens.ts     256-bit tokens, hashes only
+server/shared/actor.ts      the only place a TripActor is constructed
+server/shared/repository.ts the contract, implemented twice
+migrations/*.sql            plain SQL, in Git, run by a person
+```
+
+**The split is the point.** `core/shared` is pure: no clock, no database, no
+request. It holds the authority and privacy rules, so those can be tested
+exhaustively without infrastructure -- and a repo guard asserts nothing in there
+imports a server module or a driver.
+
+`server/shared` holds everything that touches a connection or a cookie, and
+every file declares `server-only`.
+
+### Identity is derived, never accepted
+
+`resolveActor` is the one function that builds a `TripActor`, and it builds it
+from a session cookie. A request may say which trip it wants and which idea to
+save; it may not say who it is.
+
+The Stage 2.5 "View as" control was an honest prototype affordance when there
+was one reader. In shared mode it is gone -- keeping it would have turned it
+into an impersonation endpoint.
+
+### Privacy is structural, not cosmetic
+
+Owner-only values live in their own table, and the actor-aware builders decide
+what is **serialised at all**. Nothing is hidden with CSS or filtered in React.
+
+That distinction is the whole design: privacy that depends on remembering to
+filter a field fails the first time somebody adds a field.
+
+### Local mode is not a fallback
+
+A trip is LOCAL or SHARED and the product knows which. With no `DATABASE_URL`
+the local product is exactly what it was, and the sharing controls say sharing
+is not configured here. There is no silent degradation, and no invite that
+appears to work.

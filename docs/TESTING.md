@@ -350,3 +350,39 @@ It is **not** in the test suite. It needs a running server and a real browser,
 and a screenshot diff would fail on font rendering long before it caught
 anything real. Layout regressions are guarded by the structural tests above and
 by looking at the screen.
+
+
+## Shared trips
+
+`tests/sharedTrips.test.ts` -- 45 tests, four actors: an organiser, two
+travellers, and a stranger.
+
+Almost every Stage 3 rule is only meaningful in the presence of somebody it
+should **not** apply to, so each question is asked from all four sides. They run
+against the in-memory repository, which implements the same contract as the
+PostgreSQL one -- the questions are about authority and privacy, not about SQL,
+and they should run on every commit in milliseconds.
+
+**The privacy assertions cannot pass vacuously.** `650` is a real private
+requirement in the Tokyo example; the suite asserts it is present before
+stripping and absent from every non-owner view afterwards.
+
+## `npm run verify` means what it says
+
+It used to be `check && build`, so the tests ran **before** the build. The
+browser-bundle checks were guarded by `it.skipIf(!built)` and therefore skipped
+silently on a clean checkout -- the exact case they existed for -- while the run
+still reported green.
+
+It is now:
+
+```
+check  ->  secrets, lint, typecheck, unit tests
+build  ->  next build
+test:bundle  ->  assertions about what actually reached the browser
+```
+
+A missing build **fails** `test:bundle` rather than skipping it. Verified both
+ways: it fails without a build and passes with one.
+
+`npm test` on a fresh checkout excludes `tests/bundle` and still passes.

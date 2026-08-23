@@ -670,3 +670,64 @@ cost an hour of chasing a CSS bug that was already fixed.
 
 **Next:** unchanged — infrastructure (identity, a server-side store, real invite
 links). Still explicitly not started.
+
+## Stage 3 local foundation + history sanitisation (23 August 2026)
+
+**1,299 tests across 59 files**, plus 4 browser-bundle tests after the build.
+All gates green.
+
+### Part A: the history rewrite happened
+
+Every commit message on `main` was rewritten to drop AI attribution trailers.
+73 of 81 commits carried them; 0 do now. Author and committer identity, dates
+and every tree SHA are byte-identical -- only messages changed, and the file
+tree at HEAD is the same object.
+
+**A recovery bundle exists outside the repository** at
+`C:/Users/lucas/Documents/orkestr-travel-pre-attribution-rewrite-20260823-0858.bundle`.
+Keep it. It is the only copy of the pre-rewrite history and it is deliberately
+not in Git.
+
+Old SHAs in older notes will no longer resolve. `2976703` is now `ce7bee2`.
+
+**The permanent rule:** no commit may carry `Co-authored-by: Claude`,
+`Claude-Session:` or an equivalent trailer. Check `git log --format=full`
+before pushing.
+
+### Part B: shared trips, up to the infrastructure checkpoint
+
+Everything that does not need a database is built and tested. The PostgreSQL
+adapter is written and **has never spoken to a database** -- that label matters
+and should not be upgraded without running it.
+
+**Read `docs/INFRASTRUCTURE_CHECKPOINT.md` first.** It says what the founder has
+to set up and what to say back ("DATABASE CONFIGURED", no value).
+
+### The one design decision to understand before changing anything
+
+**Privacy is structural.** Owner-only values live in their own table, and
+actor-aware builders in `core/shared/views.ts` decide what is *serialised at
+all*. Nothing is hidden with CSS or filtered in a component.
+
+If you find yourself writing `if (isOwner) show(...)` in a React component, the
+value has already been sent to the wrong browser and the fix is upstream.
+
+### Do not
+
+* Trust a `memberId` from a request. `resolveActor` is the only source of
+  identity, and it reads a session cookie.
+* Reintroduce "View as" in shared mode. It was honest with one reader; with
+  several it is an impersonation endpoint.
+* Add a `NEXT_PUBLIC_` variant of any database or session variable. A test
+  fails on it, and the consequence is permanent.
+* Call it real-time. It polls every seven seconds while visible.
+* Call it encrypted. Private values are access-controlled, not encrypted, and
+  a database operator can read them.
+* Upgrade "IMPLEMENTED" to "LIVE VERIFIED" for the Postgres path until it has
+  actually run.
+* Let migration claim that somebody confirmed something. Other people's local
+  details migrate as drafts, and that is the point of the whole module.
+
+**Next:** the founder configures a database; then migrations, live integration
+tests, two-browser QA, and a privacy audit against real HTML. Deployment is a
+separate authorisation after that.
