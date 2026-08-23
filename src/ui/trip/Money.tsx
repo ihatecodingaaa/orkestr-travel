@@ -4,7 +4,7 @@ import { useState } from "react";
 import type { ConsumerTrip } from "@/domain/consumerTrip";
 import { BUDGET_CATEGORIES, budgetLabel } from "@/domain/livingTrip";
 import { summariseBudget } from "@/core/trips/living";
-import { setAutopilot, setBudgetLine } from "@/core/trips/mutate";
+import type { TripActions } from "./actions";
 
 /**
  * Money, and what Orkestr does on its own.
@@ -21,11 +21,11 @@ import { setAutopilot, setBudgetLine } from "@/core/trips/mutate";
  */
 export function Money({
   trip,
-  save,
+  actions,
   viewerId,
 }: {
   readonly trip: ConsumerTrip;
-  readonly save: (trip: ConsumerTrip) => void;
+  readonly actions: TripActions;
   readonly viewerId: string;
 }) {
   const summary = summariseBudget(trip);
@@ -64,7 +64,7 @@ export function Money({
               onChange={(e) => {
                 setCurrency(e.target.value.toUpperCase());
                 if (/^[A-Za-z]{3}$/.test(e.target.value)) {
-                  save(setBudgetLine(trip, "FLIGHTS", lineFor(trip, "FLIGHTS"), e.target.value));
+                  void actions.setCurrency(e.target.value);
                 }
               }}
             />
@@ -92,7 +92,7 @@ export function Money({
                      * worked it out.
                      */
                     if (raw !== "" && (!Number.isFinite(parsed) || (parsed ?? -1) < 0)) return;
-                    save(setBudgetLine(trip, category, parsed, trip.budget.currency));
+                    void actions.setBudgetLine(category, parsed);
                   }}
                 />
                 <span className="faint">
@@ -163,19 +163,19 @@ export function Money({
             label="Point out facts that have gone stale"
             detail="Flight prices and availability go out of date quickly."
             on={trip.autopilot.flagStaleFacts}
-            onChange={(value) => save(setAutopilot(trip, { flagStaleFacts: value }))}
+            onChange={(value) => void actions.setAutopilot({ flagStaleFacts: value })}
           />
           <Switch
             label="Suggest a repair when something changes"
             detail="Rather than waiting to be asked."
             on={trip.autopilot.suggestRepairs}
-            onChange={(value) => save(setAutopilot(trip, { suggestRepairs: value }))}
+            onChange={(value) => void actions.setAutopilot({ suggestRepairs: value })}
           />
           <Switch
             label="Never move things you have fixed"
             detail="Anything marked fixed stays put unless nothing else works."
             on={trip.autopilot.preserveFixedItems}
-            onChange={(value) => save(setAutopilot(trip, { preserveFixedItems: value }))}
+            onChange={(value) => void actions.setAutopilot({ preserveFixedItems: value })}
           />
         </ul>
 

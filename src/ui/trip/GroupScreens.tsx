@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { privateCountFor } from "@/core/trips/privateCount";
 import Link from "next/link";
 import type { ConsumerTrip } from "@/domain/consumerTrip";
 import { readinessLabel, readinessOf } from "@/domain/consumerTrip";
@@ -32,7 +33,14 @@ export function GroupScreen({
   readonly trip: ConsumerTrip;
   readonly base: string;
   readonly viewerId: string;
-  readonly setViewer: (id: string) => void;
+  /**
+   * Absent in shared mode, where identity comes from the session.
+   *
+   * The picker was an honest prototype affordance while one browser owned the
+   * whole trip. With several people on it, a control that changes who you are
+   * is an impersonation endpoint, so shared mode simply does not pass one.
+   */
+  readonly setViewer?: (id: string) => void;
 }) {
   const counts = countReadiness(trip.travellers);
   const summary = summariseGroup(trip);
@@ -53,16 +61,21 @@ export function GroupScreen({
       </div>
 
       {/*
-        A prototype control, named as one. There is no authentication, so this
-        previews a perspective rather than signing anybody in.
+        A prototype control, named as one, and ONLY in local mode.
+
+        There is no authentication on a device-local trip, so this previews a
+        perspective rather than signing anybody in. A shared trip passes no
+        `setViewer`, because a control that changes who you are would be an
+        impersonation endpoint the moment a second person is on the trip.
       */}
+      {setViewer !== undefined && (
       <div className="viewas">
         <label htmlFor="viewer">Viewing as</label>
         <select
           id="viewer"
           className="input input-small"
           value={viewerId}
-          onChange={(e) => setViewer(e.target.value)}
+          onChange={(e) => { setViewer(e.target.value); }}
         >
           {trip.travellers.map((traveller) => (
             <option key={traveller.id} value={traveller.id}>
@@ -72,13 +85,14 @@ export function GroupScreen({
         </select>
         <span className="faint">Prototype control — there are no accounts yet.</span>
       </div>
+      )}
 
       <ul className="group-people">
         {trip.travellers.map((traveller) => {
           const readiness = readinessOf(traveller);
           const isSelf = traveller.id === viewerId;
           const shared = traveller.requirements.filter((r) => !r.private);
-          const privateCount = traveller.requirements.filter((r) => r.private).length;
+          const privateCount = privateCountFor(traveller);
           const saves = trip.ideas.filter((idea) => idea.savedBy.includes(traveller.id));
           const likes = [...new Set(saves.map((idea) => idea.category))].slice(0, 3);
 

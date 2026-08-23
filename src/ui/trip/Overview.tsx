@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { privateCountFor } from "@/core/trips/privateCount";
 import type { ConsumerTrip } from "@/domain/consumerTrip";
 import { readinessLabel, readinessOf } from "@/domain/consumerTrip";
 import { countReadiness, groupByDeparture, outstanding, readyPercent } from "@/core/trips/pulse";
@@ -140,7 +141,7 @@ export function Overview({
         <ul className="people-strip">
           {trip.travellers.map((traveller) => {
             const readiness = readinessOf(traveller);
-            const privateCount = traveller.requirements.filter((r) => r.private).length;
+            const privateCount = privateCountFor(traveller);
             const shared = traveller.requirements.filter((r) => !r.private);
             return (
               <li key={traveller.id} className="person-chip">

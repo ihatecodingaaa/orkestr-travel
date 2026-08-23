@@ -11,9 +11,8 @@ import {
   initialsOf,
   tripDays,
 } from "@/core/trips/living";
-import { addIdea, addPlanItem, removeIdea, toggleSave } from "@/core/trips/mutate";
-import { newId, nowIso } from "./TripsClient";
 import { formatWithWeekday } from "./format";
+import type { TripActions } from "./actions";
 
 /**
  * Explore.
@@ -36,11 +35,11 @@ import { formatWithWeekday } from "./format";
  */
 export function Explore({
   trip,
-  save,
+  actions,
   viewerId,
 }: {
   readonly trip: ConsumerTrip;
-  readonly save: (trip: ConsumerTrip) => void;
+  readonly actions: TripActions;
   readonly viewerId: string;
 }) {
   const [filter, setFilter] = useState<IdeaCategory | "ALL">("ALL");
@@ -86,9 +85,7 @@ export function Explore({
 
       {showAdd && (
         <AddIdea
-          trip={trip}
-          save={save}
-          viewerId={viewerId}
+          actions={actions}
           onDone={() => {
             setShowAdd(false);
           }}
@@ -167,12 +164,7 @@ export function Explore({
             </div>
 
             {featured !== undefined && (
-              <FeaturedIdea
-                trip={trip}
-                idea={featured}
-                save={save}
-                viewerId={viewerId}
-              />
+              <FeaturedIdea trip={trip} idea={featured} actions={actions} viewerId={viewerId} />
             )}
 
             {rest.length === 0 && featured === undefined && (
@@ -181,7 +173,7 @@ export function Explore({
 
             <ul className="idea-grid">
               {rest.map((idea) => (
-                <IdeaCard key={idea.id} trip={trip} idea={idea} save={save} viewerId={viewerId} />
+                <IdeaCard key={idea.id} trip={trip} idea={idea} actions={actions} viewerId={viewerId} />
               ))}
             </ul>
           </section>
@@ -239,12 +231,12 @@ function sourceNote(idea: TripIdea): string {
 function FeaturedIdea({
   trip,
   idea,
-  save,
+  actions,
   viewerId,
 }: {
   readonly trip: ConsumerTrip;
   readonly idea: TripIdea;
-  readonly save: (trip: ConsumerTrip) => void;
+  readonly actions: TripActions;
   readonly viewerId: string;
 }) {
   const isSaved = idea.savedBy.includes(viewerId);
@@ -278,12 +270,12 @@ function FeaturedIdea({
             type="button"
             className={isSaved ? "btn btn-small btn-saved" : "btn btn-primary btn-small"}
             onClick={() => {
-              save(toggleSave(trip, idea.id, viewerId));
+              void actions.toggleSave(idea.id);
             }}
           >
             {isSaved ? "♥ Saved" : "♡ Save"}
           </button>
-          <AddToDay trip={trip} idea={idea} save={save} />
+          <AddToDay trip={trip} idea={idea} actions={actions} />
           <span className="source-note">{sourceNote(idea)}</span>
         </div>
       </div>
@@ -296,12 +288,12 @@ function FeaturedIdea({
 function IdeaCard({
   trip,
   idea,
-  save,
+  actions,
   viewerId,
 }: {
   readonly trip: ConsumerTrip;
   readonly idea: TripIdea;
-  readonly save: (trip: ConsumerTrip) => void;
+  readonly actions: TripActions;
   readonly viewerId: string;
 }) {
   const isSaved = idea.savedBy.includes(viewerId);
@@ -336,18 +328,18 @@ function IdeaCard({
           type="button"
           className={isSaved ? "btn btn-small btn-saved" : "btn btn-secondary btn-small"}
           onClick={() => {
-            save(toggleSave(trip, idea.id, viewerId));
+            void actions.toggleSave(idea.id);
           }}
         >
           {isSaved ? "♥ Saved" : "♡ Save"}
         </button>
-        <AddToDay trip={trip} idea={idea} save={save} />
+        <AddToDay trip={trip} idea={idea} actions={actions} />
         {idea.source !== "LOCAL_EXAMPLE" && (
           <button
             type="button"
             className="linkish"
             onClick={() => {
-              save(removeIdea(trip, idea.id));
+              void actions.removeIdea(idea.id);
             }}
           >
             Remove
@@ -362,11 +354,11 @@ function IdeaCard({
 function AddToDay({
   trip,
   idea,
-  save,
+  actions,
 }: {
   readonly trip: ConsumerTrip;
   readonly idea: ConsumerTrip["ideas"][number];
-  readonly save: (trip: ConsumerTrip) => void;
+  readonly actions: TripActions;
 }) {
   const already = trip.plan.some((item) => item.fromIdeaId === idea.id);
   if (already) return <span className="faint">On the plan</span>;
@@ -378,20 +370,13 @@ function AddToDay({
       aria-label={`Add ${idea.title} to a day`}
       onChange={(event) => {
         if (event.target.value === "") return;
-        save(
-          addPlanItem(
-            trip,
-            {
-              day: event.target.value as (typeof trip)["startDate"],
-              title: idea.title,
-              kind: idea.category === "FOOD" ? "FOOD" : "ACTIVITY",
-              ...(idea.area === undefined ? {} : { area: idea.area }),
-              ...(idea.minutes === undefined ? {} : { minutes: idea.minutes }),
-              fromIdeaId: idea.id,
-            },
-            { now: nowIso(), newId },
-          ),
-        );
+        void actions.addPlanItem({
+          day: event.target.value as (typeof trip)["startDate"],
+          title: idea.title,
+          kind: idea.category === "FOOD" ? "FOOD" : "ACTIVITY",
+          ...(idea.area === undefined ? {} : { area: idea.area }),
+          fromIdeaId: idea.id,
+        });
       }}
     >
       <option value="">Add to a day…</option>
@@ -406,14 +391,10 @@ function AddToDay({
 
 /** Add an idea by hand, or paste a link. The link is stored, never fetched. */
 function AddIdea({
-  trip,
-  save,
-  viewerId,
+  actions,
   onDone,
 }: {
-  readonly trip: ConsumerTrip;
-  readonly save: (trip: ConsumerTrip) => void;
-  readonly viewerId: string;
+  readonly actions: TripActions;
   readonly onDone: () => void;
 }) {
   const [title, setTitle] = useState("");
@@ -427,13 +408,7 @@ function AddIdea({
       onSubmit={(event) => {
         event.preventDefault();
         if (title.trim().length === 0) return;
-        save(
-          addIdea(
-            trip,
-            { title, category, url, note, addedBy: viewerId },
-            { now: nowIso(), newId },
-          ),
-        );
+        void actions.addIdea({ title, category, url, note });
         setTitle("");
         setUrl("");
         setNote("");

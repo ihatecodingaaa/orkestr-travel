@@ -70,6 +70,72 @@ export interface NewIdea {
  * looked at it. Claiming to have read a page nobody read is the sort of small
  * lie that makes every other claim suspect.
  */
+export type TravellerPatch = Partial<Omit<ConsumerTraveller, "availableFrom" | "availableTo">> & {
+  availableFrom?: IsoDate | undefined;
+  availableTo?: IsoDate | undefined;
+};
+
+
+/**
+ * Apply a patch, treating an explicit `undefined` as "remove this".
+ *
+ * A plain spread cannot do this. `{...traveller, availableFrom: undefined}`
+ * leaves the key present holding undefined, which the domain type forbids and
+ * which would serialise into storage as a field that exists and means nothing.
+ * Clearing a date has to actually remove it.
+ */
+function applyPatch(traveller: ConsumerTraveller, patch: TravellerPatch): ConsumerTraveller {
+  const { availableFrom, availableTo, ...rest } = patch;
+  const merged: ConsumerTraveller = { ...traveller, ...rest };
+
+  const withFrom =
+    "availableFrom" in patch
+      ? availableFrom === undefined
+        ? omit(merged, "availableFrom")
+        : { ...merged, availableFrom }
+      : merged;
+
+  return "availableTo" in patch
+    ? availableTo === undefined
+      ? omit(withFrom, "availableTo")
+      : { ...withFrom, availableTo }
+    : withFrom;
+}
+
+function omit(
+  traveller: ConsumerTraveller,
+  key: "availableFrom" | "availableTo",
+): ConsumerTraveller {
+  const copy = { ...traveller };
+  delete copy[key];
+  return copy;
+}
+
+
+/**
+ * Change one traveller's own details.
+ *
+ * PURE, AND SHARED BY BOTH MODES. It used to live inside the people screen,
+ * which was fine while one browser owned the whole trip. A shared trip applies
+ * the same change on the server, and a second implementation there would be a
+ * second set of rules -- the two would disagree the first time either changed.
+ */
+export function updateTraveller(
+  trip: ConsumerTrip,
+  travellerId: string,
+  patch: TravellerPatch,
+  ctx: Ctx,
+): ConsumerTrip {
+  if (!trip.travellers.some((traveller) => traveller.id === travellerId)) return trip;
+  return {
+    ...trip,
+    travellers: trip.travellers.map((traveller) =>
+      traveller.id === travellerId ? applyPatch(traveller, patch) : traveller,
+    ),
+    updatedAt: ctx.now,
+  };
+}
+
 export function addIdea(trip: ConsumerTrip, input: NewIdea, ctx: Ctx): ConsumerTrip {
   const title = input.title.trim();
   if (title.length === 0) return trip;

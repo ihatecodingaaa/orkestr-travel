@@ -1,32 +1,49 @@
-"use client";
-
-import { use } from "react";
 import Link from "next/link";
-import { useTrip } from "@/ui/trip/TripsClient";
-import { ExampleNote, TripShell } from "@/ui/trip/TripShell";
-import { WhatIf } from "@/ui/trip/WhatIf";
+import { loadSharedTrip } from "@/server/shared/loadTrip";
+import { SharedScreen } from "@/ui/shared/SharedScreen";
+import { SharedShell } from "@/ui/shared/SharedShell";
+import { LocalScreen } from "@/ui/trip/LocalScreen";
 
 /**
- * A trip screen.
+ * What if, in whichever mode this trip is in.
  *
- * Thin on purpose: read the trip, hand it to a component. The three states
- * below are all real and all distinct -- still asking, genuinely absent, and
- * found. Collapsing the first two would flash "not found" on every load.
+ * The mode is decided ONCE, here, on the server -- not guessed by a component
+ * further down. A shared trip is resolved and access-checked before any of it
+ * reaches a browser; anything else falls through to the local product, which
+ * reads this device and needs no configuration.
+ *
+ * A shared trip never renders the local screen, and a local trip never renders
+ * the shared one. That is the defect this route shape exists to make
+ * impossible: a trip whose Overview came from the server and whose whatif came
+ * from this device would be two different trips under one name.
  */
-export default function Page({ params }: { readonly params: Promise<{ tripId: string }> }) {
-  const { tripId } = use(params);
-  const { loading, trip, save } = useTrip(tripId);
+export default async function Page({
+  params,
+}: {
+  readonly params: Promise<{ tripId: string }>;
+}) {
+  const { tripId } = await params;
+  const shared = await loadSharedTrip(tripId);
 
-  if (loading) return <p className="faint">Loading your trip…</p>;
+  if (shared.kind === "OK") {
+    return (
+      <SharedShell trip={shared.trip} actor={shared.actor} current="whatif">
+        <SharedScreen
+          screen="whatif"
+          trip={shared.trip}
+          actor={shared.actor}
+          members={shared.members}
+          version={shared.version}
+        />
+      </SharedShell>
+    );
+  }
 
-  if (trip === undefined) {
+  if (shared.kind === "NO_ACCESS") {
     return (
       <div className="empty-panel">
-        <h1>That trip isn&rsquo;t on this device</h1>
-        <p className="faint">
-          Trips are saved in the browser that created them. If you made this one somewhere else it
-          will not be here — Orkestr has no accounts or sync yet.
-        </p>
+        <h1>You can&rsquo;t open this trip</h1>
+        <p className="faint">{shared.message}</p>
         <p>
           <Link className="btn btn-primary" href="/">
             Back to your trips
@@ -36,10 +53,5 @@ export default function Page({ params }: { readonly params: Promise<{ tripId: st
     );
   }
 
-  return (
-    <TripShell trip={trip} current="whatif">
-      {trip.isExample === true && <ExampleNote />}
-      <WhatIf save={save} trip={trip} />
-    </TripShell>
-  );
+  return <LocalScreen tripId={tripId} screen="whatif" />;
 }

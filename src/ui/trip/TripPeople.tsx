@@ -1,5 +1,6 @@
 "use client";
 
+import { updateTraveller, type TravellerPatch } from "@/core/trips/mutate";
 import { useState } from "react";
 import type { ConsumerTrip, ConsumerTraveller, RequirementStrength } from "@/domain/consumerTrip";
 import { groupVisibleRequirement, readinessLabel, readinessOf } from "@/domain/consumerTrip";
@@ -7,7 +8,6 @@ import { countReadiness } from "@/core/trips/pulse";
 import { withUpdate } from "@/core/trips/store";
 import { newId, nowIso } from "./TripsClient";
 import { asIsoDate } from "@/domain/time";
-import type { IsoDate } from "@/domain/time";
 
 /**
  * A change to one traveller.
@@ -19,47 +19,6 @@ import type { IsoDate } from "@/domain/time";
  * they gave" both end up absent, but only one of them is a thing a person just
  * did.
  */
-type TravellerPatch = Partial<Omit<ConsumerTraveller, "availableFrom" | "availableTo">> & {
-  availableFrom?: IsoDate | undefined;
-  availableTo?: IsoDate | undefined;
-};
-
-
-/**
- * Apply a patch, treating an explicit `undefined` as "remove this".
- *
- * A plain spread cannot do this. `{...traveller, availableFrom: undefined}`
- * leaves the key present holding undefined, which the domain type forbids and
- * which would serialise into storage as a field that exists and means nothing.
- * Clearing a date has to actually remove it.
- */
-function applyPatch(traveller: ConsumerTraveller, patch: TravellerPatch): ConsumerTraveller {
-  const { availableFrom, availableTo, ...rest } = patch;
-  const merged: ConsumerTraveller = { ...traveller, ...rest };
-
-  const withFrom =
-    "availableFrom" in patch
-      ? availableFrom === undefined
-        ? omit(merged, "availableFrom")
-        : { ...merged, availableFrom }
-      : merged;
-
-  return "availableTo" in patch
-    ? availableTo === undefined
-      ? omit(withFrom, "availableTo")
-      : { ...withFrom, availableTo }
-    : withFrom;
-}
-
-function omit(
-  traveller: ConsumerTraveller,
-  key: "availableFrom" | "availableTo",
-): ConsumerTraveller {
-  const copy = { ...traveller };
-  delete copy[key];
-  return copy;
-}
-
 /**
  * The people.
  *
@@ -109,7 +68,7 @@ export function TripPeople({
   function update(travellerId: string, patch: TravellerPatch, summary?: string) {
     const next: ConsumerTrip = {
       ...trip,
-      travellers: trip.travellers.map((t) => (t.id === travellerId ? applyPatch(t, patch) : t)),
+      ...updateTraveller(trip, travellerId, patch, { now: nowIso(), newId }),
     };
     save(summary === undefined ? next : withUpdate(next, { summary }, nowIso(), newId));
   }

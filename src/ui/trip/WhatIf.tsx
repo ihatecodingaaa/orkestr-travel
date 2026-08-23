@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import type { TripActions } from "./actions";
 import type { ConsumerTrip } from "@/domain/consumerTrip";
 import { readinessOf } from "@/domain/consumerTrip";
 import { groupByDeparture } from "@/core/trips/pulse";
@@ -32,10 +33,10 @@ export type Scenario =
 
 export function WhatIf({
   trip,
-  save,
+  actions,
 }: {
   readonly trip: ConsumerTrip;
-  readonly save: (trip: ConsumerTrip) => void;
+  readonly actions: TripActions;
 }) {
   const [scenario, setScenario] = useState<Scenario | undefined>(undefined);
 
@@ -169,7 +170,7 @@ export function WhatIf({
               className="btn btn-primary"
               type="button"
               onClick={() => {
-                save(preview.result);
+                void actions.applyWhatIf(preview.result, preview.title);
                 setScenario(undefined);
               }}
             >

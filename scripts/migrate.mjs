@@ -31,13 +31,44 @@ const files = readdirSync(DIR)
   .filter((name) => name.endsWith(".sql"))
   .sort();
 
-const client = new pg.Client({
-  connectionString: url,
-  ssl:
-    url.includes("localhost") || url.includes("127.0.0.1")
-      ? false
-      : { rejectUnauthorized: false },
-});
+
+/**
+ * Is this connection to this machine?
+ *
+ * Parsed, not substring-matched. `url.includes("localhost")` was the earlier
+ * test, and `postgresql://u:p@localhost.evil.example.com/db` would have
+ * satisfied it -- disabling TLS for a remote host whose name merely starts
+ * with the word.
+ */
+function isLoopback(url) {
+  try {
+    const { hostname } = new URL(url);
+    return hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1";
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * How to trust the connection, mirroring src/server/shared/tls.ts.
+ *
+ * These scripts are developer tools run by a person at a terminal, so the
+ * relaxed path is available here when asked for -- but it is asked for, and it
+ * is reported in the output rather than assumed.
+ */
+function sslFor(url) {
+  if (isLoopback(url)) return false;
+  const rootCert = process.env.PGSSLROOTCERT;
+  if (rootCert !== undefined && rootCert.trim() !== "") {
+    return { rejectUnauthorized: true, ca: readFileSync(rootCert.trim(), "utf8") };
+  }
+  if ((process.env.PGSSL_ALLOW_UNVERIFIED ?? "").toLowerCase() === "true") {
+    return { rejectUnauthorized: false };
+  }
+  return { rejectUnauthorized: true };
+}
+
+const client = new pg.Client({ connectionString: url, ssl: sslFor(url) });
 
 function fail(context, error) {
   const name = error instanceof Error ? error.constructor.name : "Error";

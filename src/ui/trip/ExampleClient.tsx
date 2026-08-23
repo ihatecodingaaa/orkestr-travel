@@ -10,6 +10,7 @@ import { WhatIf, buildPreview } from "./WhatIf";
 import { Money } from "./Money";
 import { TripPeople } from "./TripPeople";
 import { exampleTrip } from "./exampleTrip";
+import { localActions } from "./localActions";
 import type { ConsumerTrip } from "@/domain/consumerTrip";
 
 /**
@@ -59,6 +60,13 @@ export function ExampleClient({
   const [tab, setTab] = useState<ExampleSection>(initialTab);
   const [viewerId, setViewerId] = useState("ex-mum");
   const [moreOpen, setMoreOpen] = useState(false);
+
+  /**
+   * The example runs the same actions as a local trip, writing to React state
+   * instead of storage. Changes vanish on reload, which is what an example
+   * should do -- and the screens cannot tell the difference.
+   */
+  const actions = localActions(trip, setTrip, viewerId);
 
   const base = "/examples/tokyo-family";
 
@@ -148,14 +156,14 @@ export function ExampleClient({
       </div>
 
       {tab === "overview" && <Overview trip={trip} base={base} save={setTrip} />}
-      {tab === "explore" && <Explore trip={trip} save={setTrip} viewerId={viewerId} />}
-      {tab === "plan" && <Plan trip={trip} base={base} save={setTrip} />}
+      {tab === "explore" && <Explore trip={trip} actions={actions} viewerId={viewerId} />}
+      {tab === "plan" && <Plan trip={trip} base={base} actions={actions} />}
       {tab === "group" && (
         <GroupScreen trip={trip} base={base} viewerId={viewerId} setViewer={setViewerId} />
       )}
       {tab === "inbox" && <Inbox trip={trip} base={base} viewerId={viewerId} />}
-      {tab === "whatif" && <WhatIf trip={trip} save={setTrip} />}
-      {tab === "money" && <Money trip={trip} save={setTrip} viewerId={viewerId} />}
+      {tab === "whatif" && <WhatIf trip={trip} actions={actions} />}
+      {tab === "money" && <Money trip={trip} actions={actions} viewerId={viewerId} />}
       {tab === "activity" && <Activity trip={trip} />}
       {tab === "people" && <TripPeople trip={trip} save={setTrip} />}
 

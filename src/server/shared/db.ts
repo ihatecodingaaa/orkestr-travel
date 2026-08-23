@@ -2,6 +2,7 @@ import "server-only";
 import { Pool } from "pg";
 import type { PoolClient, QueryResultRow } from "pg";
 import { DATABASE_URL_VAR } from "./mode";
+import { tlsForUrl } from "./tls";
 
 /**
  * The database connection.
@@ -41,19 +42,12 @@ export function getPool(): Pool | undefined {
     idleTimeoutMillis: 10_000,
     connectionTimeoutMillis: 8_000,
     /**
-     * Managed Postgres almost always requires TLS, and its certificate is
-     * frequently signed by a provider root the runtime does not carry.
-     * `rejectUnauthorized: false` keeps the connection encrypted while not
-     * verifying that chain.
+     * Decided in one place, and production always verifies.
      *
-     * SAY WHAT THIS IS: transport encryption without full certificate
-     * validation. It stops passive interception; it does not stop an active
-     * man-in-the-middle who can already reach the connection. Set
-     * `PGSSLROOTCERT` and remove this once the provider's CA is known.
+     * There is no flag that turns verification off in production -- see
+     * `tls.ts`. A switch for "trust anything" is a switch that ends up set.
      */
-    ssl: url.includes("localhost") || url.includes("127.0.0.1")
-      ? false
-      : { rejectUnauthorized: false },
+    ssl: tlsForUrl(url).ssl,
   });
 
   return pool;
@@ -110,14 +104,16 @@ export async function transaction<T>(work: (client: PoolClient) => Promise<T>): 
  * into a chat window while asking for help.
  */
 export async function checkConnection(): Promise<
-  { readonly ok: true; readonly serverVersion: string } | { readonly ok: false; readonly error: string }
+  | { readonly ok: true; readonly serverVersion: string; readonly tls: string }
+  | { readonly ok: false; readonly error: string }
 > {
   try {
     const rows = await query<{ version: string }>("SELECT version() AS version");
     const raw = rows[0]?.version ?? "unknown";
     // "PostgreSQL 16.3 on x86_64-pc-linux-gnu…" -> "PostgreSQL 16.3"
     const short = /^(PostgreSQL\s+[\d.]+)/.exec(raw)?.[1] ?? "PostgreSQL";
-    return { ok: true, serverVersion: short };
+    const url = process.env[DATABASE_URL_VAR] ?? "";
+    return { ok: true, serverVersion: short, tls: tlsForUrl(url).description };
   } catch (error) {
     /**
      * Driver errors can carry the connection string in `message`. Only the

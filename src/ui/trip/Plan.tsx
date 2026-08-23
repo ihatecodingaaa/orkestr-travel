@@ -5,12 +5,6 @@ import Link from "next/link";
 import type { ConsumerTrip } from "@/domain/consumerTrip";
 import type { PlanItem, PlanItemKind } from "@/domain/livingTrip";
 import {
-  addPlanItem,
-  movePlanItem,
-  removePlanItem,
-  setPlanItemStatus,
-} from "@/core/trips/mutate";
-import {
   describeOpenDay,
   initialsOf,
   planShape,
@@ -19,8 +13,8 @@ import {
   type DayShape,
   type PlanShape,
 } from "@/core/trips/living";
-import { newId, nowIso } from "./TripsClient";
 import { formatWithWeekday } from "./format";
+import type { TripActions } from "./actions";
 
 /**
  * The plan.
@@ -48,11 +42,11 @@ import { formatWithWeekday } from "./format";
 export function Plan({
   trip,
   base,
-  save,
+  actions,
 }: {
   readonly trip: ConsumerTrip;
   readonly base: string;
-  readonly save: (trip: ConsumerTrip) => void;
+  readonly actions: TripActions;
 }) {
   const shape = planShape(trip);
   const [selected, setSelected] = useState<string | undefined>(undefined);
@@ -75,8 +69,7 @@ export function Plan({
   if (day === undefined) return null;
 
   /** Adding something should feel like it landed. */
-  function confirm(next: ConsumerTrip, where: string) {
-    save(next);
+  function confirm(where: string) {
     setJustAdded(where);
     setTimeout(() => {
       setJustAdded(undefined);
@@ -134,18 +127,19 @@ export function Plan({
         {day.items.length > 0 && (
           <ul className="day-timeline">
             {day.items.map((item) => (
-              <PlanRow key={item.id} trip={trip} item={item} save={save} />
+              <PlanRow key={item.id} trip={trip} item={item} actions={actions} />
             ))}
           </ul>
         )}
 
-        {day.items.length === 0 && <OpenDay trip={trip} day={day} base={base} onAdd={confirm} />}
+        {day.items.length === 0 && (
+          <OpenDay trip={trip} day={day} base={base} actions={actions} onAdded={confirm} />
+        )}
 
         {adding && (
           <AddItem
-            trip={trip}
             day={day.day}
-            save={save}
+            actions={actions}
             onDone={() => {
               setAdding(false);
             }}
@@ -272,12 +266,14 @@ function OpenDay({
   trip,
   day,
   base,
-  onAdd,
+  actions,
+  onAdded,
 }: {
   readonly trip: ConsumerTrip;
   readonly day: DayShape;
   readonly base: string;
-  readonly onAdd: (next: ConsumerTrip, where: string) => void;
+  readonly actions: TripActions;
+  readonly onAdded: (where: string) => void;
 }) {
   const open = describeOpenDay(trip, day.day);
   const suggestions = suggestForDay(trip, day.day);
@@ -298,23 +294,20 @@ function OpenDay({
                   type="button"
                   className="suggestion"
                   onClick={() => {
-                    onAdd(
-                      addPlanItem(
-                        trip,
-                        {
-                          day: day.day,
-                          title: suggestion.idea.title,
-                          kind: suggestion.idea.category === "FOOD" ? "FOOD" : "ACTIVITY",
-                          startTime: suggestion.startTime,
-                          ...(suggestion.idea.area === undefined
-                            ? {}
-                            : { area: suggestion.idea.area }),
-                          fromIdeaId: suggestion.idea.id,
-                        },
-                        { now: nowIso(), newId },
-                      ),
-                      day.weekday,
-                    );
+                    void actions
+                      .addPlanItem({
+                        day: day.day,
+                        title: suggestion.idea.title,
+                        kind: suggestion.idea.category === "FOOD" ? "FOOD" : "ACTIVITY",
+                        startTime: suggestion.startTime,
+                        ...(suggestion.idea.area === undefined
+                          ? {}
+                          : { area: suggestion.idea.area }),
+                        fromIdeaId: suggestion.idea.id,
+                      })
+                      .then((result) => {
+                        if (result.ok) onAdded(day.weekday);
+                      });
                   }}
                 >
                   <span className="suggestion-time">{suggestion.startTime}</span>
@@ -351,11 +344,11 @@ function OpenDay({
 function PlanRow({
   trip,
   item,
-  save,
+  actions,
 }: {
   readonly trip: ConsumerTrip;
   readonly item: PlanItem;
-  readonly save: (trip: ConsumerTrip) => void;
+  readonly actions: TripActions;
 }) {
   const [open, setOpen] = useState(false);
   const who =
@@ -408,14 +401,7 @@ function PlanRow({
             className="input input-small"
             value={item.day}
             onChange={(e) =>
-              save(
-                movePlanItem(
-                  trip,
-                  item.id,
-                  { day: e.target.value as PlanItem["day"] },
-                  { now: nowIso(), newId },
-                ),
-              )
+              void actions.movePlanItem(item.id, { day: e.target.value as PlanItem["day"] })
             }
           >
             {tripDays(trip).map((day) => (
@@ -434,14 +420,7 @@ function PlanRow({
             className="input input-small"
             value={item.startTime ?? ""}
             onChange={(e) =>
-              save(
-                movePlanItem(
-                  trip,
-                  item.id,
-                  { startTime: e.target.value },
-                  { now: nowIso(), newId },
-                ),
-              )
+              void actions.movePlanItem(item.id, { startTime: e.target.value })
             }
           />
 
@@ -449,13 +428,9 @@ function PlanRow({
             className="btn btn-secondary btn-small"
             type="button"
             onClick={() =>
-              save(
-                setPlanItemStatus(
-                  trip,
-                  item.id,
-                  item.status === "FIXED" ? "PLANNED" : "FIXED",
-                  { now: nowIso(), newId },
-                ),
+              void actions.setPlanItemStatus(
+                item.id,
+                item.status === "FIXED" ? "PLANNED" : "FIXED",
               )
             }
           >
@@ -465,7 +440,7 @@ function PlanRow({
           <button
             className="linkish danger"
             type="button"
-            onClick={() => save(removePlanItem(trip, item.id, { now: nowIso(), newId }))}
+            onClick={() => void actions.removePlanItem(item.id)}
           >
             Remove
           </button>
@@ -484,14 +459,12 @@ const KINDS: readonly { readonly kind: PlanItemKind; readonly label: string }[] 
 ];
 
 function AddItem({
-  trip,
   day,
-  save,
+  actions,
   onDone,
 }: {
-  readonly trip: ConsumerTrip;
   readonly day: PlanItem["day"];
-  readonly save: (trip: ConsumerTrip) => void;
+  readonly actions: TripActions;
   readonly onDone: () => void;
 }) {
   const [title, setTitle] = useState("");
@@ -504,13 +477,12 @@ function AddItem({
       onSubmit={(event) => {
         event.preventDefault();
         if (title.trim().length === 0) return;
-        save(
-          addPlanItem(
-            trip,
-            { day, title, kind, ...(time === "" ? {} : { startTime: time }) },
-            { now: nowIso(), newId },
-          ),
-        );
+        void actions.addPlanItem({
+          day,
+          title,
+          kind,
+          ...(time === "" ? {} : { startTime: time }),
+        });
         onDone();
       }}
     >

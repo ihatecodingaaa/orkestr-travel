@@ -9,6 +9,7 @@
  * Driver errors are surfaced as CLASS NAMES only, because `pg` puts the
  * connection string into the message of several of them.
  */
+import { readFileSync } from "node:fs";
 import pg from "pg";
 import { loadEnvLocal } from "./loadEnv.mjs";
 
@@ -41,6 +42,7 @@ let looksLocal = false;
 try {
   const parsed = new URL(url);
   scheme = parsed.protocol.replace(":", "");
+  // Parsed, not substring-matched: "localhost.evil.example.com" is remote.
   looksLocal = ["localhost", "127.0.0.1", "::1"].includes(parsed.hostname);
 } catch {
   console.log("\nDATABASE_URL is set but is not a parseable URL.");
@@ -49,12 +51,28 @@ try {
 
 console.log("connection scheme       :", scheme);
 console.log("target                  :", looksLocal ? "local" : "remote");
-console.log("TLS                     :", looksLocal ? "off (local)" : "on (relaxed chain check)");
+const rootCert = process.env.PGSSLROOTCERT;
+const relaxed = (process.env.PGSSL_ALLOW_UNVERIFIED ?? "").toLowerCase() === "true";
+const ssl = looksLocal
+  ? false
+  : rootCert !== undefined && rootCert.trim() !== ""
+    ? { rejectUnauthorized: true, ca: readFileSync(rootCert.trim(), "utf8") }
+    : relaxed
+      ? { rejectUnauthorized: false }
+      : { rejectUnauthorized: true };
 
-const client = new pg.Client({
-  connectionString: url,
-  ssl: looksLocal ? false : { rejectUnauthorized: false },
-});
+console.log(
+  "TLS                     :",
+  looksLocal
+    ? "off (connection is to this machine)"
+    : ssl.ca !== undefined
+      ? "verified against PGSSLROOTCERT"
+      : ssl.rejectUnauthorized
+        ? "verified against system roots"
+        : "encrypted, NOT verified (PGSSL_ALLOW_UNVERIFIED is set)",
+);
+
+const client = new pg.Client({ connectionString: url, ssl });
 
 try {
   await client.connect();
@@ -87,7 +105,8 @@ try {
     ECONNREFUSED: "nothing is listening on that host and port",
     ENOTFOUND: "that hostname does not resolve",
     ETIMEDOUT: "the host did not answer - usually a firewall or an IP allow-list",
-    SELF_SIGNED_CERT_IN_CHAIN: "the TLS chain is not trusted",
+    SELF_SIGNED_CERT_IN_CHAIN:
+      "the certificate is not signed by a root this machine trusts. Production: set PGSSLROOTCERT to the provider's root certificate. Local: set PGSSL_ALLOW_UNVERIFIED=true (ignored in production).",
   };
   if (code !== undefined) {
     console.log("sqlstate / code         :", code);

@@ -102,6 +102,18 @@ export interface ConsumerTraveller {
   /** Absent means they have not said whether they are coming. */
   readonly comingConfirmed?: boolean;
   readonly requirements: readonly TravellerRequirement[];
+  /**
+   * How many private requirements exist that the READER may not see.
+   *
+   * Only set on a shared trip, and only for somebody other than the reader.
+   * Their private requirements are not in `requirements` at all -- they were
+   * never sent to this browser -- so counting the array would report zero and
+   * the group would stop being told a constraint exists.
+   *
+   * Absent on a local trip, where there is one reader who owns everything and
+   * the count is simply the private entries in `requirements`.
+   */
+  readonly hiddenPrivateCount?: number;
   /** Ids of people this traveller must travel with. Mutual by convention. */
   readonly mustTravelWith: readonly string[];
 }
