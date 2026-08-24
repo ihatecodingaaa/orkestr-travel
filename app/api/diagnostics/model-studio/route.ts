@@ -27,9 +27,15 @@ import { HttpModelStudioTransport } from "@/adapters/modelStudio/transport";
  * place to keep a secret. Without the header this route is a 404, because
  * "wrong credential" and "no such route" should look identical to a stranger.
  *
- * IT SPENDS NO MONEY. Every probe stops at the model LIST endpoint. An HTTP 401
- * is a successful outcome here: it proves bytes reached Alibaba and came back.
- * No inference is performed by any code path in this file.
+ * IT SPENDS NO MONEY BY DEFAULT. Every probe stops at the model LIST endpoint,
+ * where an HTTP 401 is a successful outcome: it proves bytes reached Alibaba and
+ * came back.
+ *
+ * `?inference=1` IS THE ONE EXCEPTION and it is the only billable path here. It
+ * sends a single minimal completion -- sixteen tokens, no tools, no research,
+ * thinking off -- to measure where the time actually goes. It is called
+ * deliberately, once, and there is no retry anywhere in it: a diagnostic that
+ * retried would turn one budgeted call into several.
  *
  * IT NEVER TOUCHES THE CREDENTIAL. No key is read from here. `?auth=1` asks the
  * TRANSPORT -- the one class permitted to hold a key -- to make an authenticated
@@ -79,7 +85,9 @@ export async function GET(request: Request): Promise<Response> {
 
   const config = readModelStudioConfig();
   const configured = config.configured;
-  const withAuth = new URL(request.url).searchParams.get("auth") === "1";
+  const params = new URL(request.url).searchParams;
+  const withAuth = params.get("auth") === "1";
+  const withInference = params.get("inference") === "1";
 
   /**
    * The workspace host is derived from configuration, not from the request.
@@ -134,9 +142,60 @@ export async function GET(request: Request): Promise<Response> {
         )
       : undefined;
 
+  /**
+   * THE BUDGETED CALL. The smallest completion that still exercises the real
+   * path: same transport, same endpoint, same model, same `enable_thinking:
+   * false` that extraction uses. If this returns quickly then the endpoint is
+   * healthy and the extraction WORKLOAD is what exceeds the ceiling; if it also
+   * stalls, the problem is not the size of the request.
+   */
+  let inference: Record<string, string | number | boolean> | string = "(not requested)";
+  if (withInference && config.configured) {
+    const transport = new HttpModelStudioTransport(config, () => Date.now());
+    const outcome = await transport.send({
+      path: "/chat/completions",
+      timeoutMs: config.timeoutMs,
+      body: {
+        model: config.extractionModel,
+        messages: [{ role: "user", content: "Return exactly OK." }],
+        max_tokens: 16,
+        temperature: 0,
+        enable_thinking: false,
+      },
+    });
+    if (outcome.ok) {
+      const body = outcome.body as {
+        choices?: { message?: { content?: unknown } }[];
+        usage?: { prompt_tokens?: number; completion_tokens?: number };
+      };
+      const text = body.choices?.[0]?.message?.content;
+      inference = {
+        ok: true,
+        status: outcome.status,
+        durationMs: outcome.durationMs,
+        // The reply is sixteen tokens of "OK"; only its shape is reported.
+        repliedOk: typeof text === "string" && text.trim().toUpperCase().includes("OK"),
+        replyChars: typeof text === "string" ? text.length : 0,
+        promptTokens: body.usage?.prompt_tokens ?? -1,
+        completionTokens: body.usage?.completion_tokens ?? -1,
+      };
+    } else {
+      inference = {
+        ok: false,
+        kind: outcome.kind,
+        message: outcome.message,
+        durationMs: outcome.durationMs,
+        headersAtMs: outcome.headersAtMs ?? -1,
+        status: outcome.status ?? -1,
+      };
+    }
+  }
+
   return Response.json(
     {
-      note: "temporary incident diagnostic; zero inference performed",
+      note: withInference
+        ? "ONE minimal completion performed"
+        : "temporary incident diagnostic; zero inference performed",
       runtime: {
         node: process.version,
         region: process.env["VERCEL_REGION"] ?? "(not vercel)",
@@ -167,6 +226,7 @@ export async function GET(request: Request): Promise<Response> {
       },
       baseUrl: baseUrlReport,
       credentialProbe: credential ?? "(not requested)",
+      inference,
       probes: { workspaceDedicated: workspace ?? "(no workspace host configured)", shared },
     },
     { headers: { "cache-control": "no-store" } },
