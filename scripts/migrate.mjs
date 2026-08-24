@@ -19,11 +19,28 @@ import pg from "pg";
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const DIR = join(ROOT, "migrations");
 
-const url = process.env.DATABASE_URL;
+/**
+ * Migrations use their own connection when one is configured.
+ *
+ * Runtime traffic goes through a transaction pooler, which is right for many
+ * short-lived serverless instances and wrong for schema changes: a migration is
+ * one long session doing DDL, run deliberately from a terminal. Providers that
+ * offer both hand out two URLs, and they are not interchangeable.
+ *
+ * With MIGRATION_DATABASE_URL unset this falls back to DATABASE_URL, which is
+ * correct for a local database where there is only one.
+ */
+const url = process.env.MIGRATION_DATABASE_URL ?? process.env.DATABASE_URL;
 if (url === undefined || url.trim() === "") {
-  console.error("DATABASE_URL is not set. Shared trips are optional; nothing to do.");
+  console.error(
+    "Neither MIGRATION_DATABASE_URL nor DATABASE_URL is set. Shared trips are optional; nothing to do.",
+  );
   process.exit(1);
 }
+console.log(
+  "connection            :",
+  process.env.MIGRATION_DATABASE_URL ? "MIGRATION_DATABASE_URL" : "DATABASE_URL (no migration URL set)",
+);
 
 const statusOnly = process.argv.includes("--status");
 

@@ -77,15 +77,67 @@ export function appBaseUrl(): string | undefined {
 }
 
 /**
+ * Is this a base an invite may be built from at all?
+ *
+ * HTTPS ALWAYS, OR HTTP ON LOOPBACK. An invite link is a bearer credential, so
+ * sending one over http across a network would hand it to anybody on the path.
+ * Loopback is the exception because nothing crosses a network, and it is where
+ * a developer's own server is -- including when they run a production build
+ * locally to check it.
+ *
+ * THE PRODUCTION RESTRICTION IS ABOUT THE SOURCE, NOT THE SCHEME. A configured
+ * `APP_BASE_URL` is a deliberate choice by whoever deployed the application; a
+ * request's `Host` is chosen by whoever sent the request. `inviteUrl` refuses
+ * the second one in production, which is the control that matters.
+ */
+export function isUsableBase(base: string): boolean {
+  let parsed: URL;
+  try {
+    parsed = new URL(base);
+  } catch {
+    return false;
+  }
+
+  if (parsed.protocol === "https:") return true;
+  if (parsed.protocol !== "http:") return false;
+
+  return ["localhost", "127.0.0.1", "[::1]", "::1"].includes(parsed.hostname);
+}
+
+/**
  * Build an invite URL.
  *
- * `origin` is used only when nothing is configured, and only for a link that is
- * about to be shown on that same origin.
+ * IN PRODUCTION THE ORIGIN IS NEVER TAKEN FROM THE REQUEST. `APP_BASE_URL` is
+ * the only source, because the request's own `Host` is attacker-controlled: an
+ * organiser could be served a link pointing at a host of somebody else's
+ * choosing, click Copy, and send the group an invite that hands their tokens
+ * away. That is a real, cheap attack and the only defence is a configured
+ * canonical origin.
+ *
+ * In development the request origin is used as a fallback, which is correct for
+ * a localhost link and is refused above for anything else.
+ *
+ * Returns undefined rather than guessing. A manufactured production domain is
+ * how an organiser copies a link that points nowhere and only finds out when
+ * four people cannot join.
  */
 export function inviteUrl(token: string, origin?: string): string | undefined {
-  const base = appBaseUrl() ?? origin?.replace(/\/+$/, "");
-  if (base === undefined) return undefined;
-  return `${base}/join/${token}`;
+  const isProduction = process.env.NODE_ENV === "production";
+  const configured = appBaseUrl();
+
+  if (configured !== undefined) {
+    return isUsableBase(configured) ? `${configured}/join/${token}` : undefined;
+  }
+
+  /**
+   * No configured origin. In production this REFUSES rather than falling back
+   * to the request, because the request's host is attacker-controlled.
+   */
+  if (isProduction) return undefined;
+
+  const fallback = origin?.replace(/\/+$/, "");
+  if (fallback === undefined) return undefined;
+  return isUsableBase(fallback) ? `${fallback}/join/${token}` : undefined;
 }
 
 /**
