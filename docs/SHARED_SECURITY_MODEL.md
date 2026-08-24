@@ -135,3 +135,36 @@ browser with no session received nothing on any of them.
 
 No invite token appears in any activity event, and none survives in the URL,
 HTML or RSC payload after redemption.
+
+## Production hardening (Stage 4)
+
+**The canonical origin is configured, never taken from the request.** In
+production, invite links are built only from `APP_BASE_URL`, and only over
+`https`. The request's `Host` is attacker-controlled: an organiser could be
+served a link pointing at somebody else's host, press Copy, and hand the group's
+tokens away. With `APP_BASE_URL` unset, invite creation refuses rather than
+guessing.
+
+**Certificate material may arrive through the environment.** Serverless has no
+filesystem to hold a certificate, so `PGSSLROOTCERT_B64` carries it. It is
+server-only, has no `NEXT_PUBLIC_` variant, is never echoed in an error, and
+malformed material fails loudly rather than falling through to a weaker root.
+Environment beats file, so a deployment cannot be altered by a path that happens
+to exist in an image.
+
+**Response headers**: `Referrer-Policy`, `X-Content-Type-Options: nosniff`,
+`X-Frame-Options: DENY` with `frame-ancestors 'none'`, a `Permissions-Policy`
+denying every device capability, and `Strict-Transport-Security`. `X-Powered-By`
+is off.
+
+A full `script-src` Content-Security-Policy is **deliberately absent**. Next.js
+injects inline bootstrap scripts and streams inline RSC payloads, so a policy
+strict enough to be worth having needs per-request nonces threaded through the
+framework. A policy with `'unsafe-inline'` would pass an audit tool and stop
+nothing, so the part that works without nonces is set and the rest is honestly
+missing.
+
+**Connection safety**: at most two pooled connections per instance, bounded
+connect and statement timeouts enforced server-side, and **no retries** — these
+writes are not idempotent, and a retry after a timeout the caller abandoned is
+how one invitation becomes two joins.

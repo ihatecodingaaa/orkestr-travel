@@ -419,3 +419,28 @@ browser, so it is run deliberately rather than on every commit.
 It has earned its keep twice — it found the missing `buildActorTrip` wiring
 (a traveller could not see their own private requirement) and the missing
 refresh after a successful write.
+
+
+## Production configuration (Stage 4)
+
+`tests/tls.test.ts` covers the trust decision and the canonical origin — 23
+tests, no database needed.
+
+The ones that matter most are the negatives:
+
+* **No input produces an unverified production connection.** Asserted across
+  every value somebody might try in `PGSSL_ALLOW_UNVERIFIED`.
+* **Malformed certificate material is refused**, rather than silently falling
+  through to a weaker trust root.
+* **An error never echoes the material it rejected.**
+* **Production refuses to build an invite link from the request origin**, even
+  when handed a plausible one.
+
+Two live proofs were run against the real database and are not in the suite,
+because they need one:
+
+* Connecting with **only** the environment certificate, the file variable
+  removed — the exact mechanism a deployment uses.
+* The same mechanism with the **wrong** certificate, which is refused
+  (`SELF_SIGNED_CERT_IN_CHAIN`). A positive result alone would not have shown
+  that verification was doing anything.

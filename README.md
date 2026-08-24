@@ -329,6 +329,9 @@ Start with `docs/PRODUCT_SPEC.md` for what the product does, and
 | `VISUAL_SYSTEM.md` | Typography, colour, spacing, cards, motion and the responsive rules |
 | `SHARED_TRIPS_SPEC.md` | Shared trips: modes, roles, and what each person may see |
 | `SHARED_MODE_ARCHITECTURE.md` | How one set of screens serves local, shared and example |
+| `PRODUCTION_DEPLOYMENT.md` | Deployment architecture, connection strategy, TLS, origin |
+| `PRODUCTION_RUNBOOK.md` | Rollback, migrations, incidents, key and certificate rotation |
+| `PRODUCTION_ACCEPTANCE.md` | What must be true of the public deployment |
 | `IDENTITY_AND_INVITES.md` | How somebody joins a trip without an account |
 | `SHARED_DATA_MODEL.md` | The seven tables and why privacy is one of them |
 | `SHARED_SECURITY_MODEL.md` | What is true, what is not, and the residual risk |
