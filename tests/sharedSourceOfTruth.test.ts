@@ -188,3 +188,51 @@ describe("client directives are where they have to be", () => {
     }
   });
 });
+
+/**
+ * A write carries the version of the trip that is on screen.
+ *
+ * THE DEFECT THIS PREVENTS SHIPPED TO PRODUCTION. `SharedScreen` passed the
+ * POLLED version into `sharedActions` instead of the server-rendered `version`
+ * prop. `useTripSync` raises its polled version the instant it notices the
+ * server moved, but the `router.refresh()` that brings the new trip down is a
+ * network round trip. In that window the screen shows the OLD trip carrying the
+ * NEW version number, so a write submitted then matched
+ * `UPDATE … WHERE version = $4` and was applied against a trip the person had
+ * never seen -- silently, which is the exact failure optimistic concurrency
+ * exists to prevent.
+ *
+ * It was invisible in every other way. The conflict path was not merely
+ * untested, it was unreachable: two live browsers racing on the deployed site
+ * could not produce a refusal, because the poll kept handing the loser a
+ * winning version.
+ *
+ * The version a browser may write against is the one the trip it rendered came
+ * from. That is the `version` prop, and nothing else.
+ */
+describe("a shared write states the version the reader was actually looking at", () => {
+  const shared = (name: string): string => join(ROOT, "src", "ui", "shared", name);
+
+  it("no shared component writes against a polled version", () => {
+    for (const file of [shared("SharedScreen.tsx"), shared("MyDetails.tsx")]) {
+      const source = code(file);
+      const call = /sharedActions\(\s*[^,]+,\s*([^,]+),/.exec(source);
+      expect(call, `${posix(file)} does not call sharedActions`).not.toBeNull();
+      const versionArgument = (call?.[1] ?? "").trim();
+      expect(
+        versionArgument,
+        `${posix(file)} writes against "${versionArgument}" — the polled version races ahead of the rendered trip, so a stale write would be accepted silently`,
+      ).toBe("version");
+    }
+  });
+
+  it("the sync hook does not offer a version that could be written against", () => {
+    const source = code(join(ROOT, "src", "ui", "shared", "useTripSync.ts"));
+    const returned = /return\s*\{([^}]*)\}\s*;?\s*\}\s*$/m.exec(source);
+    expect(returned, "useTripSync has no recognisable return").not.toBeNull();
+    expect(
+      returned?.[1] ?? "",
+      "useTripSync returns a version, which invites writing against the polled value",
+    ).not.toMatch(/\bversion\b/);
+  });
+});

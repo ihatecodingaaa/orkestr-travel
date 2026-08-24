@@ -5,6 +5,7 @@ import type { TripActor } from "../../domain/sharedTrip";
 import type { IsoDateTime } from "../../domain/time";
 import { asIsoDateTime } from "../../domain/time";
 import { parseTrip } from "../../core/trips/store";
+import { CONFLICT_MESSAGE } from "../../core/shared/concurrency";
 import {
   addIdea,
   addPlanItem,
@@ -56,9 +57,6 @@ export type ApplyResult =
       readonly message: string;
     }
   | { readonly ok: false; readonly reason: "GONE"; readonly message: string };
-
-const CONFLICT_MESSAGE =
-  "The trip changed while you were editing. Orkestr has refreshed it — please check your change still makes sense.";
 
 export async function applySharedMutation(
   repository: SharedTripRepository,

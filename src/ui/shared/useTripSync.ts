@@ -17,6 +17,13 @@ import { currentTripVersion } from "~/trip/[tripId]/shared/actions";
  * WebSocket or SSE transport could replace `currentTripVersion` without the
  * rest of this changing.
  *
+ * IT REPORTS A STATE, NEVER A NUMBER. The polled version is deliberately not
+ * returned. It moves the moment the server changes, while the trip on screen is
+ * still the old one until `router.refresh()` lands -- so a caller that wrote
+ * against it would state a version the reader had never actually seen, and the
+ * stale write it was meant to catch would be accepted in silence. The version a
+ * browser may write against is the one its rendered trip came from.
+ *
  * A HIDDEN TAB STOPS ENTIRELY. Nobody is reading it, and a backgrounded phone
  * asking a server for a number every seven seconds forever is how a product
  * becomes a battery complaint. On focus it checks immediately, because the most
@@ -27,11 +34,9 @@ export type SyncState = "IDLE" | "REFRESHING" | "UPDATED" | "OFFLINE";
 
 export function useTripSync(knownVersion: number): {
   readonly state: SyncState;
-  readonly version: number;
 } {
   const router = useRouter();
   const [state, setState] = useState<SyncState>("IDLE");
-  const [version, setVersion] = useState(knownVersion);
 
   /**
    * The server-rendered version is the source of truth. When a refresh brings
@@ -41,7 +46,6 @@ export function useTripSync(knownVersion: number): {
   const seen = useRef(knownVersion);
   useEffect(() => {
     seen.current = knownVersion;
-    setVersion(knownVersion);
   }, [knownVersion]);
 
   useEffect(() => {
@@ -68,7 +72,6 @@ export function useTripSync(knownVersion: number): {
         if (shouldRefetch(seen.current, latest)) {
           setState("REFRESHING");
           seen.current = latest;
-          setVersion(latest);
           router.refresh();
           // Long enough to read, short enough not to linger.
           setTimeout(() => {
@@ -117,5 +120,5 @@ export function useTripSync(knownVersion: number): {
      */
   }, [router]);
 
-  return { state, version };
+  return { state };
 }

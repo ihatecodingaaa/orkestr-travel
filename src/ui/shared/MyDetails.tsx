@@ -39,12 +39,13 @@ export function MyDetails({
   readonly draftFromOrganiser: boolean;
 }) {
   const router = useRouter();
-  const sync = useTripSync(version);
+  // Polling keeps this screen current; the version written against is the prop.
+  useTripSync(version);
   /**
    * Refresh as soon as the server accepts. Somebody answering four questions in
    * a row must see each answer land, not wait for the next poll.
    */
-  const actions = sharedActions(trip.id, sync.version, () => {
+  const actions = sharedActions(trip.id, version, () => {
     router.refresh();
   });
 

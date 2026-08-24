@@ -75,7 +75,7 @@ export function SharedScreen({
    * people made; your own are already known the moment the server accepts them.
    */
   const actions = wrap(
-    sharedActions(trip.id, sync.version, () => {
+    sharedActions(trip.id, version, () => {
       setNotice(undefined);
       router.refresh();
     }),
