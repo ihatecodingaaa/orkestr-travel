@@ -65,7 +65,12 @@ export async function extractIntentAction(
     return {
       status: "FAILED",
       mode,
-      failure: understandingFailureModel(result.code),
+      /**
+       * The adapter already records the transport's own message. Passing it
+       * through is what lets the screen distinguish "never answered" from
+       * "answered and was slow".
+       */
+      failure: understandingFailureModel(result.code, result.problems[0]?.detail),
       diagnostics,
     };
   }

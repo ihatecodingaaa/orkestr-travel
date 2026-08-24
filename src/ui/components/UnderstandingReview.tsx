@@ -186,6 +186,11 @@ export function UnderstandingFailure({ model }: { readonly model: UnderstandingF
         <h2 style={{ margin: 0 }}>{model.title}</h2>
       </div>
       <p>{model.detail}</p>
+      {/*
+        What the provider layer itself said, when it knows something the code
+        alone does not -- such as whether the provider answered at all.
+      */}
+      {model.providerNote !== undefined && <p className="faint">{model.providerNote}</p>}
       <p className="faint">{model.whatHappensNow}</p>
     </section>
   );

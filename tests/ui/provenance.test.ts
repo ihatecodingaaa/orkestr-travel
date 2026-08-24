@@ -1,4 +1,5 @@
 import { describe, it, expect } from "vitest";
+import { understandingFailureModel } from "@/ui/view/understanding";
 import {
   assistanceStatus,
   buildProvenanceBoard,
@@ -326,5 +327,41 @@ describe("a board never states something false about its own configuration", () 
     expect(understanding?.state).toBe("FAILED");
     expect(research?.state).toBe("NOT_RUN");
     expect(research?.detail).not.toMatch(/credential|failed|timeout/i);
+  });
+});
+
+describe("a timeout says which kind of timeout it was", () => {
+  /**
+   * OBSERVED IN PRODUCTION, and the reason this distinction exists. The same
+   * request took 9s from a laptop and hit the 30s ceiling from the deployed
+   * runtime, every time, with a SMALLER input and no retries.
+   *
+   * "The model took too long" is true of both a provider that never answered
+   * and one that answered and was slow to finish -- and those are a
+   * connectivity problem and a model problem, with opposite fixes. A person
+   * staring at the screen cannot tell them apart, and the transport can.
+   */
+  it("carries the provider's own note when there is one", () => {
+    const model = understandingFailureModel(
+      "MODEL_TIMEOUT",
+      "The provider did not answer at all within 30000ms.",
+    );
+    expect(model.title).toBe("The model took too long");
+    expect(model.providerNote).toMatch(/did not answer at all/i);
+  });
+
+  it("says nothing extra when the transport had nothing to add", () => {
+    const model = understandingFailureModel("MODEL_TIMEOUT");
+    expect(model.providerNote).toBeUndefined();
+    expect(model.title).toBe("The model took too long");
+  });
+
+  it("ignores an empty note rather than rendering a blank line", () => {
+    expect(understandingFailureModel("MODEL_TIMEOUT", "   ").providerNote).toBeUndefined();
+  });
+
+  it("works for every failure code, not just timeouts", () => {
+    const model = understandingFailureModel("MODEL_UNAVAILABLE", "The provider could not be reached.");
+    expect(model.providerNote).toBe("The provider could not be reached.");
   });
 });

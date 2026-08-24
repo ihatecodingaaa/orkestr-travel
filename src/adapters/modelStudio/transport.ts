@@ -36,6 +36,14 @@ export type TransportOutcome =
       readonly kind: "TIMEOUT" | "NETWORK" | "HTTP_ERROR" | "MALFORMED_RESPONSE";
       /** Safe to log and to show. Never contains a credential or a request body. */
       readonly message: string;
+      /**
+       * How long until the response HEADERS arrived, when they did.
+       *
+       * Absent means nothing came back at all. That distinction is the whole
+       * reason this exists: a single duration cannot tell a connectivity
+       * problem from a slow model, and the two have opposite fixes.
+       */
+      readonly headersAtMs?: number;
       readonly status?: number;
       readonly durationMs: number;
     };
@@ -103,6 +111,20 @@ export class HttpModelStudioTransport implements ModelStudioTransport {
       controller.abort();
     }, request.timeoutMs);
 
+    /**
+     * When the response HEADERS arrived, separately from when the body did.
+     *
+     * Added after a production incident that a single duration could not
+     * explain: the same request took 9s from a laptop and hit the 30s ceiling
+     * from the deployed runtime, every time. One number cannot distinguish
+     * "the provider never answered" from "it answered and generation was slow",
+     * and those have opposite fixes -- one is a connectivity problem, the other
+     * might justify a different ceiling.
+     *
+     * Undefined means `fetch` never resolved: nothing came back at all.
+     */
+    let headersAtMs: number | undefined;
+
     try {
       const response = await this.fetchImpl(`${this.config.baseUrl}${request.path}`, {
         method: "POST",
@@ -115,6 +137,7 @@ export class HttpModelStudioTransport implements ModelStudioTransport {
         signal: controller.signal,
       });
 
+      headersAtMs = this.now() - startedAt;
       const text = await response.text();
       const durationMs = this.now() - startedAt;
 
@@ -150,8 +173,18 @@ export class HttpModelStudioTransport implements ModelStudioTransport {
         return {
           ok: false,
           kind: "TIMEOUT",
-          message: `The provider did not respond within ${String(request.timeoutMs)}ms.`,
+          /**
+           * Says WHICH kind of timeout it was. "Never answered" and "answered,
+           * then was slow to finish" look identical in a duration alone, and a
+           * person reading this is trying to decide whether to look at the
+           * network or at the model.
+           */
+          message:
+            headersAtMs === undefined
+              ? `The provider did not answer at all within ${String(request.timeoutMs)}ms.`
+              : `The provider answered after ${String(headersAtMs)}ms but did not finish within ${String(request.timeoutMs)}ms.`,
           durationMs,
+          ...(headersAtMs === undefined ? {} : { headersAtMs }),
         };
       }
       return {
@@ -160,6 +193,7 @@ export class HttpModelStudioTransport implements ModelStudioTransport {
         // The error's own message can carry the URL, which carries the workspace.
         message: "The model provider could not be reached.",
         durationMs,
+        ...(headersAtMs === undefined ? {} : { headersAtMs }),
       };
     } finally {
       clearTimeout(timer);

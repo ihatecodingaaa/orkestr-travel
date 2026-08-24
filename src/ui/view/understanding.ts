@@ -302,11 +302,33 @@ export interface UnderstandingFailureModel {
   readonly detail: string;
   readonly whatHappensNow: string;
   readonly tone: TruthTone;
+  /**
+   * What the provider layer itself reported, when it adds something the code
+   * alone cannot say.
+   *
+   * "The model took too long" is true and does not distinguish a provider that
+   * never answered from one that answered and was slow to finish -- which are a
+   * connectivity problem and a model problem respectively, and have opposite
+   * fixes. The transport knows which; without this the screen threw it away.
+   *
+   * Safe to show: transport messages are built to carry no credential, no URL
+   * and no request body.
+   */
+  readonly providerNote?: string;
 }
 
 export function understandingFailureModel(
   code: ExtractionFailureCode,
+  providerNote?: string,
 ): UnderstandingFailureModel {
+  const withNote = (model: UnderstandingFailureModel): UnderstandingFailureModel =>
+    providerNote === undefined || providerNote.trim() === ""
+      ? model
+      : { ...model, providerNote };
+  return withNote(baseFailureModel(code));
+}
+
+function baseFailureModel(code: ExtractionFailureCode): UnderstandingFailureModel {
   const nothingApplied = "Nothing was added to the trip. You can type the details in instead.";
   switch (code) {
     case "MODEL_NOT_CONFIGURED":
