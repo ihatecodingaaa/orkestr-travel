@@ -60,6 +60,20 @@ export interface ModelStudioTransport {
 }
 
 /**
+ * What an authenticated, non-generating request came back as.
+ *
+ * A STATUS CODE AND NOTHING ELSE. No body is read, because the point is to
+ * learn whether the credential is accepted from this network location, and a
+ * provider error body is the one place a key or a workspace reliably turns up.
+ */
+export interface CredentialProbe {
+  readonly status?: number;
+  readonly headersAtMs?: number;
+  readonly durationMs: number;
+  readonly code?: string;
+}
+
+/**
  * Turn a provider error body into a message safe to surface.
  *
  * Provider errors sometimes echo part of the request. A message is only taken
@@ -103,6 +117,46 @@ export class HttpModelStudioTransport implements ModelStudioTransport {
     private readonly now: () => number,
     private readonly fetchImpl: typeof fetch = fetch,
   ) {}
+
+  /**
+   * Is this credential accepted, from here?
+   *
+   * FREE. A GET against a listing endpoint performs no inference and costs
+   * nothing, so it can be run as often as an incident needs. It exists to
+   * separate three failures that a hanging completion cannot:
+   *
+   *   200  the key works from this network location
+   *   401  the key is wrong, revoked, or for another region
+   *   403  the request reached Alibaba and was refused -- which is what an
+   *        API-key source-IP restriction looks like from a runtime whose
+   *        egress address is not on the list
+   *
+   * It lives HERE rather than in the diagnostic that wants it, because this
+   * class is the one place in the repository permitted to hold the key. A
+   * diagnostic that took a credential would be a second such place, and the
+   * point of having one is that there is only one.
+   */
+  async probeCredential(path: string, timeoutMs: number): Promise<CredentialProbe> {
+    const startedAt = this.now();
+    const controller = new AbortController();
+    const timer = setTimeout(() => {
+      controller.abort();
+    }, timeoutMs);
+    try {
+      const response = await this.fetchImpl(`${this.config.baseUrl}${path}`, {
+        method: "GET",
+        headers: { Authorization: `Bearer ${this.config.apiKey}` },
+        signal: controller.signal,
+      });
+      const headersAtMs = this.now() - startedAt;
+      return { status: response.status, headersAtMs, durationMs: this.now() - startedAt };
+    } catch (error: unknown) {
+      const name = error instanceof Error ? error.name : "UNKNOWN";
+      return { durationMs: this.now() - startedAt, code: name };
+    } finally {
+      clearTimeout(timer);
+    }
+  }
 
   async send(request: TransportRequest): Promise<TransportOutcome> {
     const startedAt = this.now();

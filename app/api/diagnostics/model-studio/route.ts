@@ -7,6 +7,7 @@ import {
   maskUrl,
 } from "@/adapters/modelStudio/endpoints";
 import { readModelStudioConfig } from "@/adapters/modelStudio/config";
+import { HttpModelStudioTransport } from "@/adapters/modelStudio/transport";
 
 /**
  * TEMPORARY. Delete when the Model Studio connectivity incident is closed.
@@ -30,10 +31,13 @@ import { readModelStudioConfig } from "@/adapters/modelStudio/config";
  * is a successful outcome here: it proves bytes reached Alibaba and came back.
  * No inference is performed by any code path in this file.
  *
- * IT NEVER TOUCHES THE CREDENTIAL. No key is read, passed or sent from here.
- * Reachability does not need one, and the repository enforces that exactly one
- * module names the credential and exactly one dereferences it. Answering a
- * network question was not worth becoming the third.
+ * IT NEVER TOUCHES THE CREDENTIAL. No key is read from here. `?auth=1` asks the
+ * TRANSPORT -- the one class permitted to hold a key -- to make an authenticated
+ * GET against a listing endpoint and report the status code. That is still zero
+ * inference and zero cost, and it separates three failures a hanging completion
+ * cannot: 200 accepted, 401 rejected, 403 refused from this network location,
+ * which is what a source-IP restriction looks like from a runtime whose egress
+ * address is not on the list.
  */
 
 /** SHA-256 of the incident token. The token itself is not in this repository. */
@@ -75,6 +79,7 @@ export async function GET(request: Request): Promise<Response> {
 
   const config = readModelStudioConfig();
   const configured = config.configured;
+  const withAuth = new URL(request.url).searchParams.get("auth") === "1";
 
   /**
    * The workspace host is derived from configuration, not from the request.
@@ -117,6 +122,18 @@ export async function GET(request: Request): Promise<Response> {
     probeEndpoint({ host: SHARED_SINGAPORE_HOST }),
   ]);
 
+  /**
+   * Only when asked, and only through the transport. Still free: a listing
+   * endpoint generates nothing.
+   */
+  const credential =
+    withAuth && config.configured
+      ? await new HttpModelStudioTransport(config, () => Date.now()).probeCredential(
+          "/models",
+          12_000,
+        )
+      : undefined;
+
   return Response.json(
     {
       note: "temporary incident diagnostic; zero inference performed",
@@ -149,6 +166,7 @@ export async function GET(request: Request): Promise<Response> {
         DASHSCOPE_BASE_URL: envShape("DASHSCOPE_BASE_URL"),
       },
       baseUrl: baseUrlReport,
+      credentialProbe: credential ?? "(not requested)",
       probes: { workspaceDedicated: workspace ?? "(no workspace host configured)", shared },
     },
     { headers: { "cache-control": "no-store" } },
