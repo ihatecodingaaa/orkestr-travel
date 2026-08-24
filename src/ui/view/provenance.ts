@@ -28,6 +28,8 @@ export type SubsystemState =
   | "LOCAL_FIXTURE"
   /** No credentials, so nothing was called. Not an error. */
   | "NOT_CONFIGURED"
+  /** The screen never asked this subsystem. Says nothing about configuration. */
+  | "NOT_RUN"
   /** There is no integration at all. */
   | "NOT_CONNECTED"
   /** It was called and it failed. */
@@ -61,6 +63,12 @@ function toneFor(state: SubsystemState): TruthTone {
     case "NOT_CONFIGURED":
     case "NOT_CONNECTED":
       return "unknown";
+    /**
+     * Neutral, not "unknown": there is nothing uncertain about a subsystem the
+     * screen deliberately did not use.
+     */
+    case "NOT_RUN":
+      return "neutral";
     case "FAILED":
       return "alert";
   }
@@ -104,6 +112,28 @@ export function understandingStatus(mode: UnderstandingMode, failed = false): Su
         tone: toneFor("NOT_CONFIGURED"),
       };
   }
+}
+
+/**
+ * A subsystem this screen never asked.
+ *
+ * NOT THE SAME AS "not configured", and the difference is the whole point of
+ * this board. "No credential is set" is a claim about the deployment, and on a
+ * screen that simply does not do research it is a claim that can be FALSE --
+ * which is exactly what happened in production: a live extraction ran and timed
+ * out while the row beneath it announced that no credential existed.
+ *
+ * A board that states something untrue about its own configuration undermines
+ * every other row on it.
+ */
+export function notAskedHere(subsystem: string, what: string): SubsystemStatus {
+  return {
+    subsystem,
+    state: "NOT_RUN",
+    label: "Not used here",
+    detail: `This screen does not ${what}, so nothing was asked and nothing below came from it.`,
+    tone: "neutral",
+  };
 }
 
 export function researchStatus(mode: ResearchMode, failed = false): SubsystemStatus {
@@ -262,6 +292,13 @@ export interface ProvenanceBoardInput {
   readonly understanding: UnderstandingMode;
   readonly understandingFailed?: boolean;
   readonly research: ResearchMode;
+  /**
+   * False when this screen does not run research at all.
+   *
+   * Without it the board reuses NOT_CONFIGURED, which asserts that no
+   * credential is set -- a statement that is false whenever one is.
+   */
+  readonly researchAsked?: boolean;
   readonly researchFailed?: boolean;
   readonly assistanceTravellerConfirmed?: boolean;
   /** Defaults to the fixture row, so a caller cannot claim Atlas by omission. */
@@ -278,7 +315,9 @@ export interface ProvenanceBoardInput {
 export function buildProvenanceBoard(input: ProvenanceBoardInput): readonly SubsystemStatus[] {
   return [
     understandingStatus(input.understanding, input.understandingFailed ?? false),
-    researchStatus(input.research, input.researchFailed ?? false),
+    input.researchAsked === false
+      ? notAskedHere("Destination research", "research a destination")
+      : researchStatus(input.research, input.researchFailed ?? false),
     flightInventoryStatus(input.flights ?? "LOCAL_FIXTURE"),
     providerCapacityStatus(),
     assistanceStatus(input.assistanceTravellerConfirmed ?? false),

@@ -39,9 +39,17 @@ export function UnderstandForm({
         rows={buildProvenanceBoard({
           understanding: state.mode,
           understandingFailed: state.status === "FAILED",
-          // No research has been run on this screen, so it is not configured
-          // here regardless of what it could do elsewhere.
+          /**
+           * This screen reads a discussion; it does no research.
+           *
+           * It used to pass NOT_CONFIGURED, which renders as "no Model Studio
+           * credential is set" -- and that was observed in production directly
+           * beneath a live extraction that had just run with a credential that
+           * plainly existed. Saying a subsystem was not asked is true; saying
+           * it has no credential was not.
+           */
           research: "NOT_CONFIGURED",
+          researchAsked: false,
         })}
       />
 

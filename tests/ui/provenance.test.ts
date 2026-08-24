@@ -251,3 +251,80 @@ describe("the flight inventory row after Atlas", () => {
     expect(capacity?.detail).toMatch(/does not create orders/i);
   });
 });
+
+describe("a board never states something false about its own configuration", () => {
+  /**
+   * OBSERVED IN PRODUCTION. The /understand screen showed a live extraction
+   * that had just run -- alibaba-model-studio, qwen3.7-plus, orkestr-intent-v2
+   * -- and, directly beneath it, "Destination research - Not configured - No
+   * Model Studio credential is set."
+   *
+   * Both rows were about the same deployment. One of them was wrong.
+   *
+   * The two failures were unrelated: the extraction genuinely timed out, and
+   * the research row was a hard-coded placeholder that reused NOT_CONFIGURED
+   * because the screen does no research. "Not asked" is true; "no credential
+   * exists" was not, and a board that says one untrue thing devalues every
+   * other row on it.
+   */
+  it("says a subsystem was not asked, rather than claiming no credential", () => {
+    const board = buildProvenanceBoard({
+      understanding: "LIVE_MODEL",
+      research: "NOT_CONFIGURED",
+      researchAsked: false,
+    });
+
+    const research = board.find((row) => row.subsystem === "Destination research");
+    expect(research?.state).toBe("NOT_RUN");
+    expect(research?.detail).not.toMatch(/credential/i);
+    expect(research?.detail).toMatch(/does not research/i);
+  });
+
+  it("never claims a credential is missing on a board where a live call ran", () => {
+    const board = buildProvenanceBoard({
+      understanding: "LIVE_MODEL",
+      research: "NOT_CONFIGURED",
+      researchAsked: false,
+    });
+
+    const liveRan = board.some((row) => row.state === "LIVE");
+    expect(liveRan).toBe(true);
+    for (const row of board) {
+      expect(
+        row.detail,
+        `${row.subsystem} claims no credential while a live call ran on the same board`,
+      ).not.toMatch(/No Model Studio credential is set/i);
+    }
+  });
+
+  it("still says NOT_CONFIGURED where that is genuinely true", () => {
+    // The claim is correct when research WAS asked and there is no credential.
+    const board = buildProvenanceBoard({
+      understanding: "NOT_CONFIGURED",
+      research: "NOT_CONFIGURED",
+    });
+    const research = board.find((row) => row.subsystem === "Destination research");
+    expect(research?.state).toBe("NOT_CONFIGURED");
+    expect(research?.detail).toMatch(/credential/i);
+  });
+
+  it("a failed extraction does not change what the research row says", () => {
+    /**
+     * The two are independent subsystems. A timeout in one must not be
+     * described as, or alongside, a configuration problem in the other.
+     */
+    const board = buildProvenanceBoard({
+      understanding: "LIVE_MODEL",
+      understandingFailed: true,
+      research: "NOT_CONFIGURED",
+      researchAsked: false,
+    });
+
+    const understanding = board.find((row) => row.subsystem === "Group understanding");
+    const research = board.find((row) => row.subsystem === "Destination research");
+
+    expect(understanding?.state).toBe("FAILED");
+    expect(research?.state).toBe("NOT_RUN");
+    expect(research?.detail).not.toMatch(/credential|failed|timeout/i);
+  });
+});
