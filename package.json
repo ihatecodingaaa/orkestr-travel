@@ -32,6 +32,7 @@
     "db:migrate": "node -e \"import('./scripts/loadEnv.mjs').then(m=>{m.loadEnvLocal();import('./scripts/migrate.mjs')})\"",
     "db:status": "node -e \"import('./scripts/loadEnv.mjs').then(m=>{m.loadEnvLocal();process.argv.push('--status');import('./scripts/migrate.mjs')})\"",
     "db:check": "node scripts/dbCheck.mjs",
+    "db:cleanup": "node scripts/cleanupSynthetic.mjs",
     "test:db": "vitest run --config vitest.db.config.ts"
   },
   "devDependencies": {

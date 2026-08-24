@@ -810,3 +810,91 @@ that runs after the build. No network access required.
 3. **Production TLS is verified**, against a real provider certificate, with
    `PGSSL_ALLOW_UNVERIFIED` unset. What remains unproven is a *deployment* —
    nothing has been hosted.
+
+## STAGE 4 — PRODUCTION READINESS AND PUBLIC DEPLOYMENT
+
+Orkestr is deployed and publicly reachable at `https://orkestr-travel.vercel.app`,
+served from Vercel's Singapore region (`sin1`) against a Supabase PostgreSQL
+database. Everything below was checked against that deployment, not a local
+build.
+
+**Production acceptance used synthetic trips only.** Every traveller named in
+these runs is fictional. The synthetic data is removed by `npm run db:cleanup`.
+
+| Thing | Status |
+| --- | --- |
+| **Public deployment reachable** | **LIVE VERIFIED** — Singapore region, real HTTPS |
+| **Shared trips on the deployed product** | **LIVE VERIFIED** — 53/54 acceptance checks |
+| **Non-shared public product** | **LIVE VERIFIED** — 11/11, works with no database |
+| **Session cookie flags over real HTTPS** | **LIVE VERIFIED** — `HttpOnly`, `Secure`, `SameSite=Lax` |
+| **Production TLS from a serverless runtime** | **LIVE VERIFIED** — CA verified, no relax flag |
+| **Invite links carry the configured base URL** | **LIVE VERIFIED** |
+| **Private values absent from HTML and RSC payloads** | **VERIFIED ABSENT** — organiser and traveller |
+| **Cross-origin server-action replay** | **LIVE VERIFIED REFUSED** — mutates nothing |
+| **Optimistic concurrency in the deployed interface** | **LIVE VERIFIED** — after fixing a real defect, below |
+| **Browser bundle contains no server module** | **VERIFIED** — 753,629 bytes, 14 assets, positive control |
+| **Model Studio from the Vercel runtime** | **NOT WORKING** — see below |
+| **Custom domain / DNS** | **NOT CONFIGURED** — deliberately |
+| **Global user accounts** | **NOT IMPLEMENTED** |
+| Atlas production | NOT AUTHORISED |
+| Booking, payment, ticketing | NOT IMPLEMENTED |
+
+**Tests: 1,343 across 61 files**, plus 4 browser-bundle tests that run after the
+build and 32 live database tests. Only the latter two need anything external.
+
+### The defect production acceptance found
+
+`SharedScreen` and `MyDetails` wrote against the **polled** trip version rather
+than the version the rendered trip came from. `useTripSync` raises its polled
+number the instant it notices the server moved, but the `router.refresh()` that
+brings the new trip down is a network round trip. In that window the screen
+showed the old trip carrying the new version number, so a write submitted then
+satisfied `UPDATE … WHERE version = $4` and was applied against a trip the
+person had never seen — silently, which is the exact failure optimistic
+concurrency exists to prevent.
+
+The conflict path was not merely untested, it was **unreachable**: two live
+browsers racing on the deployed site could not produce a refusal, because the
+poll kept handing the loser a winning version. Every unit test passed throughout,
+because each half was correct on its own.
+
+Fixed by writing against the server-rendered `version` prop. `useTripSync` no
+longer returns a version at all, so the mistake is a type error rather than a
+convention. Both guards fail on the previous code. The refusal is now
+**LIVE VERIFIED** on the deployed product: the losing browser is told *"The trip
+changed while you were editing. Orkestr has refreshed it — please check your
+change still makes sense."* and its write is not persisted.
+
+### Model Studio does not work from production
+
+This is recorded as **NOT WORKING**, not as slow.
+
+A single budgeted production call was instrumented to distinguish "the model is
+slow" from "nothing answered". The result was decisive: **the provider did not
+return response headers at all within 30,000 ms** — `fetch` never resolved, so
+there was no model latency to measure. The same prompt, the same credential and
+a *smaller* input complete locally in ~9.4 s, reproduced twice.
+
+Therefore:
+
+* It is **not** a timeout that is set too low. Raising it lengthens the wait
+  before the same failure; nothing is answering.
+* It is **not** the adapter, the prompt, retries or context size. `enable_thinking`
+  is correctly `false` for extraction, and there are no retries.
+* It is a **connectivity problem between the Vercel runtime and the Model Studio
+  Singapore workspace endpoint** — an infrastructure question for the founder
+  (network path, allow-listing, or regional reachability), not a code change.
+
+The product degrades honestly when this happens: the interface says the
+extraction did not complete and reports what the provider actually did, rather
+than presenting invented structure. Local and recorded modes are unaffected.
+
+### Vercel Security Checkpoint
+
+Vercel is currently challenging non-browser clients on this project: `curl` and
+headless Chrome receive `403 Vercel Security Checkpoint` / *"Failed to verify
+your browser, Code 29"*. A normal browser passes it and the product behaves
+correctly, so **visitors are unaffected**. It appeared partway through automated
+acceptance and was most likely triggered by that traffic. It blocks scripted
+verification, so the remaining production checks were run in a real browser
+window. Worth confirming in Vercel → Firewall before a public demo.

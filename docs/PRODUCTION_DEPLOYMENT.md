@@ -140,3 +140,29 @@ Pacific and back is latency nobody has to pay for.
 OS keychain — neither exists on a serverless platform, and exporting them is
 explicitly out of bounds. Where flight data appears it is labelled
 **recorded Atlas Sandbox**, and it is never called live, purchasable or booked.
+
+## A custom domain — recommended, not configured
+
+**Nothing here has been done.** DNS is deliberately untouched; this is a
+recommendation for after the public product is proven.
+
+The `.vercel.app` URL is fine for a hackathon submission and costs nothing. A
+custom domain is worth it for one reason and it is not branding: **invite links
+carry the origin**. A link somebody forwards to their family reads
+`orkestr.travel/join/…` rather than a hosting provider's subdomain, and it keeps
+working if the hosting ever moves — the `.vercel.app` name does not.
+
+If it is done, the order matters:
+
+1. Add the domain in Vercel and let its certificate issue **before** anything
+   points at it.
+2. Set `APP_BASE_URL` to the new origin in Production, and redeploy. Invite links
+   are built from that variable, not from the request, so a domain switch with a
+   stale variable produces links pointing at the old origin — issued correctly,
+   and wrong forever once sent.
+3. Redeem one synthetic invite end to end on the new origin before announcing it.
+4. Keep the `.vercel.app` origin working. Links already sent use it.
+
+Invitations already in the wild are the reason this is a considered change and
+not a cosmetic one: a token is a URL, and changing the origin changes every URL
+that has not yet been opened.

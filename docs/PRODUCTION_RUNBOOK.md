@@ -114,11 +114,25 @@ Providers rotate roots on a schedule and it is not always announced loudly.
 ## Cleaning up test data
 
 Synthetic trips use recognisable id prefixes (`e2e-`, `qa-`, `itest-`,
-`mtest-`). Delete by prefix through `shared_trip`; `ON DELETE CASCADE` removes
-members, invitations, private data and events.
+`mtest-`, and `prod-` for production acceptance). Delete by prefix through
+`shared_trip`; `ON DELETE CASCADE` removes members, invitations, private data
+and events.
 
-**Never delete `schema_migration` rows.** Never hand-edit rows in a provider
-dashboard unless recovering from something.
+```bash
+npm run db:cleanup             # dry run: says what it would delete
+npm run db:cleanup -- --commit # actually delete
+```
+
+`browser_session` is deliberately **not** cascaded, because a browser outlives
+any one trip. Deleting a trip therefore strands the sessions whose only
+membership it was, so the script also removes sessions that have no memberships
+left. Having no memberships is the test, not age — a real session that still has
+access is never eligible.
+
+**Never delete `schema_migration` rows.** Removing one makes the next deploy try
+to reapply a migration that has already run. The cleanup script contains no code
+path that names that table. Never hand-edit rows in a provider dashboard unless
+recovering from something.
 
 ## What free tiers actually mean
 
