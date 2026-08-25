@@ -43,6 +43,27 @@ const COUNTED_TABLES = [
 
 const commit = process.argv.includes("--commit");
 
+/**
+ * Exact ids, for trips that cannot carry a synthetic prefix.
+ *
+ * A shared trip is created by the product with a UUID, so acceptance runs that
+ * exercise real sharing leave rows the prefix rule cannot see -- and it must not
+ * learn to, because widening it is how a founder's trip gets deleted by a
+ * wildcard.
+ *
+ * This is the opposite of widening: it deletes nothing except ids typed out in
+ * full by whoever runs it. It is more restrictive than the prefix rule, not
+ * less, and the two never combine -- a run does one or the other.
+ */
+const idsFlag = process.argv.indexOf("--ids");
+const explicitIds =
+  idsFlag === -1
+    ? []
+    : (process.argv[idsFlag + 1] ?? "")
+        .split(",")
+        .map((value) => value.trim())
+        .filter((value) => value.length > 0);
+
 loadEnvLocal();
 if (!process.env.DATABASE_URL) {
   console.error("DATABASE_URL is not set. Nothing to clean.");
@@ -78,10 +99,22 @@ const count = async (table) => {
 };
 
 try {
-  const { rows: doomed } = await pool.query(
-    "SELECT id, version FROM shared_trip WHERE id LIKE $1 ORDER BY created_at",
-    [`${SYNTHETIC_PREFIX}%`],
-  );
+  const { rows: doomed } =
+    explicitIds.length > 0
+      ? await pool.query(
+          "SELECT id, version FROM shared_trip WHERE id = ANY($1::text[]) ORDER BY created_at",
+          [explicitIds],
+        )
+      : await pool.query(
+          "SELECT id, version FROM shared_trip WHERE id LIKE $1 ORDER BY created_at",
+          [`${SYNTHETIC_PREFIX}%`],
+        );
+
+  if (explicitIds.length > 0) {
+    console.log("mode                     : explicit ids only");
+    const missing = explicitIds.filter((id) => !doomed.some((row) => row.id === id));
+    for (const id of missing) console.log(`  not present (nothing to do): ${id}`);
+  }
   const { rows: orphanRows } = await pool.query(
     `SELECT COUNT(*)::int AS c FROM browser_session bs
       WHERE NOT EXISTS (SELECT 1 FROM session_membership sm WHERE sm.session_id = bs.id)`,
@@ -90,6 +123,16 @@ try {
   console.log("synthetic trips eligible :", doomed.length);
   for (const trip of doomed) console.log(`  ${trip.id}  v${trip.version}`);
   console.log("orphan browser sessions  :", orphanRows[0].c);
+
+  /**
+   * An explicit-id run touches only those trips. The orphan sweep is part of the
+   * prefix run, where the trips it strands were all synthetic; here the sessions
+   * belong to whoever else is using the database.
+   */
+  if (explicitIds.length > 0 && doomed.length === 0) {
+    console.log("\nNothing to do.");
+    process.exit(0);
+  }
 
   if (doomed.length === 0 && orphanRows[0].c === 0) {
     console.log("\nNothing to do.");
@@ -109,17 +152,23 @@ try {
      * `shared_trip`. Deleting the children by hand would be a second definition
      * of the schema's shape, kept in step by memory.
      */
-    const removed = await client.query(
-      "DELETE FROM shared_trip WHERE id LIKE $1 RETURNING id",
-      [`${SYNTHETIC_PREFIX}%`],
-    );
+    const removed =
+      explicitIds.length > 0
+        ? await client.query("DELETE FROM shared_trip WHERE id = ANY($1::text[]) RETURNING id", [
+            explicitIds,
+          ])
+        : await client.query("DELETE FROM shared_trip WHERE id LIKE $1 RETURNING id", [
+            `${SYNTHETIC_PREFIX}%`,
+          ]);
     /**
      * `browser_session` is deliberately NOT cascaded -- a browser outlives any
      * one trip -- so a session whose only membership was synthetic is left
      * behind pointing at nothing. It is cleaned by having no memberships, not
      * by its age, so a real session that still has access is never eligible.
      */
-    const sessions = await client.query(
+    const sessions = explicitIds.length > 0
+      ? { rowCount: 0 }
+      : await client.query(
       `DELETE FROM browser_session bs
         WHERE NOT EXISTS (SELECT 1 FROM session_membership sm WHERE sm.session_id = bs.id)
         RETURNING id`,
