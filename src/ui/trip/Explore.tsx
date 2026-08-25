@@ -234,16 +234,25 @@ function Savers({ trip, idea }: { readonly trip: ConsumerTrip; readonly idea: Tr
           </span>
         ))}
       </span>
-      <span className="faint">
-        {people.length === 1
-          ? `${people[0]?.name ?? ""} saved this`
-          : `${String(people.length)} people saved this`}
-      </span>
+      <span className="faint">{saverWords(people.map((person) => person.name))}</span>
     </span>
   );
 }
 
 
+/**
+ * Who saved it, in words rather than a count.
+ *
+ * §B. A merge is only trustworthy if the person who saved the second link can
+ * see that their save survived it. "2 people saved this" is a number; on a trip
+ * with two people in it, their own name is the proof. Names are used while they
+ * still fit, and a count takes over when a list would be longer than the place.
+ */
+function saverWords(names: readonly string[]): string {
+  if (names.length === 1) return `${names[0] ?? ""} saved this`;
+  if (names.length === 2) return `${names[0] ?? ""} and ${names[1] ?? ""} saved this`;
+  return `${String(names.length)} people saved this`;
+}
 /**
  * Every link that turned out to be about this place.
  *
