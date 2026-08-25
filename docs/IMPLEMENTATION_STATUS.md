@@ -1075,19 +1075,20 @@ what the stage's own instruction asked for.
 
 ### What is proven, and against what
 
-Proven against a **production build connected to the production database**, in
-two isolated browser profiles at a mobile viewport: the whole shared loop, the
-repair path, the privacy boundary, browser-level stale-draft refusal, and 390 /
-430 width QA over six shared surfaces.
+Proven against **the deployed product at `https://orkestr-travel.vercel.app`**,
+in two isolated browser profiles at a mobile viewport: the whole shared loop
+(**22/22**), the repair path, the privacy boundary, browser-level stale-draft
+refusal (**5/5**), and 390 / 430 width QA over six shared surfaces.
 
-**Not proven: the same run against the deployed URL.** Vercel's Attack Challenge
-Mode began serving a JS challenge that headless Chrome cannot pass, and it was
-not evaded — see `SECURITY.md`. Server code and data are identical; the deployed
-edge is not covered by this stage's evidence.
+It was proven twice. Vercel's Attack Challenge Mode interrupted the middle of
+this stage — triggered by its own automated traffic — so the acceptance first ran
+against a production build on the same production database. The mitigation
+cleared once the traffic stopped, and every check was then re-run against the
+deployment itself with the same results. It was never evaded; see `SECURITY.md`.
 
 ### Database after cleanup
 
-Eleven synthetic shared trips created by this stage were removed by explicit id.
+Thirteen synthetic shared trips created by this stage were removed by explicit id.
 
 | Table | Rows |
 | --- | --- |

@@ -159,8 +159,8 @@ With no cloud configuration at all:
 
 ## 16. Shared magic loop — run record
 
-Run against a production build on the production database, two isolated Chrome
-profiles, 390px. `scratchpad/sharedloop.mjs`, **22/22**.
+Run against **the deployed product**, `https://orkestr-travel.vercel.app`, two
+isolated Chrome profiles, 390px. `scratchpad/sharedloop.mjs`, **22/22**.
 
 - [x] The trip becomes shared (two deliberate clicks: preview, then share)
 - [x] An invite link is created, and no token is ever rendered to the page
@@ -193,11 +193,13 @@ stops polling, Zen changes the trip and Luc applies the draft he was looking at:
 `scratchpad/qa.mjs`, **390px and 430px**, six shared surfaces: no page scrolls
 sideways, nothing overflows outside a container that scrolls on purpose.
 
-**Not covered:** the deployed URL. Vercel's Attack Challenge Mode serves a JS
-challenge headless Chrome fails, and it was not evaded (`SECURITY.md`).
+**Interrupted once:** Vercel's Attack Challenge Mode blocked the deployment
+partway through this stage, triggered by these runs. It was not evaded; the
+acceptance ran against a local production build on the same database until the
+mitigation cleared, then in full against the deployment (`SECURITY.md`).
 
 ### Cleanup performed
 
-Eleven synthetic trips removed by explicit id. `shared_trip` = 1 (the founder's,
+Thirteen synthetic trips removed by explicit id. `shared_trip` = 1 (the founder's,
 untouched), `member_private_data` = 0, `trip_invitation` = 0, `schema_migration`
 intact. Browser sessions deliberately untouched — see `IMPLEMENTATION_STATUS.md`.

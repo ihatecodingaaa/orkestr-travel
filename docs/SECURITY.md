@@ -299,10 +299,15 @@ repeated headless acceptance runs and a polling loop against the deployment.
 **No attempt was made to work around it.** Defeating a platform's bot challenge
 to make a test pass would trade a real protection for a green tick. The
 acceptance was completed instead against a production build running locally and
-connected to the same production database, which exercises the same server code
-and the same data. What that substitution does **not** prove is the deployed
-edge — routing, headers and the platform's own behaviour — and the stage report
-says so rather than rounding it up.
+connected to the same production database.
 
-Turning the mode off, if the founder wants it off, is a dashboard setting and a
-founder decision.
+**The mitigation then cleared on its own** once the automated traffic stopped —
+which is what identifies it as automatic mitigation rather than a setting
+somebody switched on. The deployment returned `200`, and the full acceptance was
+re-run against it: **22/22**, plus **5/5** for the stale draft and clean width QA
+at 390 and 430. The deployed edge is therefore covered by evidence, not by
+substitution.
+
+The sequence is worth keeping: sustained headless traffic against a Vercel
+deployment can trip mitigation, and the fix is to stop and wait, not to defeat
+it.

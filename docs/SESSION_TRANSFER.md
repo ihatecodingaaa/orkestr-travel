@@ -845,12 +845,13 @@ and build clean.
 
 ### The two things to know before trusting a green run
 
-1. **The deployed URL is not what was tested.** Vercel's Attack Challenge Mode
-   is on and headless Chrome cannot pass it. The acceptance ran against a
-   production build on the same production database. It was not evaded; see
-   `SECURITY.md`. If it has since been turned off, re-run
-   `scratchpad/sharedloop.mjs` with `BASE` pointing at the deployment — nothing
-   in the script depends on the host, because it navigates invite links by path.
+1. **Sustained headless runs can trip Vercel's bot mitigation.** It happened in
+   this stage: the deployment started returning `403` with
+   `X-Vercel-Mitigated: challenge`, which headless Chrome cannot pass. It was
+   not evaded — see `SECURITY.md` — and it cleared on its own once the traffic
+   stopped, after which everything was re-run against the deployment. If it
+   happens again, stop and wait. `scratchpad/sharedloop.mjs` runs against any
+   host via `BASE`, because it navigates invite links by path.
 2. **Most "failures" in this stage were the test.** Seven of them, listed in
    `MAGIC_LOOP_PRODUCT_SPEC.md` §10.4. Before reporting a defect from a browser
    check, confirm it in the database. Three times the database said the product

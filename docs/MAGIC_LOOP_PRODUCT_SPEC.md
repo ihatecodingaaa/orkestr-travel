@@ -273,10 +273,13 @@ people are looking at one trip through one database.
 
 ### 10.1 What was actually run
 
-Two isolated Chrome profiles — Luc (organiser) and Zen (traveller) — against a
-**production build** (`next start`) connected to the **production Postgres**,
-at a 390px mobile viewport. One trip, created through the interface, never
-seeded.
+Two isolated Chrome profiles — Luc (organiser) and Zen (traveller) — against
+**the deployed product**, `https://orkestr-travel.vercel.app`, at a 390px mobile
+viewport. One trip, created through the interface, never seeded.
+
+(The same 22 checks were run first against a local production build on the same
+production database, because Vercel's bot mitigation was briefly blocking the
+deployment. It cleared, and the deployed run is the one recorded here.)
 
 **22 of 22 checks pass**, plus a separate 5-check run for the stale-draft case:
 
