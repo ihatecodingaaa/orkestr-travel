@@ -138,3 +138,42 @@ is refused, and the refusal says who can.
 Both were added to the union, the authority case list and `describeMutation`
 together — the union is exhaustive, so a mutation that reaches none of those
 places does not compile.
+
+## Membership stays open, and stays consistent with the payload
+
+A person on a shared trip exists in **two places on purpose**: a `trip_member`
+row that owns their membership, and a traveller inside the payload that the
+planner reads. They are tied together by `traveller_id`.
+
+That split is what makes late joining delicate. Two separate writes have a
+window between them, and either half landing alone is a real failure:
+
+* a **member with no traveller** resolves a session to somebody who is not on
+  the trip, which breaks `travellerIdFor` for that person on every screen;
+* a **traveller with no member** is a person nobody can ever be, and nobody can
+  ever be invited as.
+
+So `PayloadWrite` carries an optional `addMember`, and the store creates the row
+**inside the same transaction as the payload change** — after the version check,
+after the `UPDATE`. A stale caller is refused before either exists. There is
+still exactly one write path, and it is still version-guarded.
+
+The server chooses the id, once, and hands the same value to both halves. A
+client that named it could name one that already exists.
+
+### `ADD_TRAVELLER`, `CONFIRM_MY_DRAFT`, `DISMISS_MY_DRAFT`
+
+`ADD_TRAVELLER` requires the **`ADD_MEMBER`** capability, which already existed
+and was already organiser-only; this is its first use. Membership is its own
+authority rather than a kind of plan edit, so "who may change who is on this
+trip" stays answerable on its own.
+
+The two draft mutations carry **no target**, like every other "my" mutation.
+They apply to whoever the session resolved to, so they are structurally
+incapable of confirming an answer on somebody else's behalf.
+
+### What the activity feed is told
+
+`Luc added Ryan to the trip` — and never the note. What the organiser typed
+about Ryan is shown to *Ryan*, for him to confirm; an activity feed is the
+easiest place to turn it into a fact the whole group has already read.

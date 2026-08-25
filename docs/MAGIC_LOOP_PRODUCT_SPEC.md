@@ -313,18 +313,17 @@ would be longer than the place.
 That is the whole of it. Everything else this stage set out to close was already
 built; the work was proving it, and the honest report of that is §10.4.
 
-### 10.3 A real limitation, found by trying to use it
+### 10.3 A real limitation, found by trying to use it — since closed
 
-**There is no way to add a new person to a trip that is already shared.**
-Members are created by migration from the travellers a trip had when it was
-converted. The Group screen lists who is there and offers each of them an
-invite; it does not offer to add somebody new. Adding Zen has to happen *before*
-"Make this shareable".
+**There was no way to add a new person to a trip that was already shared.**
+Members were created by migration from the travellers a trip had when it was
+converted, and never again. The Group screen listed who was there and offered
+each of them an invite; it did not offer to add somebody new.
 
-This is a genuine gap in the product, not a bug in the test that found it. It is
-recorded rather than fixed because inventing a mid-flight join path — how a new
-member reconciles with a plan the group already agreed — is a design decision,
-not a missing button.
+It was recorded rather than fixed at the time, because the missing part was not
+a button — it was a decision about how somebody joining late reconciles with a
+plan the group has already agreed. **That is now built and verified in
+production; see §11.**
 
 ### 10.4 Seven things that looked like defects and were not
 
@@ -350,3 +349,102 @@ findings makes the process look cleaner than it was:
    `"private": false`, which is the product doing exactly what it was told.
 7. **Sharing takes two deliberate clicks** — "Make this shareable" opens a
    migration preview, and "Share this trip" is the decision.
+
+## 11. Joining late — a shared trip stays open to membership change
+
+**A shared trip is not a closed snapshot of whoever happened to be there when it
+was converted.** People join groups late. Somebody's partner comes after all, an
+auntie decides she is in — and a product that cannot express that forces the
+group to start again somewhere else, which is the opposite of what Orkestr
+promises when it says it adapts.
+
+Joining late is not a reset. It is another change Orkestr coordinates.
+
+### 11.1 The two events that are deliberately not one
+
+Adding **Ryan** to the trip changes almost nothing. He has no dates, no
+requirements and nothing to schedule around. Membership is not an impact.
+
+It is when Ryan says *"I can only come from Wednesday"* that the plan acquires a
+problem — so that is when the impact is computed, and not before. Conflating the
+two would either fire a scary panel at the moment somebody is welcomed, or bury
+the moment that actually matters.
+
+### 11.2 The organiser knows things. That does not make them answers.
+
+The organiser types *"He can only join from Wednesday"* because they are being
+helpful, and because they probably are right. They are still guessing, and the
+planner cannot tell a guess from an answer once it is in `availableFrom`: it
+would build the week around Wednesday, tell the group Ryan is sorted, and be
+wrong in a way nobody can see.
+
+So the note is stored **beside** the traveller, never inside their availability:
+
+* attributed — *"Luc added this before you joined"*, never an unowned statement;
+* read into a day **only when the trip's own calendar makes it unambiguous** —
+  one Wednesday in the trip means Wednesday, two means ask;
+* accompanied by *"Nothing has been planned around this. It counts once you say
+  so."*, which is literally true;
+* removed the moment Ryan answers, either way. **Change it** is not a refusal to
+  travel: it clears somebody else's guess and leaves the questions open, which is
+  the honest state.
+
+### 11.3 The declared size is asked about, never adjusted
+
+A trip that says *"2 people in total"* and gains a third named person has two
+numbers that disagree. Quietly raising the total would be Orkestr inventing
+capacity — exactly what `readGroupSize` refuses to do everywhere else. So it
+asks, once, at the moment the two stop agreeing:
+
+> You said 2 people in total. Adding Ryan makes 3.
+> **[ Yes, 3 ]**  Someone else is dropping out
+
+Replacement is deliberately left as a question. Somebody dropping out is a
+decision with consequences for the plan, so it is sent to What-if — which shows
+those consequences — rather than becoming a second, quieter way to remove a
+person.
+
+### 11.4 What the group is shown when the answer arrives
+
+Every number is calculated by the preview engine What-if already uses, run over
+a counterfactual with the arrival taken back out. From the verified production
+run:
+
+> **RYAN IS JOINING FROM WEDNESDAY 2 SEP**
+> 1 thing may need to change.
+> 2 of 3 earlier decisions can stay · 1 new decision
+>
+> **Affected** — Everyone together — now Wednesday 2 Sep
+> **Unaffected** — Tuesday: Temple of Heaven, Qianmen Street · Wednesday: Jingshan Park
+>
+> **Ryan arrives after 1 thing you have fixed**
+> 🔒 Tuesday 1 Sep: Temple of Heaven
+> Orkestr will not move it. Either Ryan joins after it, or the group reconsiders
+> it on the plan.
+
+Three properties worth naming:
+
+1. **The denominator is what was decided BEFORE.** A travel group that exists
+   only after Ryan arrives is a *new* decision, counted separately and never
+   called preserved. This was a real defect: such a group used to land in
+   "changed", so a late join made the ratio worse for doing nothing wrong.
+2. **Nothing is regenerated.** The plan is not rebuilt around the new arrival;
+   what-if changes who travels when, not what is on the itinerary.
+3. **A fixed item is never moved to make somebody fit, and never passed over in
+   silence either.** The collision is stated with both honest options, and both
+   belong to the group.
+
+### 11.5 Ask reaches the same door
+
+*"Ryan is joining us from Wednesday"* proposes; it does not act:
+
+> **Add Ryan to the trip?**
+> They'll get their own invite and their own view.
+> Anything you've said about them is kept as your note until they confirm it.
+> **[ Add Ryan ]**  Not now
+
+The button calls the same shared action the Group screen calls. There is no
+Ask-only path onto a trip's membership, the server still checks that the asker
+is the organiser, and it still refuses a stale version. A name the model returns
+is kept **only if it appears in the question** — "add my auntie" has no name in
+it, and the useful answer is to ask rather than to invite somebody called Auntie.

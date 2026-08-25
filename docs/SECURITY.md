@@ -311,3 +311,46 @@ substitution.
 The sequence is worth keeping: sustained headless traffic against a Vercel
 deployment can trip mitigation, and the fix is to stop and wait, not to defeat
 it.
+
+## Adding a person: authority, atomicity, and what the feed is told
+
+Adding somebody to a shared trip is a membership change, so it required an
+answer to *who may do that* before it required a button.
+
+* **`ADD_MEMBER`, organiser-only.** The capability already existed and was
+  already restricted; `ADD_TRAVELLER` is its first use. An ordinary traveller is
+  refused and told who can. No new authority mechanism was introduced.
+* **The client chooses nothing that matters.** Not the trip owner, not the role,
+  not the new person's id, not whether anybody is confirmed. The server resolves
+  the actor from the session and generates the id.
+* **Cross-trip is refused.** An organiser of one trip carrying their own member
+  id at another trip's id is not an actor on that trip.
+* **A refused addition writes nothing.** Membership is created inside the same
+  transaction as the payload change, after the version check — so a stale or
+  unauthorised caller leaves neither a traveller nor a member row behind. This is
+  covered by a database test that asserts the absence of both.
+* **The activity feed carries the name and not the note.** `Luc added Ryan to
+  the trip`. What Luc wrote about Ryan is shown to Ryan; putting it in a feed
+  would make it a fact the group had read before Ryan ever saw it.
+* **The invite lifecycle is unchanged.** A late-added member gets the same
+  single-use hashed token, the same expiry, the same revocation, the same clean
+  URL after redemption. No second token path exists.
+
+### A name a model returned is checked against the question
+
+`ADD_TRAVELLER` is the first Ask intent that carries free text rather than a
+value chosen from an enum, so it is the first one that could invent a person. A
+name survives only if it appears in what the asker actually typed — the same
+containment rule the extraction pipeline uses for quotations — and only if it
+looks like a name rather than an instruction. Writing the test for that found a
+real hole: the first shape accepted *"add everyone from the group chat"*, which
+is letters and spaces inside forty characters. It is now bounded to three words,
+matching the deterministic `add <name>` command.
+
+### Privacy re-tested with a third person
+
+The sentinel test was repeated with **three** members. A private requirement
+written by the late joiner is absent from fourteen pages of the other two
+members' rendered HTML — Overview, Plan, Explore, People, Group, What-if and
+Activity, for each of them — absent from Ask, and absent from the activity feed,
+while its owner can still read it.

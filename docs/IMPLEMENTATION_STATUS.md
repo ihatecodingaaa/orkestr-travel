@@ -1107,8 +1107,51 @@ when their trips were deleted. They are left alone because the only tool that
 sweeps orphans is the prefix mode, which would take the founder's 32 with them. A
 `browser_session` with no `session_membership` grants access to nothing.
 
-### A limitation worth naming
+### A limitation worth naming — closed in the next stage
 
-**A person cannot be added to a trip that is already shared.** Members come from
-migration; the Group screen invites the people who were already there. See
-`MAGIC_LOOP_PRODUCT_SPEC.md` §10.3.
+**A person could not be added to a trip that was already shared.** Members came
+from migration and never changed. Closed by the Late Joiner stage below.
+
+## Stage: Late Joiner closure
+
+The one material limitation the previous stage found is gone. **A shared trip
+stays open to membership change**, and joining late is not a reset — it is
+another change Orkestr coordinates.
+
+### What it does
+
+| | |
+| --- | --- |
+| Add someone to an already-shared trip | Group → **+ Add someone**, organiser only (`ADD_MEMBER`) |
+| What the organiser knows about them | kept as an attributed draft, never as their answer |
+| Declared group size | asked about, never adjusted silently |
+| Invite | the existing single-use hashed-token lifecycle, unchanged |
+| Their join view | shown the note, with **That's right** / **Change it** |
+| Impact | fires on their **answer**, not on membership |
+| The plan | never regenerated; a fixed item is never moved, and never passed over in silence |
+| Ask | proposes; the button calls the same shared action |
+
+### Verified in production
+
+`https://orkestr-travel.vercel.app`, three isolated browsers, 390px:
+**29/29**. Concurrency, two tabs of one organiser: **3/3**. Width QA at 390 and
+430 over six shared surfaces: clean.
+
+### No database migration
+
+`trip_member` accepts an insert at any time, invitations already work for any
+member of a trip, and travellers live in a JSONB payload. The only schema-shaped
+change is that `PayloadWrite` may now carry a membership row so the two land in
+one transaction — application code, not DDL.
+
+### One defect fixed in passing
+
+A travel group that exists only *after* somebody joins was being counted as a
+**changed** existing decision. It is a new one. Counting it in the denominator
+meant a late arrival made "decisions preserved" worse for doing nothing wrong.
+
+### Gates
+
+**1647 tests / 74 files**, **54 DB**, 4 bundle, lint, typecheck, build — all
+clean. Database after cleanup: `shared_trip` 1 (the founder's, untouched),
+`member_private_data` 0, `trip_invitation` 0, `schema_migration` intact.

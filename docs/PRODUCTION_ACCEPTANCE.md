@@ -203,3 +203,49 @@ mitigation cleared, then in full against the deployment (`SECURITY.md`).
 Thirteen synthetic trips removed by explicit id. `shared_trip` = 1 (the founder's,
 untouched), `member_private_data` = 0, `trip_invitation` = 0, `schema_migration`
 intact. Browser sessions deliberately untouched — see `IMPLEMENTATION_STATUS.md`.
+
+## 17. Late joiner — run record
+
+Run against **the deployed product**, `https://orkestr-travel.vercel.app`, three
+isolated Chrome profiles, 390px. `scratchpad/latejoin.mjs`, **29/29**.
+
+Set-up: shared trip, Zen joins, a **generated** first draft is built and kept,
+one item is pinned FIXED. Only then does Ryan get added.
+
+- [x] The shared Group screen offers **+ Add someone**
+- [x] Ryan is added to the already-shared trip
+- [x] The group-size question is asked, not assumed — *"You said 2 people in total. Adding Ryan makes 3."*
+- [x] The organiser can accept the new total
+- [x] Zen sees Ryan appear through ordinary sync
+- [x] Ryan gets his own invite through the existing lifecycle
+- [x] Ryan joins in a third browser and sees the trip as himself
+- [x] He is shown what Luc wrote, attributed to Luc
+- [x] The note was read into a day he can confirm — *"Can travel from Wednesday"*
+- [x] *"Nothing has been planned around this"* — and nothing was
+- [x] Confirming makes it his answer
+- [x] Orkestr says *"Ryan is joining from Wednesday 2 Sep"*
+- [x] Real counts — *"2 of 3 earlier decisions can stay · 1 new decision"*
+- [x] New decisions counted apart from preserved ones
+- [x] The fixed item is named as protected, not moved
+- [x] A repair still shows both halves after a late join
+- [x] Decisions Preserved counts only earlier decisions
+- [x] The fixed item survived the repair
+- [x] All three browsers see the same plan
+- [x] Ryan can read his own private note
+- [x] Ryan's words never reach Luc or Zen — 14 pages clear
+- [x] Ask never repeats Ryan's words
+- [x] Ask proposes adding somebody rather than doing it
+- [x] Confirming the proposal adds them through the shared action
+- [x] The feed records the addition, and carries no note and no token
+
+`scratchpad/concurrent.mjs`, **3/3** — two tabs of one organiser, both frozen at
+the same version: the first addition lands, the second is refused in words, and
+the refused person is not in the trip afterwards.
+
+`scratchpad/qa.mjs` at **390 and 430**: no page scrolls sideways.
+
+### Cleanup performed
+
+Six synthetic trips removed by explicit id. `shared_trip` = 1 (the founder's,
+untouched), `member_private_data` = 0, `trip_invitation` = 0, `schema_migration`
+intact. Browser sessions deliberately untouched.

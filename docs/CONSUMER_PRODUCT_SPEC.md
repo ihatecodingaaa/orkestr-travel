@@ -227,3 +227,24 @@ place that is already on the trip, the two become one card — and from where th
 person stands, their save has just disappeared into somebody else's. Their own
 name is the proof that it did not. Names stop at two because a longer list would
 be longer than the place it belongs to.
+
+## Adding someone after planning has started
+
+The Group screen carries **+ Add someone** for the organiser, on a trip that is
+already shared. Two fields: who is joining, and *"Anything you already know?"*.
+
+The second is optional and is treated as what it is — the organiser's note, with
+their name on it. The form says so where it is typed:
+
+> Kept as your note, with your name on it. They confirm or change it when they
+> join — Orkestr will not plan around it until they do.
+
+The new person appears immediately for everybody through ordinary shared sync,
+with **Send invite** beside their name. The invite is the existing one: a
+single-use token, hashed, expiring, revocable, shared through the phone's own
+share sheet.
+
+When they open it they are not asked to re-enter what the trip already knows.
+They are shown what was written about them, attributed, with **That's right** and
+**Change it** — and only then asked the personal questions that are still
+genuinely unknown.

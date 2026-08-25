@@ -237,3 +237,32 @@ link. The place is shared; the saving belongs to the person who did it. That is
 also why the interface names both savers when there are two: somebody who saved
 the second link needs to see that their save survived, and a bare count does not
 tell them.
+
+## A note about somebody who has not arrived yet
+
+`ConsumerTraveller.draft` holds what **one person wrote about another** before
+that other person could speak for themselves.
+
+It is deliberately NOT `availableFrom`. Nothing reads it when deciding anything:
+not the planner, not the travel-group algorithm, not readiness. It exists to be
+shown to the person it is about, with the author's name on it, and it becomes an
+answer only when they say so — at which point `confirmDraft` sets availability
+exactly as answering would, and clears the draft.
+
+```
+draft: {
+  note        the author's words, unchanged
+  byName      who wrote it, so it is never an unowned statement
+  at
+  proposedFrom?   a day, only when the trip's calendar made it unambiguous
+}
+```
+
+`proposedFrom` is absent far more often than not, and that is the point. It is
+filled by `readProposedArrival`, which refuses a weekday the trip contains twice,
+two different weekdays in one note, a date outside the trip, and any note with no
+sense of arriving at all. A wrong proposal is worse than none, because a proposal
+arrives with a one-tap **Confirm** beside it.
+
+The parser drops a draft whole if it lost its author, because a note nobody
+signed is exactly the thing the field exists to prevent.

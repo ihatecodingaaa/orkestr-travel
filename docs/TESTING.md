@@ -489,3 +489,46 @@ because they generalise:
 Group, What-if, People — at **390px and 430px**, screenshots each, and asserts
 that no page scrolls sideways and that nothing overflows the viewport outside a
 container that scrolls on purpose. Both widths: clean.
+
+## Joining late
+
+**50 unit tests** (`tests/lateJoin.test.ts`, additions to `tests/askIntents.test.ts`)
+and **15 database tests** (`tests/db/lateMember.test.ts`).
+
+The negatives are the point:
+
+* an organiser's note never reaches `availableFrom` — verified by breaking the
+  code and watching exactly that test fail;
+* a weekday the trip contains **twice** proposes nothing, because the person is
+  about to be shown a one-tap Confirm beside it;
+* a stale addition writes **neither** a traveller nor a membership row, which is
+  the whole reason the two share a transaction;
+* an ordinary traveller is refused and leaves no membership row behind;
+* the feed records `Luc added Ryan to the trip` and never what Luc wrote;
+* dismissing a note leaves somebody **unanswered**, not "not coming".
+
+### Three browsers, one trip
+
+`scratchpad/latejoin.mjs` — **29 checks**, run against the deployment. Luc
+organises, Zen is already on the trip, Ryan joins after a generated first draft
+exists and one item has been pinned. It covers the whole arc: add, group-size
+question, sync to Zen, invite, join, the attributed note, confirm, impact,
+repair, fixed-item survival, three-way agreement, privacy, the Ask flow and the
+activity feed.
+
+`scratchpad/concurrent.mjs` — **3 checks**. Two tabs in **one** Chrome, so one
+organiser with one session, both frozen at the same version by backgrounding
+them. The first addition lands, the second is refused in words, and the refused
+person is not in the trip afterwards.
+
+### The same three traps, again
+
+Every failure in this stage's acceptance was in the test, and three were the
+traps `MAGIC_LOOP_PRODUCT_SPEC.md` §10.4 already named — an eyebrow uppercased
+by CSS so `innerText` did not match a case-sensitive regex, a control behind a
+disclosure, and a wording assumption. They are worth re-reading before writing a
+browser check.
+
+One failure was **not** a test bug: the late joiner's panel rendered nothing at
+all, because a `MemberView` carries two string ids and the wrong one typechecks.
+The component now takes the member instead of an id.

@@ -859,9 +859,8 @@ and build clean.
 
 ### Where the next real work is
 
-* **A person cannot be added to a trip that is already shared.** The clearest
-  gap in the product. It needs a design decision about how somebody joining
-  late reconciles with a plan the group already agreed — not just a button.
+* ~~A person cannot be added to a trip that is already shared.~~ **Closed.**
+  See the Late Joiner handover at the end of this file.
 * **48 `browser_session` rows have no membership.** Harmless, and left alone on
   purpose: the only sweep available also takes the 32 that pre-date this work.
   An id-scoped session cleanup would fix that properly.
@@ -873,3 +872,52 @@ and build clean.
   founder's trip safe from a wildcard.
 * Solve a bot challenge to make a test pass.
 * Claim the loop works on the deployment until something has run against it.
+
+---
+
+## Handover after the Late Joiner closure
+
+### What is true now
+
+Somebody can join a real shared Orkestr trip after planning has started, without
+the group restarting. Verified on the deployment with three isolated browsers:
+**29/29**, plus **3/3** for two organiser tabs racing, and clean width QA at 390
+and 430.
+
+Gates: **1647 tests / 74 files**, 54 DB, 4 bundle, lint, typecheck, build.
+
+### The two rules not to break
+
+1. **An organiser's note is not the person's answer.** It lives in
+   `ConsumerTraveller.draft`, nothing reads it when deciding anything, and it is
+   cleared the moment they answer. If you ever find yourself writing it into
+   `availableFrom` to "save a step", that is the defect this design exists to
+   prevent — the planner cannot tell it from an answer afterwards.
+2. **Membership and the payload move together.** `PayloadWrite.addMember` exists
+   so they share one transaction. Two calls would leave a member with no
+   traveller on a version conflict, and that person's session then resolves to
+   nobody.
+
+### Two traps that cost time here
+
+* **A `MemberView` has two string ids.** `id` is membership, `travellerId` is the
+  planning model, and passing the wrong one typechecks and renders nothing.
+  Components take the member now; keep it that way.
+* **`innerText` returns rendered text.** An eyebrow uppercased by CSS does not
+  match a case-sensitive regex. Three separate checks in this stage failed on it
+  after `MAGIC_LOOP_PRODUCT_SPEC.md` §10.4 had already written it down.
+
+### Where the next real work is
+
+* **Removal has no first-class flow.** `WITHDRAWN` semantics still work and were
+  not disturbed, but "someone is dropping out" currently points at What-if
+  rather than being a decision you can take from Group. That was deliberate —
+  it has plan consequences and What-if is where those are shown — but it is the
+  obvious next thing somebody will ask for.
+* **`mustTravelWith` is never populated by the consumer product.** The conflict
+  detector exists and is tested, but nothing in the consumer flow sets the
+  field; only the `/understand` extraction path produces relationships, into a
+  different domain type.
+* **60 `browser_session` rows have no membership.** Harmless — a session with no
+  membership grants access to nothing — and left alone because the only sweep
+  available would also take the founder's.
