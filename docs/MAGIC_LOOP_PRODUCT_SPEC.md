@@ -148,3 +148,70 @@ repair and decisions preserved · verified production TLS · server-only Model
 Studio credential · recorded Atlas truth labels · no fake booking or availability
 · local trips remaining usable with no account · the Tokyo example remaining
 deterministic.
+
+---
+
+## 7. What this pass changed
+
+Each verified at 390px against a production build, by creating the founder's
+trip through the real form rather than reading the fixture.
+
+| | Before | After |
+| --- | --- | --- |
+| A note saying "8 of us" | **1 traveller** | **8 travellers total · 1 named · 7 still to add** |
+| Whose view it is | not stated anywhere | `Luc · ORGANISER · Your view`, on every trip screen |
+| Way back | a wordmark | **← Trips** |
+| `/new` height | 1052px, date row 398px | **844px**, date row 168px |
+| Group total in Money | one person's share | everybody the group said was coming |
+| Money with no estimates | two enormous zeros | **No estimates yet**, and what to do |
+| Trip rules on Money | a wall of checkboxes | collapsed *How Orkestr handles changes* |
+| `/understand` | provenance matrix above the input | answer first, machinery in a closed disclosure |
+| Waiting 25s | a disabled button | what is running, and roughly how long |
+| Sending an invite | copy to clipboard | the device's own share sheet, clipboard as fallback |
+
+Consumer screens no longer say *"Orkestr does not read it yet"*, *"does not open
+or read it"*, *"no server watching your trip"*, *"this build answers a fixed set
+of questions locally"*, *"what actually ran"* or *"the fixture trip"*. Nothing
+became less true — the Ask fallback still refuses and still lists what it can do,
+and every provenance row still exists, one level down.
+
+**No database migration.** `ConsumerTrip` is stored as JSONB, so
+`declaredGroupSize` needed no schema change.
+
+## 8. What this pass did NOT do
+
+Named plainly, because a spec that lists them as done would be worth less than
+no spec. Each is a stage in its own right:
+
+1. **Ask Orkestr is still a fixed command set.** It no longer describes our
+   architecture when it fails, but it does not yet reach the trip-aware tool
+   layer (`read_group`, `propose_member_add`, `simulate_change` …). The
+   expectation the input sets is still ahead of what it does.
+2. **Link ingestion does not exist.** Explore still takes a link and a title
+   from the person. No fetch, no provider adapter, no place extraction, no
+   deduplication, no multi-source place cards. **This needs a provider
+   checkpoint before it starts** — see below.
+3. **There is no plan generation.** Plan remains manual. No *Build our first
+   draft*, no readiness gate, no validation pass over a proposed itinerary.
+4. **Mobile navigation is unchanged.** Measured at 390, 430, 768, 1024 and 1440:
+   no horizontal overflow and no clipped tab bar anywhere. The crowding is real
+   but it is density, not truncation, so a bottom-nav rewrite was not made under
+   the banner of fixing a defect that measurement did not find.
+
+### The provider checkpoint that blocks item 2
+
+Reading a TikTok, Reel or YouTube link is not one feature. Each provider exposes
+different things publicly, and the honest capability differs sharply:
+
+* **TikTok** publishes an oEmbed endpoint for public video URLs giving title,
+  author and thumbnail — **no key required**. Caption text is what it returns;
+  it is not a transcript and the product must never say "Orkestr watched this".
+* **Instagram** requires a Facebook app and an access token for anything beyond
+  a bare link.
+* **YouTube** exposes oEmbed without a key; captions need the Data API and a
+  key, and most videos do not expose transcripts at all.
+
+So a genuinely useful first version is possible **with no new credential** —
+oEmbed plus OpenGraph, degrading honestly to "I opened the link but couldn't
+tell which place you meant". Anything richer is a paid or keyed dependency and
+must be a founder decision, not something a build quietly starts requiring.
