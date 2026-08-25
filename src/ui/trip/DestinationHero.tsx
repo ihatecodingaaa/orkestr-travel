@@ -1,4 +1,5 @@
 import type { ConsumerTraveller } from "@/domain/consumerTrip";
+import { describeGroupSize } from "@/core/trips/groupSize";
 import { initialsOf } from "@/core/trips/living";
 
 /**
@@ -47,13 +48,20 @@ export function DestinationHero({
   dates,
   countdown,
   travellers,
+  declaredGroupSize,
 }: {
   readonly destination: string;
   readonly dates: string;
   readonly countdown: number | undefined;
   readonly travellers: readonly ConsumerTraveller[];
+  /** What the group said its size was, when they said. */
+  readonly declaredGroupSize?: number;
 }) {
   const [deep, mid, warm] = paletteFor(destination);
+  const group = describeGroupSize({
+    ...(declaredGroupSize === undefined ? {} : { declared: declaredGroupSize }),
+    named: travellers.length,
+  });
 
   return (
     <section
@@ -99,7 +107,10 @@ export function DestinationHero({
             </span>
           ))}
           <span className="faint">
-            {travellers.length} {travellers.length === 1 ? "traveller" : "travellers"}
+            {group.total}
+            {group.detail !== undefined && (
+              <span className="hero-group-detail">{group.detail}</span>
+            )}
           </span>
         </div>
       </div>

@@ -153,8 +153,8 @@ export function Money({
         <div className="stack gap-1">
           <h2>What Orkestr does on its own</h2>
           <p className="faint">
-            These describe how Orkestr already behaves. Nothing runs in the background — there is
-            no server watching your trip. Orkestr checks when you open it.
+            How Orkestr handles changes to this trip. It works these out when you open the trip,
+            not while you are away.
           </p>
         </div>
 

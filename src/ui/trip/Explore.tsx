@@ -456,7 +456,10 @@ function AddIdea({
           and implying otherwise would be the first thing a person could catch
           it lying about.
         */}
-        <p className="faint">Saved as a link. Orkestr does not open or read it.</p>
+        <p className="faint">
+          Saved for the group with whatever you tell us about it. Orkestr keeps the original link
+          so anyone can open it themselves.
+        </p>
       </div>
 
       <div className="field">

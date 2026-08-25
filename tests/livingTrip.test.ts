@@ -411,7 +411,15 @@ describe("ask orkestr", () => {
     const result = recognise("book me a flight to Osaka on Tuesday under 400 dollars");
     expect(result.ok).toBe(false);
     if (result.ok) return;
-    expect(result.reason).toMatch(/not connected to live Orkestr AI/i);
+    /**
+     * It still refuses, and still offers what it CAN do. What changed is that
+     * it no longer explains the implementation to the person asking: "this
+     * build", "a fixed set of questions locally" and "not connected to live
+     * Orkestr AI" describe our architecture, not their trip.
+     */
+    expect(result.reason).toMatch(/can't answer that one yet/i);
+    expect(result.reason).not.toMatch(/this build|fixed set of questions|not connected/i);
+    expect(result.examples.length).toBeGreaterThan(0);
     expect(result.examples.length).toBeGreaterThan(0);
   });
 

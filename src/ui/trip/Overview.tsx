@@ -53,6 +53,9 @@ export function Overview({
         dates={formatRange(trip.startDate, trip.endDate)}
         countdown={countdown}
         travellers={trip.travellers}
+        {...(trip.declaredGroupSize === undefined
+          ? {}
+          : { declaredGroupSize: trip.declaredGroupSize })}
       />
 
       <AskOrkestr trip={trip} base={base} save={save} />

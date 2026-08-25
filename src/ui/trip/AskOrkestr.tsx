@@ -102,7 +102,13 @@ export function AskOrkestr({
           <input
             id="ask"
             className="ask-input"
-            placeholder="Ask Orkestr — why are there two travel groups?"
+            /*
+              Short enough to survive 390px. The old placeholder was a whole
+              question and clipped mid-sentence on a phone, which reads as a
+              broken input rather than a suggestion. The examples underneath
+              already show what can be asked.
+            */
+            placeholder="Ask Orkestr"
             value={text}
             onChange={(e) => {
               setText(e.target.value);

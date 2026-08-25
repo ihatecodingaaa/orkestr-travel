@@ -141,8 +141,8 @@ export function NewTripClient() {
           product makes.
         */}
         <p className="faint">
-          Saved with the trip as you wrote it. Orkestr does not read it yet — you will add people
-          and their dates on the next screen.
+          Orkestr reads this. Tell it how many of you there are and it will set the trip up for
+          that many — you can name people as they confirm.
         </p>
       </div>
 

@@ -62,6 +62,9 @@ export function SharedTripView({
         dates={formatRange(trip.startDate, trip.endDate)}
         countdown={undefined}
         travellers={trip.travellers}
+        {...(trip.declaredGroupSize === undefined
+          ? {}
+          : { declaredGroupSize: trip.declaredGroupSize })}
       />
 
       <section className="shared-banner">

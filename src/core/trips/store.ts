@@ -17,6 +17,7 @@ import type {
 } from "../../domain/livingTrip";
 import { BUDGET_CATEGORIES, DEFAULT_AUTOPILOT, IDEA_CATEGORIES } from "../../domain/livingTrip";
 import type { IsoDate, IsoDateTime } from "../../domain/time";
+import { readGroupSize } from "./groupSize";
 import { asIsoDate } from "../../domain/time";
 import { compareIsoDate, isValidIsoDate } from "../time/civilDate";
 
@@ -329,6 +330,11 @@ export function parseTrip(value: unknown): TripParse {
   if (createdAt === undefined) return { ok: false, reason: "missing createdAt" };
   const updatedAt = readString(value["updatedAt"]) ?? createdAt;
   const notes = readString(value["notes"]);
+  const declared = value["declaredGroupSize"];
+  const declaredGroupSize =
+    typeof declared === "number" && Number.isInteger(declared) && declared > 0
+      ? declared
+      : undefined;
 
   return {
     ok: true,
@@ -340,6 +346,7 @@ export function parseTrip(value: unknown): TripParse {
       endDate,
       travellers,
       ...(notes === undefined ? {} : { notes }),
+      ...(declaredGroupSize === undefined ? {} : { declaredGroupSize }),
       updates,
       createdAt: createdAt as IsoDateTime,
       updatedAt: updatedAt as IsoDateTime,
@@ -407,6 +414,18 @@ export function createTrip(
 
   const notes = input.notes?.trim();
 
+  /**
+   * Read the note NOW, deterministically and for free.
+   *
+   * Somebody who writes "8 of us are going" has told the product the single most
+   * useful fact about their trip. Waiting for a paid model call to notice it --
+   * or, as before, never noticing it at all -- makes the first thing the product
+   * asks for the first thing it ignores. An ambiguous note is left alone and
+   * becomes a question rather than a guess.
+   */
+  const sizeReading = notes === undefined ? undefined : readGroupSize(notes);
+  const declaredGroupSize = sizeReading?.kind === "FOUND" ? sizeReading.size : undefined;
+
   return {
     ok: true,
     trip: {
@@ -432,6 +451,7 @@ export function createTrip(
         },
       ],
       ...(notes === undefined || notes.length === 0 ? {} : { notes }),
+      ...(declaredGroupSize === undefined ? {} : { declaredGroupSize }),
       updates: [{ id: newId(), at: now, summary: "Trip created" }],
       createdAt: now,
       updatedAt: now,

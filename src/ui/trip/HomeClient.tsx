@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { describeGroupSize } from "@/core/trips/groupSize";
 import { useTrips } from "./TripsClient";
 import { countReadiness, outstanding } from "@/core/trips/pulse";
 import { formatRange } from "@/ui/trip/format";
@@ -71,8 +72,13 @@ export function HomeClient() {
                         {trip.isExample === true && <span className="pill">Example</span>}
                       </span>
                       <span className="faint">
-                        {counts.total} {counts.total === 1 ? "traveller" : "travellers"} ·{" "}
-                        {formatRange(trip.startDate, trip.endDate)}
+                        {describeGroupSize({
+                          ...(trip.declaredGroupSize === undefined
+                            ? {}
+                            : { declared: trip.declaredGroupSize }),
+                          named: counts.total,
+                        }).total}{" "}
+                        · {formatRange(trip.startDate, trip.endDate)}
                       </span>
                     </span>
                     <span className={needs > 0 ? "trip-card-flag" : "faint"}>

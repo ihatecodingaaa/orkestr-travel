@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { describeGroupSize } from "@/core/trips/groupSize";
 import type { ConsumerTrip } from "@/domain/consumerTrip";
 import { countReadiness, outstanding } from "@/core/trips/pulse";
 import { formatRange } from "./format";
@@ -57,20 +58,59 @@ export function TripShell({
 }) {
   const counts = countReadiness(trip.travellers);
   const needs = outstanding(trip).filter((item) => item.needsPerson).length;
+  /**
+   * What the group said, next to who has been named.
+   *
+   * `counts.total` counts rows. It said "1 traveller" for a trip whose owner had
+   * just written "8 of us are going", which is the product contradicting the
+   * person who created it.
+   */
+  const group = describeGroupSize({
+    ...(trip.declaredGroupSize === undefined ? {} : { declared: trip.declaredGroupSize }),
+    named: counts.total,
+  });
+  const you = trip.travellers.find((traveller) => traveller.isOrganiser);
 
   return (
     <div className="stack gap-3">
       <header className="trip-header">
         <div className="stack gap-1">
           <p className="eyebrow">
-            <Link href="/">Orkestr</Link>
+            {/*
+              A way back that says where it goes.
+              "Orkestr" is a wordmark; a person looking for the way out of a trip
+              is looking for their trips, so the link says so.
+            */}
+            <Link href="/" className="back-link">
+              ← Trips
+            </Link>
             {trip.isExample === true && <span className="pill">Example trip</span>}
           </p>
           <h1 className="trip-title">{trip.destination}</h1>
           <p className="faint">
-            {formatRange(trip.startDate, trip.endDate)} · {counts.total}{" "}
-            {counts.total === 1 ? "traveller" : "travellers"}
+            {formatRange(trip.startDate, trip.endDate)} · {group.total}
+            {group.detail !== undefined && (
+              <>
+                {" · "}
+                <span className="group-detail">{group.detail}</span>
+              </>
+            )}
           </p>
+          {/*
+            WHOSE VIEW THIS IS, on every screen.
+            A group product where you cannot tell whether you are looking at the
+            group or at yourself is a product you cannot trust with anything
+            private. There is no picker here: in a shared trip a control that
+            changes who you are would be an impersonation endpoint, and in a
+            local trip there is only ever one of you.
+          */}
+          {you !== undefined && (
+            <p className="pov">
+              <span className="pov-name">{you.name}</span>
+              {you.isOrganiser && <span className="pov-role">Organiser</span>}
+              <span className="pov-view">Your view</span>
+            </p>
+          )}
         </div>
       </header>
 

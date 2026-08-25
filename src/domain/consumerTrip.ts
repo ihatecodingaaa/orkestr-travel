@@ -144,6 +144,19 @@ export interface ConsumerTrip {
    * kind of thing that makes a product feel like it was not listening.
    */
   readonly notes?: string;
+  /**
+   * How many people the group said were coming, when they said so.
+   *
+   * CAPACITY, NOT PEOPLE. "8 of us" means the trip involves eight; it does not
+   * mean seven placeholder travellers should exist. A person is created when
+   * somebody names them, so this number and `travellers.length` are allowed to
+   * disagree, and the interface says how: "8 travellers total, 1 named, 7 still
+   * to add".
+   *
+   * Absent means nobody said. It is never defaulted to the number of travellers,
+   * because "we counted the rows" and "the group told us" are different claims.
+   */
+  readonly declaredGroupSize?: number;
   /** Newest first. Built by code as things happen. */
   readonly updates: readonly TripUpdate[];
   readonly createdAt: IsoDateTime;

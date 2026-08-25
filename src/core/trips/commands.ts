@@ -164,7 +164,7 @@ export function recognise(raw: string): Recognition {
   return {
     ok: false,
     reason:
-      "Orkestr does not understand that one yet. This build answers a fixed set of questions locally — it is not connected to live Orkestr AI.",
+      "I can't answer that one yet. Here are the things I can help with right now:",
     examples: EXAMPLES,
   };
 }

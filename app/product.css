@@ -607,6 +607,20 @@
   .field-row {
     flex-direction: column;
   }
+  /*
+    THE 398px FORM GAP, AT ITS ROOT.
+
+    `.field-row > .field` sets `flex: 1 1 12rem`, and flex-basis is a MAIN-AXIS
+    size. While the row is a row that means width. The moment the axis flips to
+    a column it means HEIGHT, so each date field claimed 192px and two of them
+    plus the gap came to 397.6px of mostly empty space -- measured at 398.
+
+    The basis has to flip with the axis. Sizing by content is what a stacked
+    form wants anyway.
+  */
+  .field-row > .field {
+    flex: 0 1 auto;
+  }
   .trip-card {
     flex-direction: column;
   }
@@ -640,4 +654,69 @@
   border: 1px solid var(--line);
   border-radius: var(--radius-sm);
   background: var(--paper-raised);
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Whose view this is                                                        */
+/* -------------------------------------------------------------------------- */
+
+/*
+  A group product has to answer "am I looking at the group or at me?" on every
+  screen. It is one line, it is quiet, and it is always there -- because the
+  moment it is only on some screens it stops being trustworthy on any of them.
+*/
+.pov {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0.35rem 0 0;
+  font-size: 0.88rem;
+  color: var(--ink-soft);
+}
+.pov-name {
+  font-weight: 600;
+  color: var(--ink);
+}
+.pov-role {
+  background: var(--accent-soft);
+  color: var(--accent);
+  border-radius: 999px;
+  padding: 0.05rem 0.5rem;
+  font-size: 0.75rem;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+.pov-view {
+  color: var(--ink-faint);
+}
+.pov-view::before {
+  content: "· ";
+}
+
+/*
+  A way back that names its destination. "Orkestr" is a wordmark, and a person
+  trying to leave a trip is looking for their trips.
+*/
+.back-link {
+  color: var(--ink-soft);
+  text-decoration: none;
+  font-weight: 500;
+}
+.back-link:hover {
+  color: var(--ink);
+}
+
+/*
+  Capacity next to people. "8 travellers total · 1 named · 7 still to add" says
+  what the group told us AND what is still missing, without inventing a single
+  placeholder person to pad the number out.
+*/
+.group-detail {
+  color: var(--ink-faint);
+}
+.hero-group-detail {
+  display: block;
+  font-size: 0.85rem;
+  opacity: 0.85;
 }
