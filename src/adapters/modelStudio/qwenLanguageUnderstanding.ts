@@ -13,7 +13,7 @@ import {
   INTENT_PROMPT_VERSION,
   INTENT_SYSTEM_PROMPT,
   buildIntentUserMessage,
-} from "./prompts/intentV3";
+} from "./prompts/intentV4";
 import { segmentDiscussion } from "../../core/intent/spans";
 
 /**

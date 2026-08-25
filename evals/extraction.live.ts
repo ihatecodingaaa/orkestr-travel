@@ -97,6 +97,10 @@ afterAll(() => {
     quotesChecked: outcomes.reduce((n, o) => n + o.quotesChecked, 0),
     fabricatedQuotes: outcomes.reduce((n, o) => n + o.quotesInvalid, 0),
     fabricatedCitations: outcomes.reduce((n, o) => n + o.spanIdsInvalid, 0),
+    hardeningAttemptsCaught: outcomes.reduce((n, o) => n + o.hardeningAttempts, 0),
+    duplicateFactsMerged: outcomes.reduce((n, o) => n + o.duplicateFacts, 0),
+    unsupportedFieldsCorrected: outcomes.reduce((n, o) => n + o.unsupportedFields, 0),
+    ownerBindingErrors: outcomes.reduce((n, o) => n + o.ownerErrors, 0),
     failing: outcomes
       .filter((o) => !o.passed)
       .map((o) => o.id)

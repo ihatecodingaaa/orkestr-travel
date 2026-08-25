@@ -911,7 +911,7 @@ export function validateIntentSchema(parsed: unknown, spans: DiscussionSpans): S
       // Set by Orkestr, never read from the response. The prompt version records
       // which prompt WE sent; a model claiming a different one would be
       // describing a request that did not happen.
-      promptVersion: "orkestr-intent-v3",
+      promptVersion: "orkestr-intent-v4",
       travellers,
       constraints,
       relationships,

@@ -35,7 +35,16 @@ export type ExtractionFailureCode =
  * `OMITTED_FROM_CONTEXT` is currently the only effect, and the union exists so
  * that a future effect has to be named rather than folded into this one.
  */
-export type ExtractionWarningEffect = "OMITTED_FROM_CONTEXT";
+export type ExtractionWarningEffect =
+  | "OMITTED_FROM_CONTEXT"
+  /** A HARD claim the cited words do not support was kept as SOFT. */
+  | "SOFTENED_UNSUPPORTED_STRENGTH"
+  /** A reading whose cited words state only part of it was marked less certain. */
+  | "LOWERED_UNSUPPORTED_CERTAINTY"
+  /** A claim whose dates cannot be real was removed. */
+  | "DROPPED_IMPOSSIBLE_VALUE"
+  /** The same requirement, proposed twice, was kept once. */
+  | "MERGED_DUPLICATE_FACT";
 
 /**
  * A non-fatal problem in optional, non-authoritative context.
@@ -46,9 +55,11 @@ export type ExtractionWarningEffect = "OMITTED_FROM_CONTEXT";
  * would find out until it mattered. A warning keeps the extraction alive AND
  * keeps the evidence.
  *
- * A warning can only ever REMOVE information. There is no effect that adds a
- * value, substitutes a default or upgrades a certainty, so a warning cannot be
- * a route to authority.
+ * A warning can only ever REMOVE OR WEAKEN information. There is no effect that
+ * adds a value, substitutes a default, strengthens a claim or upgrades a
+ * certainty, so a warning cannot be a route to authority. Every effect below is
+ * something being dropped, softened, made less certain, or collapsed into an
+ * existing fact.
  */
 export interface ExtractionWarning {
   /** Dotted path into the response, e.g. "tripContext.certainty". */

@@ -301,6 +301,20 @@ export interface CaseOutcome {
   readonly quotesChecked: number;
   readonly quotesInvalid: number;
   readonly spanIdsInvalid: number;
+  /**
+   * How often the model tried to make a claim firmer than its words.
+   *
+   * These are CAUGHT hardenings, not accepted ones: the policy already refused
+   * each of them. A rising number means the model is reaching, and a number
+   * that never moves means the check may have stopped working.
+   */
+  readonly hardeningAttempts: number;
+  /** Facts the model stated twice, collapsed into one. */
+  readonly duplicateFacts: number;
+  /** Values dropped or made less certain because the words did not state them. */
+  readonly unsupportedFields: number;
+  /** Constraints attached to the wrong person, per the case's ownership rules. */
+  readonly ownerErrors: number;
 }
 
 /**
@@ -328,6 +342,10 @@ export function scoreCase(testCase: EvalCase, result: ExtractionResult): CaseOut
       quotesChecked: 0,
       quotesInvalid: 0,
       spanIdsInvalid: 0,
+      hardeningAttempts: 0,
+      duplicateFacts: 0,
+      unsupportedFields: 0,
+      ownerErrors: 0,
     };
   }
 
@@ -340,10 +358,31 @@ export function scoreCase(testCase: EvalCase, result: ExtractionResult): CaseOut
       quotesChecked: 0,
       quotesInvalid: 0,
       spanIdsInvalid: 0,
+      hardeningAttempts: 0,
+      duplicateFacts: 0,
+      unsupportedFields: 0,
+      ownerErrors: 0,
     };
   }
 
   const { intent, mapped } = result;
+
+  /**
+   * What the semantic policy had to correct.
+   *
+   * Counted from the warnings rather than re-derived, because the policy is the
+   * thing that made the decision and a second implementation of the same rule
+   * would eventually disagree with it.
+   */
+  const hardeningAttempts = result.warnings.filter(
+    (w) => w.effect === "SOFTENED_UNSUPPORTED_STRENGTH",
+  ).length;
+  const duplicateFacts = result.warnings.filter(
+    (w) => w.effect === "MERGED_DUPLICATE_FACT",
+  ).length;
+  const unsupportedFields = result.warnings.filter(
+    (w) => w.effect === "LOWERED_UNSUPPORTED_CERTAINTY" || w.effect === "DROPPED_IMPOSSIBLE_VALUE",
+  ).length;
 
   // Safety, on every case. These are not negotiable and not case-specific.
   for (const constraint of mapped.constraints) {
@@ -461,15 +500,18 @@ export function scoreCase(testCase: EvalCase, result: ExtractionResult): CaseOut
     }
   }
 
+  let ownerErrors = 0;
   for (const rule of expected.ownership ?? []) {
     const owner = mapped.travellers.find((t) => t.displayName.toLowerCase().includes(rule.name.toLowerCase()));
     if (owner === undefined) {
       failures.push(`ownership: ${rule.name} was not found among the travellers`);
+      ownerErrors += 1;
       continue;
     }
     const owned = mapped.constraints.filter((c) => c.ownerTravellerId === owner.id);
     if (!owned.some((c) => c.value.kind === rule.kind)) {
       failures.push(`ownership: ${rule.name} does not own the ${rule.kind} constraint`);
+      ownerErrors += 1;
     }
   }
 
@@ -481,5 +523,9 @@ export function scoreCase(testCase: EvalCase, result: ExtractionResult): CaseOut
     quotesChecked: sources.length,
     quotesInvalid,
     spanIdsInvalid,
+    hardeningAttempts,
+    duplicateFacts,
+    unsupportedFields,
+    ownerErrors,
   };
 }

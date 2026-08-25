@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { segmentDiscussion } from "@/core/intent/spans";
 import { runExtractionPipeline } from "@/core/intent/pipeline";
 import { validateIntentSchema } from "@/core/intent/schema";
-import { buildIntentUserMessage, INTENT_SYSTEM_PROMPT } from "@/adapters/modelStudio/prompts/intentV3";
+import { buildIntentUserMessage, INTENT_SYSTEM_PROMPT } from "@/adapters/modelStudio/prompts/intentV4";
 import { asIsoDateTime } from "@/domain/index";
 
 /**

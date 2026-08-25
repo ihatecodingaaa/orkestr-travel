@@ -5,6 +5,7 @@ import type {
 } from "../../domain/extraction";
 import { validateIntentSchema } from "./schema";
 import { segmentDiscussion } from "./spans";
+import { applySemanticPolicy } from "./semanticPolicy";
 import { validateIntentSemantics } from "./semantic";
 import { mapIntentToDomain } from "./mapping";
 import type { MappingOptions } from "./mapping";
@@ -17,6 +18,7 @@ import type { MappingOptions } from "./mapping";
  *        -> schema validation           SCHEMA_INVALID / UNSAFE_OUTPUT
  *           and evidence resolution     SCHEMA_INVALID
  *        -> semantic validation         SEMANTIC_VALIDATION_FAILED
+ *        -> semantic policy             weakens, never strengthens
  *        -> safe mapping
  *        -> proposed state              SUCCESS
  *
@@ -122,11 +124,18 @@ export function runExtractionPipeline(input: PipelineInput): ExtractionResult {
     return fail("SEMANTIC_VALIDATION_FAILED", semantics.problems, input.diagnostics);
   }
 
-  const mapped = mapIntentToDomain(schema.intent, input.mapping);
+  /**
+   * Grounding proved the words are real. This asks whether they support the
+   * claim, and it runs BEFORE mapping so that nothing downstream ever sees a
+   * strength or a date the cited sentence does not justify.
+   */
+  const policy = applySemanticPolicy(schema.intent, input.mapping.now);
+
+  const mapped = mapIntentToDomain(policy.intent, input.mapping);
 
   return {
     outcome: "SUCCESS",
-    intent: schema.intent,
+    intent: policy.intent,
     mapped,
     /**
      * Optional context that was dropped on the way through.
@@ -136,13 +145,13 @@ export function runExtractionPipeline(input: PipelineInput): ExtractionResult {
      * hiding the dropped fields would turn a known model weakness into an
      * invisible one.
      */
-    warnings: schema.warnings,
+    warnings: [...schema.warnings, ...policy.warnings],
     diagnostics: {
       ...input.diagnostics,
       travellerCount: mapped.travellers.length,
       proposalCount: mapped.constraints.length,
-      ambiguityCount: schema.intent.ambiguities.length,
-      warningCount: schema.warnings.length,
+      ambiguityCount: policy.intent.ambiguities.length,
+      warningCount: schema.warnings.length + policy.warnings.length,
     },
   };
 }

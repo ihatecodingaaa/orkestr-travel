@@ -33,13 +33,22 @@ import type { ConstraintStrength } from "./constraint";
  * field. Both changed what the model is asked to DO, not merely how it is
  * worded, so the version moved.
  *
+ * v4 told the model not to overreach: hedging words decide strength, a citation
+ * proves only the field it states, a calendar year is never guessed, and one
+ * requirement is stated once. Deterministic policy refuses all four regardless,
+ * so the prompt exists to reduce what has to be refused.
+ *
  * v3 stopped asking for quotations altogether. The discussion is segmented into
  * addressable spans and the model cites their ids; software resolves them back
  * to the original characters. That is the largest change the contract has had,
  * because it removes a field the model was reliably getting wrong rather than
  * asking it more firmly to get it right. See prompts/intentV3.ts.
  */
-export type PromptVersion = "orkestr-intent-v1" | "orkestr-intent-v2" | "orkestr-intent-v3";
+export type PromptVersion =
+  | "orkestr-intent-v1"
+  | "orkestr-intent-v2"
+  | "orkestr-intent-v3"
+  | "orkestr-intent-v4";
 
 /**
  * A temporary, within-response person reference such as "P1".

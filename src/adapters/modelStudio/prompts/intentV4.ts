@@ -3,7 +3,25 @@ import type { DiscussionSpans } from "../../../core/intent/spans";
 import { renderSpansForPrompt } from "../../../core/intent/spans";
 
 /**
- * The extraction prompt, version orkestr-intent-v3.
+ * The extraction prompt, version orkestr-intent-v4.
+ *
+ * WHAT CHANGED IN v4: THE MODEL IS TOLD NOT TO OVERREACH.
+ *
+ * v3 made fabricated quotations impossible. It did not stop a REAL quotation
+ * being used to support a claim it does not make, and three defects lived in
+ * that gap: "I'd like to keep it around 400 but I could stretch" arrived as a
+ * HARD ceiling, one sentence about step-free access produced the requirement
+ * twice, and "I can only get leave from the 24th" arrived as a window ending on
+ * the 31st in the year 2024.
+ *
+ * v4 adds the rules the model needs to avoid each: hedging words mean the claim
+ * is soft, a citation proves only the field it actually states, a year is never
+ * guessed, and the same requirement is stated once.
+ *
+ * THE PROMPT IS NOT THE CONTROL. Deterministic policy refuses each of these
+ * regardless of what the model does -- see core/intent/semanticPolicy.ts. The
+ * prompt exists so the model produces less that has to be refused, not so the
+ * refusal can be skipped.
  *
  * WHAT CHANGED IN v3: THE MODEL NO LONGER WRITES EVIDENCE.
  *
@@ -50,7 +68,7 @@ import { renderSpansForPrompt } from "../../../core/intent/spans";
  * still cannot confirm anything, and now cannot manufacture a quotation either.
  */
 
-export const INTENT_PROMPT_VERSION: PromptVersion = "orkestr-intent-v3";
+export const INTENT_PROMPT_VERSION: PromptVersion = "orkestr-intent-v4";
 
 /**
  * The schema description given to the model.
@@ -181,6 +199,32 @@ The discussion is given to you already cut into numbered spans, one per line, li
 
 ONLY WHAT THE SPANS SUPPORT
 If no supplied span directly supports a fact, do not create that fact. Omit it. Returning less is always better than returning something nobody said.
+
+A CITATION PROVES ONE THING, NOT ITS NEIGHBOURS
+A span supports the specific field it states and nothing else in the same object.
+- "I can only get leave from the 24th" gives a START. It does not give an end date, a return date, a duration, or a year.
+- Never fill a sibling field just because the object has one. Leave it out and record an ambiguity instead.
+- NEVER GUESS A CALENDAR YEAR. If no span states a year, do not put a date in "ranges", "earliestDate" or "latestDate" at all. Record what was said as an ambiguity. A date in the wrong year is worse than no date.
+
+HEDGING WORDS DECIDE THE STRENGTH
+Report the wording, not how important the requirement sounds to you.
+- "around", "roughly", "about", "-ish", "or so" mean the number is approximate. Never HARD.
+- "prefer", "would rather", "ideally", "would like", "hoping", "if possible", "if we can" mean a preference. Never HARD.
+- "could stretch", "flexible", "happy to", "don't mind" mean the person has already said they will bend. Never HARD.
+- "cannot", "can't", "must", "only", "absolute", "no more than", "at most" mean a real limit. HARD is right.
+Contrast, because this is the distinction that matters most:
+- "My absolute ceiling is 600, I cannot go above that."  -> HARD, 600
+- "I'd like to keep it around 400, but I could stretch." -> SOFT, 400. NOT a ceiling of 400.
+- "I will only take a direct flight."                    -> HARD, 0 stops
+- "I'd rather fly direct."                               -> SOFT
+- "I need step-free access."                             -> HARD
+- "I like vegetarian places."                            -> a preference, not a requirement
+
+SAY EACH THING ONCE
+One requirement, however many times it is mentioned, is one entry.
+- If you record an assistance need in "assistanceNeeds", do NOT also record the same need as an ASSISTANCE_REQUIRED constraint. Pick the assistance need.
+- Two people saying the same thing is two entries, one per owner. One person saying it twice is one entry.
+- A sentence containing two different facts ("I need step-free access, and Elias travels with me") is two entries, because they are different facts -- not a duplicate.
 - Do not strengthen what was said. "Mum would rather fly in the morning" is a soft preference about departure time. It is not a requirement that she cannot fly at night.
 - Do not harden a vague number. "Maybe $600-ish?" is not a confirmed maximum of 600. It is an approximate figure, so record an ambiguity rather than a HARD budget.
 - Do not turn a taste into a requirement. "I like vegetarian food" is a preference. It is not a dietary requirement unless the text says it is one.

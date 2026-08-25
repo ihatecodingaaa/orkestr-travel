@@ -55,7 +55,7 @@ describe("intent schema: the happy path", () => {
     const response = { ...validResponse(), promptVersion: "attacker-supplied-v9" };
     const result = validateIntentSchema(response, SPANS);
     if (!result.ok) throw new Error("expected success");
-    expect(result.intent.promptVersion).toBe("orkestr-intent-v3");
+    expect(result.intent.promptVersion).toBe("orkestr-intent-v4");
   });
 
   it("treats missing optional arrays as empty rather than as a failure", () => {

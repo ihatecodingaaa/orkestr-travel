@@ -5,7 +5,7 @@ import {
   INTENT_SYSTEM_PROMPT,
   INTENT_JSON_SCHEMA,
   buildIntentUserMessage,
-} from "@/adapters/modelStudio/prompts/intentV3";
+} from "@/adapters/modelStudio/prompts/intentV4";
 import {
   RESEARCH_PROMPT_VERSION,
   RESEARCH_SYSTEM_PROMPT,
@@ -25,7 +25,7 @@ import { HERO_QUESTION } from "@/ui/demo/researchDemo";
 
 describe("the extraction prompt is versioned and complete", () => {
   it("carries a version that the pipeline stamps on every result", () => {
-    expect(INTENT_PROMPT_VERSION).toBe("orkestr-intent-v3");
+    expect(INTENT_PROMPT_VERSION).toBe("orkestr-intent-v4");
   });
 
   it("states every rule the product depends on", () => {
@@ -224,5 +224,41 @@ describe("the research prompt protects the evidence rules", () => {
   it("says community accessibility reports must be reported as community signals", () => {
     const instruction = buildResearchInstruction(HERO_QUESTION);
     expect(instruction).toContain("must be reported as community signals");
+  });
+});
+
+/**
+ * v4's job is to reduce what the deterministic policy has to refuse.
+ *
+ * The policy is the control and refuses these regardless. The prompt is asserted
+ * anyway, because a rule silently dropped from it would show up as a quietly
+ * worse model and nothing red.
+ */
+describe("the prompt tells the model not to overreach", () => {
+  it("names the hedges that make a claim soft", () => {
+    for (const hedge of ["around", "prefer", "ideally", "could stretch", "if we can"]) {
+      expect(INTENT_SYSTEM_PROMPT, hedge).toContain(hedge);
+    }
+    expect(INTENT_SYSTEM_PROMPT).toContain("Never HARD");
+  });
+
+  it("carries the contrast that decides the hardest case", () => {
+    expect(INTENT_SYSTEM_PROMPT).toContain("NOT a ceiling of 400");
+  });
+
+  it("forbids guessing a calendar year", () => {
+    expect(INTENT_SYSTEM_PROMPT).toContain("NEVER GUESS A CALENDAR YEAR");
+    expect(INTENT_SYSTEM_PROMPT).toContain("worse than no date");
+  });
+
+  it("says a citation proves one field and not its neighbours", () => {
+    expect(INTENT_SYSTEM_PROMPT).toContain("It does not give an end date");
+    expect(INTENT_SYSTEM_PROMPT).toContain("Never fill a sibling field");
+  });
+
+  it("tells the model to state one requirement once, without collapsing different facts", () => {
+    expect(INTENT_SYSTEM_PROMPT).toContain("SAY EACH THING ONCE");
+    expect(INTENT_SYSTEM_PROMPT).toContain("do NOT also record the same need");
+    expect(INTENT_SYSTEM_PROMPT).toContain("not a duplicate");
   });
 });

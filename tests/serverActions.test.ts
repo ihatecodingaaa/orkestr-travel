@@ -198,7 +198,7 @@ describe("diagnostics carry counts, never content", () => {
     const line = lines[0] ?? "";
     expect(line).toContain("op=EXTRACT_INTENT");
     expect(line).toContain("requestId=REQ-1");
-    expect(line).toContain("prompt=orkestr-intent-v3");
+    expect(line).toContain("prompt=orkestr-intent-v4");
     expect(line).toContain("travellers=7");
   });
 

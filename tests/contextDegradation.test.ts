@@ -3,7 +3,7 @@ import { validateIntentSchema } from "@/core/intent/schema";
 import { segmentDiscussion } from "@/core/intent/spans";
 import { runExtractionPipeline } from "@/core/intent/pipeline";
 import { asIsoDateTime } from "@/domain/index";
-import { INTENT_SYSTEM_PROMPT } from "@/adapters/modelStudio/prompts/intentV3";
+import { INTENT_SYSTEM_PROMPT } from "@/adapters/modelStudio/prompts/intentV4";
 
 /**
  * The blast-radius correction, and the boundary it must not weaken.
@@ -474,6 +474,6 @@ describe("the schema layer reports warnings alongside a valid intent", () => {
   it("stamps the prompt version we actually sent", () => {
     const result = validateIntentSchema({ travellers: [] }, SPANS);
     if (!result.ok) throw new Error("expected success");
-    expect(result.intent.promptVersion).toBe("orkestr-intent-v3");
+    expect(result.intent.promptVersion).toBe("orkestr-intent-v4");
   });
 });
