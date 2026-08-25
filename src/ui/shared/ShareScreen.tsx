@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { MemberInviteView } from "@/core/shared/views";
 
 /**
@@ -48,6 +48,19 @@ export function ShareScreen({
 }) {
   const [busy, setBusy] = useState<string | undefined>(undefined);
   const [copied, setCopied] = useState<string | undefined>(undefined);
+  /**
+   * Whether this device can open its own share sheet.
+   *
+   * Detected AFTER mount, deliberately. The server has no idea what the browser
+   * can do, so deciding the button's wording during render would mean the first
+   * paint says one thing and the hydrated page says another -- which React
+   * treats as a mismatch and a person reads as a flicker. Until this resolves
+   * the button says the thing that is true everywhere.
+   */
+  const [canNativeShare, setCanNativeShare] = useState(false);
+  useEffect(() => {
+    setCanNativeShare(typeof navigator.share === "function");
+  }, []);
   const [error, setError] = useState<string | undefined>(undefined);
 
   async function copyFor(memberId: string) {
@@ -59,6 +72,45 @@ export function ShareScreen({
         setError(result.message);
         return;
       }
+      /**
+       * THE PHONE'S OWN SHARE SHEET FIRST.
+       *
+       * This is a group product, and the moment an invite exists the next thing
+       * a person does is send it to somebody in WhatsApp or Messages. Copying to
+       * a clipboard and hoping they find the right conversation is the desktop
+       * answer to a phone problem.
+       *
+       * `navigator.share` opens the native sheet on iOS and Android. It must be
+       * called directly inside the click, which is why the link is created and
+       * shared in the same handler rather than in two steps.
+       *
+       * THE TOKEN STILL NEVER RENDERS. It goes from the server action into the
+       * share sheet or the clipboard and nowhere else -- not into React state,
+       * not into the DOM, not into a devtools inspection of this component.
+       */
+      const message = `Join our ${destination} trip on Orkestr. This invite is just for you.`;
+      const shareable =
+        typeof navigator.share === "function" &&
+        (typeof navigator.canShare !== "function" ||
+          navigator.canShare({ text: message, url: result.url }));
+
+      if (shareable) {
+        try {
+          await navigator.share({ title: `${destination} on Orkestr`, text: message, url: result.url });
+          setCopied(memberId);
+          setTimeout(() => { setCopied(undefined); }, 3000);
+          return;
+        } catch (shareError) {
+          /**
+           * A cancelled share is not a failure. Somebody who opened the sheet
+           * and changed their mind should not be told something went wrong --
+           * the link exists either way, and the row now says so.
+           */
+          if (shareError instanceof Error && shareError.name === "AbortError") return;
+          // Anything else: fall through and try the clipboard.
+        }
+      }
+
       /**
        * Clipboard can be refused (permissions, insecure context, an older
        * browser). Falling back to showing the link is worse than saying so:
@@ -129,9 +181,13 @@ export function ShareScreen({
                     {busy === row.memberId
                       ? "Making a link…"
                       : copied === row.memberId
-                        ? "Copied ✓"
+                        ? canNativeShare
+                          ? "Sent ✓"
+                          : "Copied ✓"
                         : row.status === "NOT_INVITED"
-                          ? "Copy invite"
+                          ? canNativeShare
+                            ? "Send invite"
+                            : "Copy invite"
                           : "New link"}
                   </button>
 
