@@ -969,3 +969,64 @@ database tests.
    is still verbatim and a reading may cite several.
 4. **This is still a proposal layer.** Nothing it produces is confirmed, and the
    deterministic engines still decide what is possible.
+
+## SEMANTIC PRECISION (25 August 2026)
+
+`/understand` is **LIVE VERIFIED in production** for semantics as well as
+evidence. Every accepted fact is grounded in real spans, owned by the person who
+stated it, no stronger than those words justify, non-duplicative, and omitted or
+questioned when unsupported.
+
+Three guarantees, kept apart — see `docs/QWEN_INTEGRATION.md` §5b:
+
+| | Question | Answered by |
+| --- | --- | --- |
+| Source grounding | *Did those words exist?* | `spans.ts` |
+| Semantic validation | *Do those words support this claim, at this strength?* | `semanticPolicy.ts` |
+| Owner confirmation | *Can this become binding?* | the person it belongs to |
+
+| Thing | Status |
+| --- | --- |
+| **Live evaluation** | **17/17** — was 14/17, no expectation loosened to get there |
+| **Fabricated quotes / citations** | **ZERO** — 75 quotes checked |
+| **Hardening attempts accepted** | **ZERO** |
+| **Duplicate facts accepted** | **ZERO** |
+| **Owner-binding errors** | **ZERO** |
+| **Production acceptance** | **13/13** |
+| A hedge may not become a requirement | IMPLEMENTED + TESTED |
+| A citation supports one field, not its siblings | IMPLEMENTED + TESTED |
+| A date already past is dropped, not repaired | IMPLEMENTED + TESTED |
+| Accessibility exempt from softening | IMPLEMENTED + TESTED, and argued |
+| Policy may only ever weaken | IMPLEMENTED + TESTED |
+| Extraction never confirms, however firmly read | UNCHANGED + ASSERTED |
+
+**Tests: 1,460 across 65 files**, plus 4 browser-bundle and 32 live database.
+
+### The three defects, and what production shows now
+
+| Was | Now |
+| --- | --- |
+| "around 400 … could stretch" → HARD ceiling 400 | SOFT budget 400, **plus** "What is the maximum you cannot exceed?" |
+| One access sentence → the requirement twice | Once |
+| "from the 24th" → window to the 31st, in **2024** | No dates, **plus** "Which year is the trip taking place?" |
+
+On the deployed page: Bo's 9am reads *"Read as a preference"*, Ama's ceiling
+still reads *"Read as a requirement"*, Gita's access requirement appears once,
+and no date carries a year nobody stated.
+
+### The things not to overclaim
+
+1. **This is not entailment.** It is a bounded marker list over Orkestr's own
+   schema, and it can be wrong in both directions — a hedge inside a genuine
+   requirement will soften it. That direction is the safe one and was chosen
+   deliberately; the reverse invents requirements.
+2. **17/17 includes one changed expectation.** `07-multiple-date-windows` used
+   to require an `AVAILABLE_DATES` constraint from a discussion that states no
+   year, which could only be satisfied by inventing one. It now forbids the
+   dates and requires the question. The case is harder, not easier, and the
+   reasoning is written into the case rather than into a commit message.
+3. **The policy caught zero hardening attempts in the live evaluation.** That is
+   the prompt doing the work, not the policy being unnecessary. It fires on
+   every one of these shapes in the offline corpus, which is where it is proven.
+4. **Owner confirmation is unchanged and still the only route to binding.**
+   Nothing here confirms anything.

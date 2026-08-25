@@ -246,6 +246,80 @@ fabricated citations.**
 
 ---
 
+## 5b. Three guarantees, and they are not the same one
+
+Extraction makes three separate promises. Conflating them is what let a correct
+quotation carry an incorrect claim.
+
+| | Question | Answered by | Failure it prevents |
+| --- | --- | --- | --- |
+| **Source grounding** | *Did those words exist?* | `spans.ts` — software slices the discussion | A quotation nobody wrote |
+| **Semantic validation** | *Do those words support this claim, at this strength?* | `semanticPolicy.ts` — bounded rules | A real quote carrying an invented requirement |
+| **Owner confirmation** | *Can this become binding?* | the person it belongs to | A model deciding something about somebody |
+
+Passing the first says nothing about the second. All three defects fixed on
+25 August 2026 quoted real sentences:
+
+* `"I'd like to keep it around 400 SGD ... but I could stretch a bit"` arrived as
+  a **HARD ceiling of 400**.
+* `"I need step-free access the whole way through"` produced the same
+  requirement **twice**.
+* `"I can only get leave from the 24th"` arrived as a window ending on the
+  **31st, in the year 2024** — two years in the past.
+
+### The rule
+
+**No accepted claim may be stronger than the words behind it.**
+
+`semanticPolicy.ts` enforces it with bounded marker rules. It does not decide
+what a sentence means; it decides whether a sentence may carry the weight the
+model put on it.
+
+* **HARD needs restrictive wording and no hedge.** "around", "prefer",
+  "ideally", "could stretch", "if we can" refuse it. "cannot", "only",
+  "absolute", "no more than" permit it.
+* **A citation proves one field, not its neighbours.** A span giving a start
+  date gives no end date, no duration and no year.
+* **A range already in the past is dropped, not repaired.** Repairing it would
+  be inventing a different date.
+* **The same requirement proposed twice becomes one** — keyed on owner and
+  meaning, deliberately not on the citation, since the same thing said twice is
+  still one thing. Strength is part of the key, because the same value proposed
+  once as firm and once as flexible is a disagreement rather than a repetition.
+
+**THE INVARIANT IS THAT IT ONLY EVER WEAKENS.** No path turns SOFT into HARD,
+widens a range, adds a field or raises a certainty. A false positive costs a
+requirement being treated as a preference, which a person can correct. The
+opposite error invents a requirement nobody stated, which they may never notice.
+
+**Accessibility is exempt, deliberately.** Reading "I'd prefer step-free access"
+as a preference can cost somebody the journey; reading a preference as a
+requirement costs a narrower search. The asymmetry is real, so the rule is
+asymmetric.
+
+### Abstention, and the question that replaces a guess
+
+Where the words do not support a value, the answer is a question rather than a
+guess. Live, on the deployed product, "the 10th to the 14th of September" with
+no year stated now produces no dates and this instead:
+
+> **Which year is the trip taking place?**
+> Cannot determine exact calendar dates for availability without the year.
+
+Softening is not omitting, though. "Around 400 SGD" is recorded as a SOFT budget
+of 400 **and** raises "What is the maximum budget Bo cannot exceed?" — both, not
+one instead of the other. Dropping the number would lose what the person said.
+
+### The prompt is not the control
+
+`orkestr-intent-v4` tells the model all of the above so that less has to be
+refused. Deterministic policy refuses it regardless. On the 17-case evaluation
+the policy now catches **zero** hardening attempts, which means the prompt is
+doing the work and the policy is sitting behind it — the offline adversarial
+corpus is where the policy is proven to fire.
+
+---
+
 ## 6. The model may propose, the model may not confirm
 
 Enforced in three independent places, so no single edit can undo it:
