@@ -11,7 +11,6 @@ import {
   detectProvider,
   normaliseSourceUrl,
   type InspirationSource,
-  type SourceEvidenceKind,
   type SourceFetchStatus,
 } from "../../core/inspiration/source";
 import type { IsoDateTime } from "../../domain/time";
@@ -278,7 +277,7 @@ export async function fetchSource(input: {
           ...(usable
             ? {
                 // The caption is the ceiling. It is not the video.
-                evidenceKind: "CAPTION_ONLY" as SourceEvidenceKind,
+                evidenceKind: "CAPTION_ONLY",
                 evidence: evidenceTextFrom(metadata),
               }
             : {}),
@@ -312,7 +311,7 @@ export async function fetchSource(input: {
       ...(thumbnailUrl === undefined ? {} : { thumbnailUrl }),
       ...(usable
         ? {
-            evidenceKind: "PAGE_METADATA" as SourceEvidenceKind,
+            evidenceKind: "PAGE_METADATA",
             evidence: evidenceTextFrom(metadata),
           }
         : {}),

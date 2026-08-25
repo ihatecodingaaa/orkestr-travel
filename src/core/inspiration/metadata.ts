@@ -63,6 +63,7 @@ function clean(value: string | undefined): string | undefined {
     // Nothing extracted from a hostile page may contain a tag.
     .replace(/[<>]/g, " ")
     // Control characters, which have no business in a title.
+    // eslint-disable-next-line no-control-regex -- stripping them is the point
     .replace(/[\u0000-\u001f\u007f]+/g, " ")
     .replace(/\s+/g, " ")
     .trim();
