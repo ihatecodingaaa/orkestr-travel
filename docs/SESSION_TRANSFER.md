@@ -825,3 +825,50 @@ well as development, and the session cookie is `secure=true` there.
 
 **Next:** production readiness -- database TLS trust, Model Studio key rotation,
 hosting, environment variables, domain, deployment.
+
+---
+
+## Handover after the Shared Magic Loop closure
+
+### What is true now
+
+The shared loop is **proven**, not asserted: two isolated browsers, one trip,
+one production database, **22/22** — convert, invite, join, save from a link,
+merge a second link into one place, build a first draft from shared state, apply
+it atomically, read it as the other person, ask as both, pin a generated item,
+repair around it, and keep one member's private words entirely away from the
+other. A separate **5/5** run proves a stale draft is refused in the browser and
+writes nothing.
+
+Gates at handover: **1597 tests / 73 files**, 4 bundle, 39 DB, lint, typecheck
+and build clean.
+
+### The two things to know before trusting a green run
+
+1. **The deployed URL is not what was tested.** Vercel's Attack Challenge Mode
+   is on and headless Chrome cannot pass it. The acceptance ran against a
+   production build on the same production database. It was not evaded; see
+   `SECURITY.md`. If it has since been turned off, re-run
+   `scratchpad/sharedloop.mjs` with `BASE` pointing at the deployment — nothing
+   in the script depends on the host, because it navigates invite links by path.
+2. **Most "failures" in this stage were the test.** Seven of them, listed in
+   `MAGIC_LOOP_PRODUCT_SPEC.md` §10.4. Before reporting a defect from a browser
+   check, confirm it in the database. Three times the database said the product
+   was right.
+
+### Where the next real work is
+
+* **A person cannot be added to a trip that is already shared.** The clearest
+  gap in the product. It needs a design decision about how somebody joining
+  late reconciles with a plan the group already agreed — not just a button.
+* **48 `browser_session` rows have no membership.** Harmless, and left alone on
+  purpose: the only sweep available also takes the 32 that pre-date this work.
+  An id-scoped session cleanup would fix that properly.
+
+### Do not
+
+* Weaken `--ids` cleanup into anything that matches by pattern. It deletes
+  nothing that was not typed out in full, and that is the property that keeps a
+  founder's trip safe from a wildcard.
+* Solve a bot challenge to make a test pass.
+* Claim the loop works on the deployment until something has run against it.

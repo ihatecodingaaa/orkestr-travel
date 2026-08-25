@@ -117,3 +117,24 @@ transport could replace it without the rest changing.
 may not read it, may not import the local repository, and may not call the local
 trip hook — all three are asserted by a guard test, because that is exactly how
 the Stage 3 defect looked from the inside: correct code, wrong source.
+
+## Two mutations a group product needed, and why they are one each
+
+`APPLY_DRAFT` carries **every item of a first draft** and folds them through
+`addPlanItem` inside one mutation.
+
+A loop was the original shape, and in shared mode it is wrong for a reason that
+is invisible on a device: every shared write states the version it was made
+against, so the first item would move the version and every item after it would
+be refused as stale — **by its own predecessor**. A draft is also one decision
+somebody made. Half a draft is not a smaller draft; it is a plan nobody chose.
+So it applies whole, bumps the version once, or does not happen.
+
+`SET_GROUP_SIZE` sets `declaredGroupSize` and **creates nobody**. "There are
+eight of us" is a fact about the group, not seven blank travellers with no names
+and no answers. Both are plan-authority mutations: a traveller asking for either
+is refused, and the refusal says who can.
+
+Both were added to the union, the authority case list and `describeMutation`
+together — the union is exhaustive, so a mutation that reaches none of those
+places does not compile.

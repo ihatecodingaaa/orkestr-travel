@@ -156,3 +156,48 @@ With no cloud configuration at all:
 - [ ] Orphan sessions removed
 - [ ] `schema_migration` untouched
 - [ ] Final counts recorded
+
+## 16. Shared magic loop — run record
+
+Run against a production build on the production database, two isolated Chrome
+profiles, 390px. `scratchpad/sharedloop.mjs`, **22/22**.
+
+- [x] The trip becomes shared (two deliberate clicks: preview, then share)
+- [x] An invite link is created, and no token is ever rendered to the page
+- [x] Zen joins in her own browser and is shown as herself
+- [x] Luc's place, saved from a link, is on the shared trip
+- [x] Zen sees it
+- [x] Zen's second link for the same place makes **one** card
+- [x] Both savers are named — *"Luc and Zen saved this"*
+- [x] Both sources are kept — *"2 sources"*
+- [x] The shared plan offers a first draft, and produces one
+- [x] The draft persists, as one version bump
+- [x] Zen sees the same plan
+- [x] Ask answers the organiser from shared state
+- [x] Ask answers a traveller too
+- [x] A generated item can be pinned as fixed
+- [x] Repair shows both halves of the impact
+- [x] Repair says how many agreed things survive
+- [x] The pinned item is in the untouched half
+- [x] Zen can read her own private note
+- [x] The group is told a requirement exists, not what it says
+- [x] Six of Luc's pages never contain Zen's words
+- [x] Ask never repeats Zen's words to Luc
+
+`scratchpad/stale.mjs`, **5/5** — with Luc's tab backgrounded so `useTripSync`
+stops polling, Zen changes the trip and Luc applies the draft he was looking at:
+
+- [x] Refused in words: *"The trip changed while you were editing…"*
+- [x] `plan=0` in the database — nothing was applied
+
+`scratchpad/qa.mjs`, **390px and 430px**, six shared surfaces: no page scrolls
+sideways, nothing overflows outside a container that scrolls on purpose.
+
+**Not covered:** the deployed URL. Vercel's Attack Challenge Mode serves a JS
+challenge headless Chrome fails, and it was not evaded (`SECURITY.md`).
+
+### Cleanup performed
+
+Eleven synthetic trips removed by explicit id. `shared_trip` = 1 (the founder's,
+untouched), `member_private_data` = 0, `trip_invitation` = 0, `schema_migration`
+intact. Browser sessions deliberately untouched — see `IMPLEMENTATION_STATUS.md`.

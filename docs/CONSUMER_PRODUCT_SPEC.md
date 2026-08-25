@@ -213,3 +213,17 @@ authenticated rather than previewed.
 Nothing above should be built until this local experience is good, because every
 one of them is easier to get right once the shape of the product has stopped
 moving.
+
+## Who saved this
+
+A place card says who wanted it, in words:
+
+* one saver — *"Luc saved this"*
+* two savers — *"Luc and Zen saved this"*
+* three or more — *"3 people saved this"*
+
+The two-name case exists because of merging. When somebody saves a link for a
+place that is already on the trip, the two become one card — and from where that
+person stands, their save has just disappeared into somebody else's. Their own
+name is the proof that it did not. Names stop at two because a longer list would
+be longer than the place it belongs to.

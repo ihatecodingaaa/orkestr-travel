@@ -444,3 +444,48 @@ because they need one:
 * The same mechanism with the **wrong** certificate, which is refused
   (`SELF_SIGNED_CERT_IN_CHAIN`). A positive result alone would not have shown
   that verification was doing anything.
+
+## The shared magic loop, in two browsers
+
+The suite proves shared writes at the database level: a draft applies as one
+version bump, a stale one is refused with nothing applied, a traveller cannot
+take an organiser's decision. What it cannot prove is that a **person** using
+two phones sees any of that, so this runs outside the suite.
+
+`scratchpad/sharedloop.mjs` drives two isolated Chrome profiles over the Chrome
+DevTools Protocol — no new dependency, Node's built-in `WebSocket` — against a
+production build connected to the real database.
+
+**22 checks.** They cover the whole loop: convert, invite, join, save a place
+from a link, save a *second* link for the same place, build a first draft from
+shared state, apply it, read it as the other person, ask as both, pin a
+generated item, repair around it, and prove one member's private words never
+reach the other.
+
+`scratchpad/stale.mjs` is separate because it needs a state the loop avoids:
+Luc's tab is backgrounded, so `useTripSync` stops polling — which is not a
+contrived condition but the ordinary one, a person switching apps — Zen changes
+the trip, and Luc applies the draft he was still looking at. **5 checks**, and
+the important assertion is in the database afterwards: `plan=0`. Refusing is
+only worth anything if nothing was written.
+
+### What made these tests hard to write correctly
+
+Every early failure was in the test, not the product — see
+`MAGIC_LOOP_PRODUCT_SPEC.md` §10.4 for all seven. Three are worth repeating
+because they generalise:
+
+* **`innerText` returns rendered text.** CSS `text-transform` changes what a
+  match sees. Match case-insensitively, or match the DOM.
+* **Count elements, not words.** A merged place is deliberately listed twice —
+  once as a card, once as a group favourite. Counting occurrences reports the
+  feature as a defect.
+* **A shared write is a round trip to Postgres and then a re-render.** Poll for
+  the result; a fixed `sleep` tuned on one machine is a flake on another.
+
+### Width QA
+
+`scratchpad/qa.mjs` walks the six shared surfaces — Overview, Explore, Plan,
+Group, What-if, People — at **390px and 430px**, screenshots each, and asserts
+that no page scrolls sideways and that nothing overflows the viewport outside a
+container that scrolls on purpose. Both widths: clean.

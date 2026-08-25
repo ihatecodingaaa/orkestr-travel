@@ -1052,3 +1052,62 @@ re-running all seventeen three times to learn about one case each time, which is
    every one of these shapes in the offline corpus, which is where it is proven.
 4. **Owner confirmation is unchanged and still the only route to binding.**
    Nothing here confirms anything.
+
+## Stage: Shared Magic Loop closure
+
+The two consumer-upgrade stages built link ingestion, first-draft planning and a
+real Ask, and proved them on one device. This stage proves them with two people
+on one trip, and closes the three gaps that were named but not shut.
+
+### Where each gap ended up
+
+| Gap | Status |
+| --- | --- |
+| **A** — the shared loop was never run end to end | **Closed by proof.** 22/22 in two isolated browsers against the production database. |
+| **B** — a merge was not visible in the interface | **Closed by a change.** Two savers are now named: *"Luc and Zen saved this"*. |
+| **C** — repair after a *generated* draft was unverified | **Closed by proof.** Impact radius, *"2 of 4 things your group already agreed are staying · 1 new"*, and a pinned item untouched. |
+
+### What changed in the product
+
+One thing: `saverWords` in `src/ui/trip/Explore.tsx`. Everything else this stage
+set out to close was already built and needed testing, not rewriting — which is
+what the stage's own instruction asked for.
+
+### What is proven, and against what
+
+Proven against a **production build connected to the production database**, in
+two isolated browser profiles at a mobile viewport: the whole shared loop, the
+repair path, the privacy boundary, browser-level stale-draft refusal, and 390 /
+430 width QA over six shared surfaces.
+
+**Not proven: the same run against the deployed URL.** Vercel's Attack Challenge
+Mode began serving a JS challenge that headless Chrome cannot pass, and it was
+not evaded — see `SECURITY.md`. Server code and data are identical; the deployed
+edge is not covered by this stage's evidence.
+
+### Database after cleanup
+
+Eleven synthetic shared trips created by this stage were removed by explicit id.
+
+| Table | Rows |
+| --- | --- |
+| `shared_trip` | 1 — the founder's, untouched |
+| `trip_member` | 1 |
+| `member_private_data` | 0 |
+| `trip_invitation` | 0 |
+| `session_membership` | 1 |
+| `trip_event` | 1 |
+| `browser_session` | 49 |
+| `schema_migration` | intact |
+
+**48 of those sessions have no membership.** 32 pre-date this stage and were
+excluded from it by instruction; the rest are this stage's own browsers, orphaned
+when their trips were deleted. They are left alone because the only tool that
+sweeps orphans is the prefix mode, which would take the founder's 32 with them. A
+`browser_session` with no `session_membership` grants access to nothing.
+
+### A limitation worth naming
+
+**A person cannot be added to a trip that is already shared.** Members come from
+migration; the Group screen invites the people who were already there. See
+`MAGIC_LOOP_PRODUCT_SPEC.md` §10.3.

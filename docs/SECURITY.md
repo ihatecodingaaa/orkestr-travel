@@ -259,3 +259,50 @@ Re-checked against the real integration:
 * Raw provider responses are never persisted. The recorded fixture stores
   structured facts only.
 * Production remains unrepresentable.
+
+## One member's words, proven to stay theirs
+
+The privacy claim in `SHARED_SECURITY_MODEL.md` is architectural: private
+requirements live in `member_private_data`, are read per member, and other
+members receive a **count** from `privateCounts` and never the text. This is
+that claim tested from the outside, on a running product against the real
+database.
+
+A traveller wrote a requirement containing a sentinel string that appears
+nowhere else in the product, with **🔒 Keep it private** ticked. Then, as the
+organiser:
+
+* the sentinel is absent from `document.documentElement.outerHTML` on **six**
+  pages — Overview, Plan, Explore, People, Group, What-if — which covers the
+  rendered payload, not merely the visible text;
+* the sentinel is absent from what **Ask** replies when the organiser asks what
+  everyone needs;
+* the organiser is still told a requirement **exists**.
+
+In the database afterwards: the shared trip payload does not contain the
+sentinel, and `member_private_data` holds exactly one row.
+
+The first run of this test reported a leak on all six pages. It was not one —
+the requirement had been created with `"private": false`, because the test had
+not ticked the box. A requirement is shared unless its author says otherwise,
+and the test now says so deliberately.
+
+## Vercel bot mitigation is on, and was not evaded
+
+Partway through this stage the production deployment began returning **403**
+with `X-Vercel-Mitigated: challenge` — Vercel's Attack Challenge Mode. Headless
+Chrome fails it (`Code 29`); an ordinary browser solves it and proceeds.
+
+It was almost certainly triggered by this stage's own automated traffic:
+repeated headless acceptance runs and a polling loop against the deployment.
+
+**No attempt was made to work around it.** Defeating a platform's bot challenge
+to make a test pass would trade a real protection for a green tick. The
+acceptance was completed instead against a production build running locally and
+connected to the same production database, which exercises the same server code
+and the same data. What that substitution does **not** prove is the deployed
+edge — routing, headers and the platform's own behaviour — and the stage report
+says so rather than rounding it up.
+
+Turning the mode off, if the founder wants it off, is a dashboard setting and a
+founder decision.

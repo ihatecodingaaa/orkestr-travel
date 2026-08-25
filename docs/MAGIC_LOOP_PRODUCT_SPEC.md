@@ -262,3 +262,88 @@ So a genuinely useful first version is possible **with no new credential** —
 oEmbed plus OpenGraph, degrading honestly to "I opened the link but couldn't
 tell which place you meant". Anything richer is a paid or keyed dependency and
 must be a founder decision, not something a build quietly starts requiring.
+
+## 10. Shared Magic Loop closure — the loop proven with two people
+
+The previous two stages built link ingestion, first-draft planning and a real
+Ask, and proved each of them **on one device**. That is a different claim from
+the one the product makes. A group product that works alone is a demo; the
+question this stage answers is whether the same three things behave when two
+people are looking at one trip through one database.
+
+### 10.1 What was actually run
+
+Two isolated Chrome profiles — Luc (organiser) and Zen (traveller) — against a
+**production build** (`next start`) connected to the **production Postgres**,
+at a 390px mobile viewport. One trip, created through the interface, never
+seeded.
+
+**22 of 22 checks pass**, plus a separate 5-check run for the stale-draft case:
+
+| What was proven | Evidence |
+| --- | --- |
+| Luc creates a trip, adds Zen, converts it, invites her | invite link created, Zen joins in her own browser |
+| Zen sees the place Luc saved from a link | `Temple of Heaven` on Zen's Explore |
+| Zen saves a **second** link for the same place | **one card**, not two |
+| The merge keeps both people | *"Luc and Zen saved this"* |
+| The merge keeps both links | *"2 sources · en.wikipedia.org · britannica.com"* |
+| A first draft is built from **shared** state and applied atomically | one version bump, 3 items |
+| Zen sees the same plan | *"2 days have a shape"*, Luc's place on the day she opens |
+| Ask answers the **organiser** from shared state | *"3 days are still empty"* |
+| Ask answers a **traveller** too | *"2 things need someone"* |
+| A generated item can be pinned | `FIXED` pill, *"1 locked in"* |
+| Repair after a generated draft shows both halves | *"This would change"* / *"This would stay exactly as it is"* |
+| Repair says what survives | *"2 of 4 things your group already agreed are staying · 1 new"* |
+| The pinned item is in the untouched half | it appears under *stay exactly as it is* |
+| Zen's private note is hers alone | absent from six of Luc's pages and from his Ask |
+| A stale draft is refused **in words** | *"The trip changed while you were editing…"*, and `plan=0` |
+
+### 10.2 The one product change this stage needed
+
+A merged place said **"2 people saved this"**. That is a count, and the person
+who saved the second link cannot find themselves in it — which is the one thing
+they need to see, because from where they stand their save disappeared into
+somebody else's card. With exactly two savers the product now names them:
+*"Luc and Zen saved this"*. Three or more still count, because a list of names
+would be longer than the place.
+
+That is the whole of it. Everything else this stage set out to close was already
+built; the work was proving it, and the honest report of that is §10.4.
+
+### 10.3 A real limitation, found by trying to use it
+
+**There is no way to add a new person to a trip that is already shared.**
+Members are created by migration from the travellers a trip had when it was
+converted. The Group screen lists who is there and offers each of them an
+invite; it does not offer to add somebody new. Adding Zen has to happen *before*
+"Make this shareable".
+
+This is a genuine gap in the product, not a bug in the test that found it. It is
+recorded rather than fixed because inventing a mid-flight join path — how a new
+member reconciles with a plan the group already agreed — is a design decision,
+not a missing button.
+
+### 10.4 Seven things that looked like defects and were not
+
+Recorded because each one cost a run, and because a report that lists only the
+findings makes the process look cleaner than it was:
+
+1. **A merged place also appears in the favourites strip** — precisely because
+   two people saved it. Counting the words *"Temple of Heaven"* on the page
+   counts the feature working as though it were the bug. Count cards.
+2. **The plan opens on a day of its own choosing**, which may legitimately be
+   empty. The day strip is what proves shared state, not whichever day happens
+   to be selected.
+3. **Ask has two answer surfaces.** `.ask-reply` is the deterministic answer;
+   `.ask-answer` is the model-backed one. A traveller's question was answered
+   correctly by the first, and a check that only knew about the second read it
+   as silence.
+4. **"Fix this" lives behind the row's *Edit* disclosure.** The button does not
+   exist until the row is open.
+5. **The `FIXED` pill is uppercased by CSS**, and `innerText` returns *rendered*
+   text. A case-sensitive `/Fixed/` misses it.
+6. **A requirement is shared unless "🔒 Keep it private" is ticked.** The first
+   privacy run reported a leak on six pages; the database showed
+   `"private": false`, which is the product doing exactly what it was told.
+7. **Sharing takes two deliberate clicks** — "Make this shareable" opens a
+   migration preview, and "Share this trip" is the decision.

@@ -220,3 +220,20 @@ Unchanged from Stage 1, and still true:
 * "Viewing as" is a prototype control, labelled as one.
 * Explore content is local example data. A real Explore comes from the research
   pipeline, which exists and already binds every claim to a source.
+
+## When two people save the same place
+
+`TripIdea.sources` holds **every link that turned out to be about this place**,
+alongside the `url` the idea was first created from.
+
+Merging happens on the way in, in `addIdea`, so both runtimes get it from one
+place and no screen has to reconcile anything. The verdict comes from
+`compareForMerge`, which returns SAME only on an exact key with nothing
+contradicting it — because two rows for one place is untidy and fixable, while
+one row for two places sends the group to the wrong restaurant.
+
+**A merge keeps everything.** Every saver, through `mergeSavers`, and every
+link. The place is shared; the saving belongs to the person who did it. That is
+also why the interface names both savers when there are two: somebody who saved
+the second link needs to see that their save survived, and a bare count does not
+tell them.
