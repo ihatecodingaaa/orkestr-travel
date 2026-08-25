@@ -750,3 +750,28 @@
 .budget-empty h3 {
   margin: 0;
 }
+
+/*
+  "How Orkestr worked this out" — the technical truth, one level down.
+
+  It sits under the answer rather than above the input. Nothing was removed to
+  achieve that: the whole provenance board is inside, along with the model, the
+  prompt version, the duration and the token counts.
+*/
+.worked-out > summary {
+  cursor: pointer;
+  list-style: none;
+}
+.worked-out > summary::-webkit-details-marker {
+  display: none;
+}
+.worked-out > summary::before {
+  content: "▸ ";
+  color: var(--ink-faint);
+}
+.worked-out[open] > summary::before {
+  content: "▾ ";
+}
+.worked-out-body {
+  margin-top: 0.85rem;
+}

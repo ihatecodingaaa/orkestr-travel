@@ -81,9 +81,9 @@ export default async function UnderstandPage() {
             are compared by deterministic code, not by a model.
           </li>
           <li>
-            It does not carry into the demo trip yet. There is no persistence in this build, and
-            a fake session store would be worse than the gap.{" "}
-            <Link href="/demo">The fixture trip</Link> stays separate and deterministic.
+            It does not carry into a trip yet. Nothing read here is saved, and a store that
+            pretended otherwise would be worse than the gap.{" "}
+            <Link href="/demo">The worked example</Link> stays separate, and always reads the same.
           </li>
         </ul>
       </section>
