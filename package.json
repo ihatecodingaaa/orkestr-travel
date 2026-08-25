@@ -22,6 +22,7 @@
     "connectivity:model-studio": "vitest run --config vitest.live.config.ts evals/connectivity.live.ts",
     "timing:understand": "vitest run --config vitest.live.config.ts evals/understandPayload.live.ts",
     "eval:qwen": "vitest run --config vitest.live.config.ts evals/extraction.live.ts",
+    "eval:case": "vitest run --config vitest.live.config.ts evals/singleCase.live.ts",
     "preflight:model-studio": "node scripts/preflight.mjs",
     "check:secrets": "node scripts/checkSecrets.mjs",
     "adversarial:qwen": "vitest run --config vitest.live.config.ts evals/adversarial.live.ts",
