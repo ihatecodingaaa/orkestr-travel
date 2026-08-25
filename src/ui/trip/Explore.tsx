@@ -245,10 +245,18 @@ function Savers({ trip, idea }: { readonly trip: ConsumerTrip; readonly idea: Tr
 
 /** Provenance beside the thing it describes, never in a table at the top. */
 function sourceNote(idea: TripIdea): string {
+  /*
+    "Saved link — not analysed" was true when nothing opened a link. Orkestr
+    now reads what a public link says about itself before offering a place, so
+    the note said the opposite of what had happened -- underclaiming is as
+    inaccurate as overclaiming, and it made a working feature look broken.
+
+    It still does not say a place was verified. It says where it came from.
+  */
   return idea.source === "LOCAL_EXAMPLE"
     ? "Local example content"
     : idea.source === "USER_LINK"
-      ? "Saved link — not analysed"
+      ? "From a link somebody saved"
       : "Added by someone in your group";
 }
 
