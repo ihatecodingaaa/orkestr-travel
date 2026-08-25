@@ -103,25 +103,46 @@ export function Money({
           })}
         </ul>
 
-        <div className="budget-total">
-          <div>
-            <span className="stat-value">{money(summary.perPerson)}</span>
-            <span className="stat-label">each</span>
-          </div>
-          <div>
-            <span className="stat-value">{money(summary.groupTotal)}</span>
-            <span className="stat-label">
-              for {summary.travellerCount}{" "}
-              {summary.travellerCount === 1 ? "person" : "people"}
-            </span>
-          </div>
-        </div>
+        {/*
+          A total of nothing is not a total.
 
-        <p className="faint">
-          {summary.estimatedCategories} of {BUDGET_CATEGORIES.length} categories estimated.{" "}
-          {summary.estimatedCategories < BUDGET_CATEGORIES.length &&
-            "The rest are blank — Orkestr will not guess them."}
-        </p>
+          Five blank categories used to render as a pair of enormous zeros, which
+          reads as a broken screen rather than an empty one. Zero is a real
+          figure and this is not it: nobody has said anything yet. So when
+          nothing has been estimated, the screen says what is missing and what to
+          do about it, and starts showing numbers the moment there are any.
+        */}
+        {summary.estimatedCategories === 0 ? (
+          <div className="stack gap-1 budget-empty">
+            <h3>No estimates yet</h3>
+            <p className="faint">
+              Put a rough number against anything above and Orkestr will keep the group total in
+              step. It never guesses a figure for you, and it has no pricing data to guess from.
+            </p>
+          </div>
+        ) : (
+          <>
+            <div className="budget-total">
+              <div>
+                <span className="stat-value">{money(summary.perPerson)}</span>
+                <span className="stat-label">each</span>
+              </div>
+              <div>
+                <span className="stat-value">{money(summary.groupTotal)}</span>
+                <span className="stat-label">
+                  for {summary.travellerCount}{" "}
+                  {summary.travellerCount === 1 ? "person" : "people"}
+                </span>
+              </div>
+            </div>
+
+            <p className="faint">
+              {summary.estimatedCategories} of {BUDGET_CATEGORIES.length} categories estimated.{" "}
+              {summary.estimatedCategories < BUDGET_CATEGORIES.length &&
+                "The rest are blank — Orkestr will not guess them."}
+            </p>
+          </>
+        )}
       </section>
 
       {privateBudgets.length > 0 && (
@@ -149,9 +170,12 @@ export function Money({
       )}
 
       {/* ------------------------------------------------------- autopilot */}
-      <section className="panel stack gap-2">
+      <details className="panel stack gap-2 trip-rules">
+        <summary>
+          <span className="rules-summary-title">How Orkestr handles changes</span>
+          <span className="faint"> — what it will and will not do on its own</span>
+        </summary>
         <div className="stack gap-1">
-          <h2>What Orkestr does on its own</h2>
           <p className="faint">
             How Orkestr handles changes to this trip. It works these out when you open the trip,
             not while you are away.
@@ -192,7 +216,7 @@ export function Money({
             <li>Only the person a compromise belongs to can accept it.</li>
           </ul>
         </div>
-      </section>
+      </details>
     </div>
   );
 }

@@ -397,7 +397,15 @@ export interface BudgetSummary {
 export function summariseBudget(trip: ConsumerTrip): BudgetSummary {
   const perPerson = trip.budget.lines.reduce((sum, line) => sum + (line.perPerson ?? 0), 0);
   const estimated = trip.budget.lines.filter((line) => line.perPerson !== undefined).length;
-  const travellers = trip.travellers.length;
+  /**
+   * Count everybody the group said was coming, not just the ones named yet.
+   *
+   * A trip whose organiser wrote "8 of us" and has named one person still costs
+   * eight fares. Multiplying by the number of rows produced a group total equal
+   * to one person's share, which is not a conservative estimate -- it is the
+   * wrong number, presented as confidently as the right one.
+   */
+  const travellers = Math.max(trip.travellers.length, trip.declaredGroupSize ?? 0);
   return {
     perPerson,
     groupTotal: perPerson * travellers,

@@ -196,3 +196,66 @@ describe("§65. creating the trip the founder created", () => {
     expect(result.trip.declaredGroupSize).toBeUndefined();
   });
 });
+
+/* ------------------------------------------ MONEY COUNTS EVERYBODY COMING */
+
+import { summariseBudget } from "@/core/trips/living";
+
+/**
+ * A group of eight costs eight fares.
+ *
+ * The budget multiplied per-person figures by `travellers.length`, so a trip
+ * that had declared eight people but named one produced a "group total" equal to
+ * one person's share -- presented as confidently as a correct number.
+ */
+describe("the group total counts everybody who is coming", () => {
+  let seq = 0;
+  const newId = () => `b-${String((seq += 1)).padStart(3, "0")}`;
+  const trip = (declared: number | undefined, named: number) => {
+    seq = 0;
+    const created = createTrip(
+      {
+        destination: "Beijing",
+        startDate: "2026-09-01",
+        endDate: "2026-09-18",
+        organiserName: "Luc",
+        notes: declared === undefined ? "" : `${String(declared)} of us are going`,
+      },
+      asIsoDateTime("2026-08-25T09:00:00+08:00"),
+      newId,
+    );
+    if (!created.ok) throw new Error("setup failed");
+    const extra = Array.from({ length: named - 1 }, (_, i) => ({
+      id: `extra-${String(i)}`,
+      name: `Person ${String(i + 2)}`,
+      isOrganiser: false,
+      comingConfirmed: true,
+      requirements: [],
+      mustTravelWith: [],
+    }));
+    return {
+      ...created.trip,
+      travellers: [...created.trip.travellers, ...extra],
+      budget: { lines: [{ category: "FLIGHTS" as const, perPerson: 600 }] },
+    };
+  };
+
+  it("multiplies by the declared size while people are still unnamed", () => {
+    const summary = summariseBudget(trip(8, 1));
+    expect(summary.perPerson).toBe(600);
+    expect(summary.travellerCount).toBe(8);
+    expect(summary.groupTotal).toBe(4800);
+  });
+
+  it("uses the named count once it overtakes what was declared", () => {
+    const summary = summariseBudget(trip(3, 5));
+    expect(summary.travellerCount).toBe(5);
+    expect(summary.groupTotal).toBe(3000);
+  });
+
+  it("counts the people it has when nothing was declared", () => {
+    const summary = summariseBudget(trip(undefined, 2));
+    expect(summary.travellerCount).toBe(2);
+    expect(summary.groupTotal).toBe(1200);
+  });
+});

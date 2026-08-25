@@ -720,3 +720,33 @@
   font-size: 0.85rem;
   opacity: 0.85;
 }
+
+/*
+  Trip rules, out of the way.
+
+  "What Orkestr does on its own" was a wall of checkboxes occupying more of the
+  Money screen than the money did. The guarantees still matter and are still
+  here in full -- they are simply no longer the first thing somebody sees when
+  they came to think about what the trip might cost.
+*/
+.trip-rules > summary {
+  cursor: pointer;
+  font-size: 1rem;
+  list-style: none;
+}
+.trip-rules > summary::-webkit-details-marker {
+  display: none;
+}
+.trip-rules > summary::before {
+  content: "▸ ";
+  color: var(--ink-faint);
+}
+.trip-rules[open] > summary::before {
+  content: "▾ ";
+}
+.rules-summary-title {
+  font-weight: 600;
+}
+.budget-empty h3 {
+  margin: 0;
+}
