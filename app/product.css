@@ -835,3 +835,54 @@
   font-style: italic;
   overflow-wrap: anywhere;
 }
+
+/* -------------------------------------------------------------------------- */
+/*  A first draft                                                             */
+/* -------------------------------------------------------------------------- */
+
+.draft-invite {
+  border-left: 3px solid var(--accent);
+}
+.draft-preview {
+  border-left: 3px solid var(--tone-verified);
+}
+.draft-days {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 1rem;
+}
+.draft-day > strong {
+  display: block;
+  margin-bottom: 0.35rem;
+}
+.draft-slots {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.5rem;
+}
+.draft-slots > li {
+  display: grid;
+  /* A fixed first column keeps the times aligned; it collapses on a phone. */
+  grid-template-columns: 5.5rem 1fr;
+  gap: 0.75rem;
+  align-items: baseline;
+  border-left: 2px solid var(--line);
+  padding-left: 0.75rem;
+}
+.draft-slot {
+  color: var(--ink-soft);
+  font-size: 0.88rem;
+}
+@media (max-width: 480px) {
+  .draft-slots > li {
+    grid-template-columns: 1fr;
+    gap: 0.15rem;
+  }
+  .draft-slot {
+    font-weight: 600;
+  }
+}

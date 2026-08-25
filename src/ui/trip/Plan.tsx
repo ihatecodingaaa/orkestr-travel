@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { BuildDraft } from "@/ui/trip/BuildDraft";
 import Link from "next/link";
 import type { ConsumerTrip } from "@/domain/consumerTrip";
 import type { PlanItem, PlanItemKind } from "@/domain/livingTrip";
@@ -79,6 +80,26 @@ export function Plan({
   return (
     <div className="stack gap-3">
       <PlanHeader trip={trip} shape={shape} base={base} />
+
+      {/*
+        The first thing on the screen, when there is no plan yet.
+
+        Orkestr already knows the dates, the group, what everybody needs and
+        every place they saved. Making somebody assemble an itinerary row by row
+        from that is the product declining to do its job. Once a plan exists it
+        moves out of the way -- shaping is a starting move, not a permanent
+        banner.
+      */}
+      {trip.plan.length === 0 && (
+        <BuildDraft
+          trip={trip}
+          actions={actions}
+          onApplied={() => {
+            setSelected(undefined);
+            confirm("the plan");
+          }}
+        />
+      )}
 
       <DayStrip
         days={shape.days}
