@@ -2,7 +2,7 @@
 
 import { readModelStudioConfig } from "@/adapters/modelStudio/config";
 import { HttpModelStudioTransport } from "@/adapters/modelStudio/transport";
-import { parseTrip } from "@/core/trips/store";
+import { tripForActor } from "@/server/shared/tripForActor";
 import {
   ASK_INTENTS,
   answerFromTrip,
@@ -58,16 +58,28 @@ Choose UNKNOWN rather than guessing. A wrong classification gives somebody a con
 Return the JSON object and nothing else.`;
 
 export async function askOrkestr(input: {
+  readonly tripId: string;
   readonly rawTrip: unknown;
   readonly question: string;
 }): Promise<AskResult> {
-  const parsed = parseTrip(input.rawTrip);
-  if (!parsed.ok) {
+  /**
+   * The same rule as the planner: for a shared trip, answer from the database.
+   *
+   * An assistant that answers from a browser's copy will tell somebody three
+   * days are empty seconds after another member filled one -- and it will sound
+   * exactly as certain as when it is right.
+   */
+  const resolved = await tripForActor({ tripId: input.tripId, rawTrip: input.rawTrip });
+  if (resolved.kind === "NO_ACCESS") {
+    return { answer: { headline: resolved.message, lines: [] }, usedModel: false };
+  }
+  if (resolved.kind === "UNREADABLE") {
     return {
       answer: { headline: "Orkestr could not read this trip.", lines: [] },
       usedModel: false,
     };
   }
+  const parsed = { ok: true as const, trip: resolved.trip };
   const question = input.question.trim().slice(0, 400);
   if (question.length === 0) {
     return {

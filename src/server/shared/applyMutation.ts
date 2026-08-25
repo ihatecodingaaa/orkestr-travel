@@ -196,6 +196,40 @@ function applyToTrip(
         ctx,
       );
 
+    case "SET_GROUP_SIZE":
+      /*
+        Capacity only. Nobody is added, named or removed -- a person exists when
+        somebody names them, and a number cannot do that on their behalf.
+      */
+      return { ...trip, declaredGroupSize: mutation.size, updatedAt: ctx.now };
+
+    case "APPLY_DRAFT": {
+      /**
+       * Folded, so the whole draft lands or none of it does.
+       *
+       * Each item goes through the same `addPlanItem` the interface uses, so a
+       * generated item is indistinguishable from a hand-made one -- which is
+       * what lets impact radius, repair and the decision inventory treat it
+       * normally rather than as something they have to learn about.
+       */
+      let next = trip;
+      for (const item of mutation.items) {
+        next = addPlanItem(
+          next,
+          {
+            day: item.day,
+            title: item.title,
+            kind: item.itemKind,
+            ...(item.startTime === undefined ? {} : { startTime: item.startTime }),
+            ...(item.area === undefined ? {} : { area: item.area }),
+            ...(item.fromIdeaId === undefined ? {} : { fromIdeaId: item.fromIdeaId }),
+          },
+          ctx,
+        );
+      }
+      return next;
+    }
+
     case "TOGGLE_SAVE":
       return toggleSave(trip, mutation.ideaId, actorTravellerId);
 

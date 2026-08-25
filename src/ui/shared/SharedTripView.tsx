@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { SharedAsk } from "./SharedAsk";
 import type { ConsumerTrip } from "@/domain/consumerTrip";
 import { readinessOf } from "@/domain/consumerTrip";
 import type { MemberView } from "@/core/shared/views";
@@ -66,6 +67,20 @@ export function SharedTripView({
           ? {}
           : { declaredGroupSize: trip.declaredGroupSize })}
       />
+
+      {/*
+        ASK, IN A SHARED TRIP.
+
+        It was only ever rendered on the local overview, which meant the one
+        capability most likely to be used by somebody who is not the organiser
+        did not exist for them. It reads the trip from the database through the
+        server action, and the only thing it can change goes through the same
+        shared mutation path as every other write.
+
+        `save` is deliberately not passed: there is no such thing as writing
+        straight to a device here, and the intents that would need it say so.
+      */}
+      <SharedAsk trip={trip} version={version} />
 
       <section className="shared-banner">
         <div>

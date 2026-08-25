@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { localActions } from "./localActions";
 import { privateCountFor } from "@/core/trips/privateCount";
 import type { ConsumerTrip } from "@/domain/consumerTrip";
 import { readinessLabel, readinessOf } from "@/domain/consumerTrip";
@@ -37,6 +38,11 @@ export function Overview({
   readonly base: string;
   readonly save: (trip: ConsumerTrip) => void;
 }) {
+  /*
+    On a local trip there is one person using it, and that is the organiser.
+    Passing their id keeps "saved by" attribution the same on both paths.
+  */
+  const organiserId = trip.travellers.find((traveller) => traveller.isOrganiser)?.id ?? "";
   const counts = countReadiness(trip.travellers);
   const percent = readyPercent(counts);
   const grouping = groupByDeparture(trip.travellers);
@@ -58,7 +64,7 @@ export function Overview({
           : { declaredGroupSize: trip.declaredGroupSize })}
       />
 
-      <AskOrkestr trip={trip} base={base} save={save} />
+      <AskOrkestr trip={trip} base={base} actions={localActions(trip, save, organiserId)} save={save} />
 
       {/* ------------------------------------------------------- milestone */}
       {milestone !== undefined && (

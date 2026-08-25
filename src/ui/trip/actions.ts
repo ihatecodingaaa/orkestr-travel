@@ -58,6 +58,25 @@ export interface TripActions {
     readonly area?: string;
     readonly fromIdeaId?: string;
   }): Promise<ActionOutcome>;
+  /** How many people are coming, as the group stated it. Capacity, not people. */
+  setDeclaredGroupSize(size: number): Promise<ActionOutcome>;
+  /**
+   * A generated draft, applied in one go.
+   *
+   * Separate from `addPlanItem` because a draft is one decision. In shared mode
+   * it is also the only correct shape: a loop of single writes would have its
+   * own first item invalidate the rest.
+   */
+  applyDraft(
+    items: readonly {
+      readonly day: IsoDate;
+      readonly title: string;
+      readonly kind: PlanItemKind;
+      readonly startTime?: string;
+      readonly area?: string;
+      readonly fromIdeaId?: string;
+    }[],
+  ): Promise<ActionOutcome>;
   movePlanItem(
     itemId: string,
     to: { readonly day?: IsoDate; readonly startTime?: string },

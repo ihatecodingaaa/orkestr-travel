@@ -1,13 +1,14 @@
 "use client";
 
 import { useState } from "react";
+import type { ActionOutcome, TripActions } from "@/ui/trip/actions";
 import { useRouter } from "next/navigation";
 import type { AskAnswer } from "@/core/ask/intents";
 import { askOrkestr } from "~/trip/[tripId]/ask/actions";
 import type { ConsumerTrip } from "@/domain/consumerTrip";
 import { answer, recognise, suggestedCommands, toAction } from "@/core/trips/commands";
 import type { Answer } from "@/core/trips/commands";
-import { addIdea, addTraveller } from "@/core/trips/mutate";
+import { addTraveller } from "@/core/trips/mutate";
 import { newId, nowIso } from "./TripsClient";
 
 /**
@@ -27,11 +28,21 @@ import { newId, nowIso } from "./TripsClient";
 export function AskOrkestr({
   trip,
   base,
+  actions,
   save,
 }: {
   readonly trip: ConsumerTrip;
   readonly base: string;
-  readonly save: (trip: ConsumerTrip) => void;
+  readonly actions: TripActions;
+  /**
+   * Local-only writes, absent in shared mode.
+   *
+   * The deterministic command layer can add a traveller straight to the device.
+   * A shared trip has no such thing -- people arrive through invitations -- so
+   * those intents simply are not offered there rather than being wired to
+   * something that would half-work.
+   */
+  readonly save?: (trip: ConsumerTrip) => void;
 }) {
   const router = useRouter();
   const [text, setText] = useState("");
@@ -64,7 +75,7 @@ export function AskOrkestr({
     setThinking(true);
     setAsked(undefined);
     try {
-      const result = await askOrkestr({ rawTrip: trip, question: input });
+      const result = await askOrkestr({ tripId: trip.id, rawTrip: trip, question: input });
       setAsked(result.answer);
       setText("");
     } catch {
@@ -116,12 +127,30 @@ export function AskOrkestr({
     const ctx = { now: nowIso(), newId };
     switch (action.kind) {
       case "ADD_TRAVELLER":
+        /*
+          Local only, and deliberately so. In a shared trip people arrive
+          through an invitation, which is what ties a person to a session and a
+          set of private answers. Adding a row on somebody's behalf would create
+          a member nobody can be.
+        */
+        if (save === undefined) {
+          setDone("Invite them from the Group screen so they get their own view.");
+          break;
+        }
         save(addTraveller(trip, action.name, ctx));
         setDone(`${action.name} was added.`);
         break;
       case "SAVE_IDEA":
-        save(addIdea(trip, { title: action.title, category: "FUN" }, ctx));
-        setDone(`Saved “${action.title}”. You can change the category on Explore.`);
+        /* Saving has a shared equivalent, so it goes through the boundary. */
+        void actions
+          .addIdea({ title: action.title, category: "FUN" })
+          .then((outcome) => {
+            setDone(
+              outcome.ok
+                ? `Saved “${action.title}”. You can change the category on Explore.`
+                : (outcome.message ?? "That didn't work."),
+            );
+          });
         break;
       case "NAVIGATE":
         router.push(action.href);
@@ -235,9 +264,23 @@ export function AskOrkestr({
                   const proposal = asked.proposal;
                   if (proposal === undefined) return;
                   if (proposal.kind === "SET_GROUP_SIZE" && proposal.size !== undefined) {
-                    save({ ...trip, declaredGroupSize: proposal.size, updatedAt: nowIso() });
-                    setAsked(undefined);
-                    setDone(`Orkestr is planning for ${String(proposal.size)} travellers.`);
+                    /*
+                      THROUGH THE ACTIONS BOUNDARY, in both modes.
+
+                      This used to write straight to the device. In a shared trip
+                      that would have been a second source of truth: the number
+                      would change on the organiser's screen and nowhere else,
+                      and nobody would be told.
+                    */
+                    const size = proposal.size;
+                    void actions.setDeclaredGroupSize(size).then((outcome: ActionOutcome) => {
+                      setAsked(undefined);
+                      setDone(
+                        outcome.ok
+                          ? `Orkestr is planning for ${String(size)} travellers.`
+                          : (outcome.message ?? "That didn't work."),
+                      );
+                    });
                     return;
                   }
                   router.push(`${base}/plan`);

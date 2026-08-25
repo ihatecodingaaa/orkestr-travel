@@ -5,7 +5,7 @@ import { HttpModelStudioTransport } from "@/adapters/modelStudio/transport";
 import { QwenDraftPlanner } from "@/adapters/modelStudio/qwenDraftPlanner";
 import { assessReadiness, validateDraft, type DraftEntry } from "@/core/plan/draft";
 import type { ConsumerTrip } from "@/domain/consumerTrip";
-import { parseTrip } from "@/core/trips/store";
+import { tripForActor } from "@/server/shared/tripForActor";
 
 /**
  * Proposing a first draft, on the server, and refusing a bad one.
@@ -35,19 +35,28 @@ export interface DraftResult {
   readonly message?: string;
 }
 
-export async function buildFirstDraft(rawTrip: unknown): Promise<DraftResult> {
-  const parsed = parseTrip(rawTrip);
-  if (!parsed.ok) {
+export async function buildFirstDraft(input: {
+  readonly tripId: string;
+  readonly rawTrip: unknown;
+}): Promise<DraftResult> {
+  /**
+   * For a shared trip the database wins and the browser's copy is ignored.
+   * Drafting from a copy that is seconds behind is how a "first draft" arrives
+   * scheduling over something another member added while it was being built.
+   */
+  const resolved = await tripForActor({ tripId: input.tripId, rawTrip: input.rawTrip });
+  if (resolved.kind === "NO_ACCESS" || resolved.kind === "UNREADABLE") {
     return {
       ok: false,
       entries: [],
       refused: [],
       using: [],
       missing: [],
-      message: "Orkestr could not read this trip.",
+      message:
+        resolved.kind === "NO_ACCESS" ? resolved.message : "Orkestr could not read this trip.",
     };
   }
-  const trip: ConsumerTrip = parsed.trip;
+  const trip: ConsumerTrip = resolved.trip;
 
   const readiness = assessReadiness(trip);
   if (!readiness.canDraft) {

@@ -133,6 +133,8 @@ function wrap(
     toggleSave: (id) => report(actions.toggleSave(id)),
     removeIdea: (id) => report(actions.removeIdea(id)),
     addPlanItem: (input) => report(actions.addPlanItem(input)),
+    setDeclaredGroupSize: (size) => report(actions.setDeclaredGroupSize(size)),
+    applyDraft: (items) => report(actions.applyDraft(items)),
     movePlanItem: (id, to) => report(actions.movePlanItem(id, to)),
     setPlanItemStatus: (id, status) => report(actions.setPlanItemStatus(id, status)),
     removePlanItem: (id) => report(actions.removePlanItem(id)),

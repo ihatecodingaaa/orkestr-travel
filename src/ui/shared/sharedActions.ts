@@ -51,6 +51,19 @@ export function sharedActions(
         ...(input.area === undefined ? {} : { area: input.area }),
         ...(input.fromIdeaId === undefined ? {} : { fromIdeaId: input.fromIdeaId }),
       }),
+    setDeclaredGroupSize: (size) => send({ kind: "SET_GROUP_SIZE", size }),
+    applyDraft: (items) =>
+      send({
+        kind: "APPLY_DRAFT",
+        items: items.map((item) => ({
+          day: item.day,
+          title: item.title,
+          itemKind: item.kind,
+          ...(item.startTime === undefined ? {} : { startTime: item.startTime }),
+          ...(item.area === undefined ? {} : { area: item.area }),
+          ...(item.fromIdeaId === undefined ? {} : { fromIdeaId: item.fromIdeaId }),
+        })),
+      }),
     movePlanItem: (itemId, to) =>
       send({
         kind: "MOVE_PLAN_ITEM",

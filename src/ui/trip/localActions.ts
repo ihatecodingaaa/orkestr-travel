@@ -45,6 +45,18 @@ export function localActions(
     removeIdea: (ideaId) => done(removeIdea(trip, ideaId)),
 
     addPlanItem: (input) => done(addPlanItem(trip, input, ctx())),
+    setDeclaredGroupSize: (size) =>
+      done({ ...trip, declaredGroupSize: size, updatedAt: nowIso() }),
+    applyDraft: (items) => {
+      /*
+        One save, for the same reason the shared path uses one mutation: a draft
+        is a single decision, and applying half of it is not a smaller version
+        of applying it.
+      */
+      let next = trip;
+      for (const item of items) next = addPlanItem(next, item, ctx());
+      return done(next);
+    },
     movePlanItem: (itemId, to) => done(movePlanItem(trip, itemId, to, ctx())),
     setPlanItemStatus: (itemId, status) =>
       done(setPlanItemStatus(trip, itemId, status, ctx())),

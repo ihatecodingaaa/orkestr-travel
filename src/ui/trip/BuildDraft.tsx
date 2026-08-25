@@ -34,6 +34,7 @@ export function BuildDraft({
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<DraftResult | undefined>(undefined);
   const [applying, setApplying] = useState(false);
+  const [stale, setStale] = useState<string | undefined>(undefined);
 
   const readiness = assessReadiness(trip);
   const byId = new Map(trip.ideas.map((idea) => [idea.id, idea]));
@@ -43,7 +44,7 @@ export function BuildDraft({
     setBusy(true);
     setResult(undefined);
     try {
-      setResult(await buildFirstDraft(trip));
+      setResult(await buildFirstDraft({ tripId: trip.id, rawTrip: trip }));
     } catch {
       setResult({
         ok: false,
@@ -61,17 +62,42 @@ export function BuildDraft({
   async function keep(entries: readonly DraftEntry[]) {
     setApplying(true);
     try {
-      for (const entry of entries) {
+      /**
+       * ONE change, not a loop of them.
+       *
+       * A loop was the original shape and it is wrong in shared mode for a
+       * reason that is invisible on a device: every shared write states the
+       * version it was made against, so the first item would move the version
+       * and every item after it would be refused as stale -- by its own
+       * predecessor. A draft is also one decision somebody made, and half of it
+       * is not a smaller version of it.
+       */
+      const items = entries.flatMap((entry) => {
         const idea = byId.get(entry.ideaId);
-        if (idea === undefined) continue;
-        await actions.addPlanItem({
-          day: entry.day,
-          title: idea.title,
-          kind: kindForCategory(idea.category),
-          startTime: slotTime(entry.slot),
-          ...(idea.area === undefined ? {} : { area: idea.area }),
-          fromIdeaId: idea.id,
-        });
+        if (idea === undefined) return [];
+        return [
+          {
+            day: entry.day,
+            title: idea.title,
+            kind: kindForCategory(idea.category),
+            startTime: slotTime(entry.slot),
+            ...(idea.area === undefined ? {} : { area: idea.area }),
+            fromIdeaId: idea.id,
+          },
+        ];
+      });
+
+      const outcome = await actions.applyDraft(items);
+      if (!outcome.ok) {
+        /**
+         * §13. The trip moved while the draft was open, so the draft was built
+         * against something that is no longer true. It is refused rather than
+         * applied, and the person is told why in the words the shared layer
+         * already uses.
+         */
+        setStale(outcome.message ?? "The trip changed while this draft was open.");
+        setResult(undefined);
+        return;
       }
       setResult(undefined);
       onApplied();
@@ -93,6 +119,12 @@ export function BuildDraft({
   if (result === undefined) {
     return (
       <div className="panel stack gap-2 draft-invite">
+        {stale !== undefined && (
+          <p className="notice notice-alert" role="alert">
+            {stale} Orkestr has refreshed it — build the draft again and it will use what is
+            there now.
+          </p>
+        )}
         <div className="stack gap-1">
           <h3>Let Orkestr shape the trip</h3>
           <p className="faint">{readiness.headline}</p>

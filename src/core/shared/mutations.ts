@@ -64,6 +64,35 @@ export type SharedMutation =
       readonly area?: string;
       readonly fromIdeaId?: string;
     }
+  /**
+   * A whole first draft, applied as ONE change.
+   *
+   * NOT a loop over ADD_PLAN_ITEM, and the reason is concurrency rather than
+   * tidiness. Every shared write states the version it was made against, so a
+   * loop would apply its first item, move the version, and have every item after
+   * it refused as stale -- by its own predecessor. A draft is also a single
+   * decision a person made about their trip, and half of one is not a smaller
+   * version of it.
+   */
+  /**
+   * How many people are coming, when somebody says it out loud.
+   *
+   * A trip-level fact rather than a personal one, so it carries the organiser's
+   * authority like the plan does. It changes CAPACITY and never membership: no
+   * member is created, renamed or removed by it.
+   */
+  | { readonly kind: "SET_GROUP_SIZE"; readonly size: number }
+  | {
+      readonly kind: "APPLY_DRAFT";
+      readonly items: readonly {
+        readonly day: IsoDate;
+        readonly title: string;
+        readonly itemKind: PlanItemKind;
+        readonly startTime?: string;
+        readonly area?: string;
+        readonly fromIdeaId?: string;
+      }[];
+    }
   | {
       readonly kind: "MOVE_PLAN_ITEM";
       readonly itemId: string;
@@ -137,7 +166,9 @@ export function checkMutation(actor: TripActor, mutation: SharedMutation): Mutat
       return { ok: true };
 
     /* --- the canonical itinerary ------------------------------------------ */
+    case "SET_GROUP_SIZE":
     case "ADD_PLAN_ITEM":
+    case "APPLY_DRAFT":
     case "MOVE_PLAN_ITEM":
     case "SET_PLAN_ITEM_STATUS":
     case "REMOVE_PLAN_ITEM":
@@ -230,6 +261,14 @@ export function describeMutation(mutation: SharedMutation, actorName: string): s
       return `${actorName} removed one of their requirements`;
     case "ADD_PLAN_ITEM":
       return `${actorName} added ${mutation.title} to the plan`;
+    case "SET_GROUP_SIZE":
+      return `${actorName} said there are ${String(mutation.size)} of you`;
+    case "APPLY_DRAFT":
+      /*
+        One line for one decision. Listing every item would bury a real change
+        somebody else made under a wall of entries from a single click.
+      */
+      return `${actorName} added a first draft of ${String(mutation.items.length)} things`;
     case "MOVE_PLAN_ITEM":
       return `${actorName} moved something on the plan`;
     case "SET_PLAN_ITEM_STATUS":
