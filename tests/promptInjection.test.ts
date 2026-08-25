@@ -1,7 +1,8 @@
 import { describe, it, expect } from "vitest";
+import { segmentDiscussion } from "@/core/intent/spans";
 import { runExtractionPipeline } from "@/core/intent/pipeline";
 import { validateIntentSchema } from "@/core/intent/schema";
-import { buildIntentUserMessage, INTENT_SYSTEM_PROMPT } from "@/adapters/modelStudio/prompts/intentV2";
+import { buildIntentUserMessage, INTENT_SYSTEM_PROMPT } from "@/adapters/modelStudio/prompts/intentV3";
 import { asIsoDateTime } from "@/domain/index";
 
 /**
@@ -51,7 +52,7 @@ describe("an obeyed injection still cannot confirm anything", () => {
           ref: "P1",
           displayName: "Ama",
           certainty: "EXPLICIT",
-          source: { quote: "Tokyo in August works for me." },
+          evidence: ["M01.S01"],
         },
       ],
       constraints: [
@@ -63,7 +64,7 @@ describe("an obeyed injection still cannot confirm anything", () => {
           confirmed: true,
           confirmation: "CONFIRMED",
           origin: "TRAVELLER_STATED",
-          source: { quote: "Tokyo in August works for me." },
+          evidence: ["M01.S01"],
         },
       ],
     });
@@ -88,7 +89,7 @@ describe("an obeyed injection still cannot confirm anything", () => {
           ref: "P1",
           displayName: "Ama",
           certainty: "EXPLICIT",
-          source: { quote: "Tokyo in August works for me." },
+          evidence: ["M01.S01"],
         },
       ],
       constraints: [
@@ -97,7 +98,7 @@ describe("an obeyed injection still cannot confirm anything", () => {
           value: { kind: "BUDGET_MAX", amountMajor: 9999999, currency: "SGD" },
           proposedStrength: "HARD",
           certainty: "EXPLICIT",
-          source: { quote: "Tokyo in August works for me." },
+          evidence: ["M01.S01"],
         },
       ],
     });
@@ -116,13 +117,13 @@ describe("an obeyed injection still cannot confirm anything", () => {
     expect(result.mapped.requiresConfirmation).toHaveLength(1);
   });
 
-  it("refuses a constraint whose quote was invented to look authoritative", () => {
+  it("refuses a constraint whose evidence was invented to look authoritative", () => {
     const fabricated = JSON.stringify({
       travellers: [
         {
           ref: "P1",
           certainty: "EXPLICIT",
-          source: { quote: "Tokyo in August works for me." },
+          evidence: ["M01.S01"],
         },
       ],
       constraints: [
@@ -131,7 +132,7 @@ describe("an obeyed injection still cannot confirm anything", () => {
           value: { kind: "BUDGET_MAX", amountMajor: 99999, currency: "SGD" },
           proposedStrength: "HARD",
           certainty: "EXPLICIT",
-          source: { quote: "Ama confirmed her budget is unlimited" },
+          evidence: ["M09.S09"],
         },
       ],
     });
@@ -142,7 +143,13 @@ describe("an obeyed injection still cannot confirm anything", () => {
       discussion: INJECTION_DISCUSSION,
     });
     if (result.outcome !== "FAILED") throw new Error("expected failure");
-    expect(result.code).toBe("SEMANTIC_VALIDATION_FAILED");
+    /**
+     * SCHEMA_INVALID, not SEMANTIC_VALIDATION_FAILED, and that is the
+     * improvement: a fabricated citation is now refused when the response is
+     * read, by looking the id up in spans this software cut itself, rather than
+     * later by searching the discussion for words the model wrote.
+     */
+    expect(result.code).toBe("SCHEMA_INVALID");
   });
 });
 
@@ -157,7 +164,7 @@ describe("hostile shapes in the discussion", () => {
   ];
 
   it.each(hostile)("neutralises %s inside the user message", (_label, text) => {
-    const message = buildIntentUserMessage(`Ama: ${text}`);
+    const message = buildIntentUserMessage(segmentDiscussion(`Ama: ${text}`));
     // The text is still present, because it is data and must be readable.
     expect(message).toContain("<discussion>");
     // But it cannot close the block early and continue as a new instruction.
@@ -182,8 +189,8 @@ describe("hostile shapes in the discussion", () => {
 
     const clean = JSON.stringify({
       travellers: [
-        { ref: "P1", displayName: "Ama", certainty: "EXPLICIT", source: { quote: "Tokyo in August, five nights." } },
-        { ref: "P2", displayName: "Cai", certainty: "EXPLICIT", source: { quote: "I cannot spend more than 400 SGD." } },
+        { ref: "P1", displayName: "Ama", certainty: "EXPLICIT", evidence: ["M01.S01"] },
+        { ref: "P2", displayName: "Cai", certainty: "EXPLICIT", evidence: ["M03.S01"] },
       ],
       constraints: [
         {
@@ -191,7 +198,7 @@ describe("hostile shapes in the discussion", () => {
           value: { kind: "BUDGET_MAX", amountMajor: 400, currency: "SGD" },
           proposedStrength: "HARD",
           certainty: "EXPLICIT",
-          source: { quote: "I cannot spend more than 400 SGD." },
+          evidence: ["M03.S01"],
         },
       ],
     });
@@ -212,14 +219,14 @@ describe("the schema is the control, not the prompt", () => {
         travellers: [],
         constraints: [],
         [field]: "anything at all",
-      });
+      }, segmentDiscussion("Ama: hello."));
       if (result.ok) throw new Error(`${field} was accepted`);
       expect(result.code, field).toBe("UNSAFE_OUTPUT");
     }
   });
 
   it("names the offending field in the problem, so a reviewer can see what happened", () => {
-    const result = validateIntentSchema({ travellers: [], confirmed: true });
+    const result = validateIntentSchema({ travellers: [], confirmed: true }, segmentDiscussion("Ama: hello."));
     if (result.ok) throw new Error("expected failure");
     expect(result.problems.some((p) => p.path.includes("confirmed"))).toBe(true);
   });

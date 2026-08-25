@@ -1,51 +1,56 @@
 import type { PromptVersion } from "../../../domain/intent";
+import type { DiscussionSpans } from "../../../core/intent/spans";
+import { renderSpansForPrompt } from "../../../core/intent/spans";
 
 /**
- * The extraction prompt, version orkestr-intent-v2.
+ * The extraction prompt, version orkestr-intent-v3.
  *
- * WHAT CHANGED IN v2, and why the version moved rather than the wording being
- * quietly edited. A live evaluation of seventeen fictional cases found two
- * instructions the model could follow correctly and still produce something the
- * validator had to refuse:
+ * WHAT CHANGED IN v3: THE MODEL NO LONGER WRITES EVIDENCE.
  *
- *   1. UNKNOWN CURRENCY. Told never to guess a currency, the model obeyed -- and
- *      then emitted the budget anyway with `currency: ""`. Its instinct was
- *      right and its action was wrong, because the prompt never said what to do
- *      INSTEAD. v2 says: omit the money proposal entirely and raise an
- *      ambiguity.
+ * v2 asked for a `source.quote` holding "the exact words from the discussion,
+ * copied verbatim", and warned that a quote which does not appear invalidates
+ * the whole response. The model was not being careless. It was being asked to do
+ * the one thing a generator does badly: transcribe. Quotes came back tidied,
+ * re-punctuated, merged from two sentences, or plausibly invented, and
+ * deterministic validation -- correctly -- refused the entire extraction. In
+ * production it failed every time, on the product's own sample discussion.
  *
- *   2. DATE FIELDS. Given "between four and six nights", the model put
- *      non-dates into `earliestDate` and `latestDate`. v2 says a calendar-date
- *      field takes a calendar date or nothing, and a stated range is an
- *      ambiguity rather than a value to pick from.
+ * The answer was not a firmer instruction, a fuzzier match, or a second model to
+ * check the first. It was to remove the field. The discussion now arrives
+ * pre-cut into addressable spans:
  *
- * Both change what the model is asked to DO, not merely how it is worded, so
- * the version moved. Evaluation results from v1 and v2 are not comparable
- * without saying which produced them, which is the whole reason the version is
- * stamped on every result.
+ *     [M02.S01] Bo: I can only get leave from the 24th.
+ *
+ * and the model returns `"evidence": ["M02.S01"]`. Software slices the original
+ * characters back out. A fabricated quotation is no longer something to detect,
+ * because there is nowhere to put one. The worst a model can now do is cite a
+ * wrong or nonexistent id, and both are decidable by lookup.
+ *
+ * It also made the response smaller. Evidence text was the most repeated content
+ * in every extraction; an id is a handful of tokens.
+ *
+ * WHAT CHANGED IN v2, kept because evaluation results are only comparable when
+ * you know which prompt produced them: an unknown currency became "omit the
+ * budget and raise an ambiguity" rather than an empty string, and date fields
+ * were restricted to real calendar dates.
  *
  * WHY IT LIVES HERE AND NOT IN A ROUTE: a prompt is the specification of what
  * the model is being asked to do. Building it inline inside a request handler
- * makes it unreviewable, untestable and impossible to compare between runs. It
- * is versioned for the same reason a schema is: when an evaluation result
- * changes, the first question is what changed, and "the prompt, some time last
- * week" is not an answer.
+ * makes it unreviewable, untestable and impossible to compare between runs.
  *
- * THE MOST IMPORTANT PARAGRAPH IN THIS FILE is the one that tells the model the
- * discussion is data. Group chat is untrusted input. It will contain quoted
- * instructions, pasted JSON, URLs, HTML and occasionally somebody deliberately
- * writing "ignore all previous instructions". None of that may change what the
- * model is doing.
+ * THE MOST IMPORTANT PARAGRAPH IN THIS FILE is still the one telling the model
+ * that the discussion is data. Group chat is untrusted input, and it will
+ * contain quoted instructions, pasted JSON, and occasionally somebody writing
+ * "ignore all previous instructions".
  *
- * That instruction is a mitigation, NOT the control. The control is that the
- * schema forbids the fields that decide authority, the mapper writes
- * `confirmation: "PROPOSED"` as a literal, and semantic validation rejects a
- * quote that does not appear in the supplied text. An injected instruction that
- * gets past the prompt still cannot confirm anything, because there is no code
- * path that would let it.
+ * That instruction is a mitigation, NOT the control. The controls are that the
+ * schema forbids the fields deciding authority, the mapper writes
+ * `confirmation: "PROPOSED"` as a literal, and evidence is resolved by software
+ * against spans it cut itself. An injected instruction that gets past the prompt
+ * still cannot confirm anything, and now cannot manufacture a quotation either.
  */
 
-export const INTENT_PROMPT_VERSION: PromptVersion = "orkestr-intent-v2";
+export const INTENT_PROMPT_VERSION: PromptVersion = "orkestr-intent-v3";
 
 /**
  * The schema description given to the model.
@@ -63,7 +68,7 @@ const SCHEMA_DESCRIPTION = `{
       "displayName": "the name as written, omit if no name is given",
       "describedAs": "how the text refers to them if unnamed, e.g. \\"my sister\\"",
       "certainty": "EXPLICIT | LIKELY | AMBIGUOUS",
-      "source": { "quote": "the exact words from the discussion" }
+      "evidence": ["M02.S01"]
     }
   ],
   "constraints": [
@@ -72,7 +77,7 @@ const SCHEMA_DESCRIPTION = `{
       "value": { "kind": "BUDGET_MAX", "amountMajor": 450, "currency": "SGD" },
       "proposedStrength": "HARD | SOFT | UNKNOWN",
       "certainty": "EXPLICIT | LIKELY | AMBIGUOUS",
-      "source": { "quote": "the exact words from the discussion" }
+      "evidence": ["M02.S01"]
     }
   ],
   "relationships": [
@@ -81,7 +86,7 @@ const SCHEMA_DESCRIPTION = `{
       "fromRef": "P1",
       "toRef": "P2",
       "certainty": "EXPLICIT | LIKELY | AMBIGUOUS",
-      "source": { "quote": "the exact words from the discussion" }
+      "evidence": ["M02.S01"]
     }
   ],
   "assistanceNeeds": [
@@ -90,7 +95,7 @@ const SCHEMA_DESCRIPTION = `{
       "need": "WHEELCHAIR_ASSISTANCE | REDUCED_WALKING | STEP_FREE_ACCESS | REST_BREAKS | TRAVELLING_WITH_INFANT | SENSORY_REQUIREMENT | MEDICAL_EQUIPMENT_BAGGAGE | CUSTOM",
       "description": "required only when need is CUSTOM",
       "certainty": "EXPLICIT | LIKELY | AMBIGUOUS",
-      "source": { "quote": "the exact words from the discussion" }
+      "evidence": ["M02.S01"]
     }
   ],
   "preferences": [
@@ -98,7 +103,7 @@ const SCHEMA_DESCRIPTION = `{
       "ownerRef": "P1 (omit if it belongs to the group)",
       "label": "a short phrase, e.g. \\"street food\\"",
       "certainty": "EXPLICIT | LIKELY | AMBIGUOUS",
-      "source": { "quote": "the exact words from the discussion" }
+      "evidence": ["M02.S01"]
     }
   ],
   "ambiguities": [
@@ -106,7 +111,7 @@ const SCHEMA_DESCRIPTION = `{
       "question": "the single question that would settle it",
       "aboutRef": "P1 (omit if it is a question for the group)",
       "whyItMatters": "what decision changes depending on the answer",
-      "source": { "quote": "the exact words from the discussion" }
+      "evidence": ["M02.S01"]
     }
   ],
   "tripContext": {
@@ -116,7 +121,7 @@ const SCHEMA_DESCRIPTION = `{
     "latestDate": "YYYY-MM-DD",
     "nights": 5,
     "certainty": "EXPLICIT | LIKELY | AMBIGUOUS (omit if you cannot say)",
-    "source": { "quote": "the exact words from the discussion" }
+    "evidence": ["M02.S01"]
   }
 }
 
@@ -167,29 +172,70 @@ LIKELY is not confirmed. Use AMBIGUOUS freely; a question asked is much better t
 AMBIGUITIES
 Raise an ambiguity only when the answer would change a decision. Do not raise questions about details that change nothing. If two statements in the discussion contradict each other, record both readings and raise an ambiguity naming the contradiction.
 
-QUOTES
-Every entry carries a "source.quote" containing the exact words from the discussion that produced it, copied verbatim. A quote that does not appear in the discussion invalidates the whole response, so copy, never paraphrase.
+EVIDENCE
+The discussion is given to you already cut into numbered spans, one per line, like [M02.S01]. Every entry you return carries an "evidence" array naming the span ids that support it.
+- Cite ids only. Never write the words out. There is no quote field, and adding one invalidates the response.
+- Cite only ids that appear in the spans given to you. An id you did not see is a fabrication and fails the whole response.
+- Cite the smallest set that genuinely supports the entry, usually one id. Use more than one only when the entry really depends on more than one statement, for example an availability needing both "I can only leave Wednesday" and "I need to be back Sunday". Never more than 4.
+- At least one cited span must state the thing directly. Surrounding chatter that merely sits near it is not evidence.
+
+ONLY WHAT THE SPANS SUPPORT
+If no supplied span directly supports a fact, do not create that fact. Omit it. Returning less is always better than returning something nobody said.
+- Do not strengthen what was said. "Mum would rather fly in the morning" is a soft preference about departure time. It is not a requirement that she cannot fly at night.
+- Do not harden a vague number. "Maybe $600-ish?" is not a confirmed maximum of 600. It is an approximate figure, so record an ambiguity rather than a HARD budget.
+- Do not turn a taste into a requirement. "I like vegetarian food" is a preference. It is not a dietary requirement unless the text says it is one.
+- Do not convert one person reporting another person into that person's own statement. If Lucas writes "Mum told me she might prefer Wednesday", that is Lucas reporting: at most LIKELY, and usually an ambiguity to put to Mum.
+- Never attach a span written by one person to a fact owned by a different person unless the span itself says so.
 
 PRIVACY
 Do not repeat medical detail beyond the assistance need it establishes. Do not speculate about anyone's health, age or ability.
 
 OUTPUT
-Return one JSON object with exactly these keys: travellers, constraints, relationships, assistanceNeeds, preferences, ambiguities, tripContext. Use an empty array where you found nothing; omit tripContext only if the discussion says nothing about where or when. Return JSON and nothing else.
+Return one JSON object with exactly these keys: travellers, constraints, relationships, assistanceNeeds, preferences, ambiguities, tripContext. Every entry carries "evidence" as an array of span ids. Use an empty array where you found nothing; omit tripContext only if the discussion says nothing about where or when. Return JSON and nothing else.
 
 SCHEMA
 ${SCHEMA_DESCRIPTION}`;
 
 /**
- * Wrap the discussion in a delimiter.
+ * Build the user message: the citable spans, then the discussion itself.
  *
- * The block markers matter less than the system prompt above, but they give the
- * model an unambiguous boundary for where the untrusted content starts and
- * stops. Any closing marker inside the text is neutralised so a pasted message
- * cannot end the block early and continue as if it were a new instruction.
+ * BOTH ARE SENT, deliberately. The spans are what the model may cite; the
+ * continuous text is what lets it read naturally, because a conversation chopped
+ * into a list reads like a list and costs accuracy on anything depending on
+ * flow. The spans are an addressable index, not a replacement for the
+ * conversation.
+ *
+ * The block markers matter less than the system prompt, but they give an
+ * unambiguous boundary for where untrusted content starts and stops. Any closing
+ * marker inside the text is neutralised so a pasted message cannot end the block
+ * early and continue as though it were a new instruction.
  */
-export function buildIntentUserMessage(discussion: string): string {
-  const neutralised = discussion.replace(/<\/?discussion>/gi, "[discussion]");
-  return `Extract the trip intent from the discussion below. Return JSON only.\n\n<discussion>\n${neutralised}\n</discussion>`;
+export function buildIntentUserMessage(spans: DiscussionSpans): string {
+  /**
+   * Both blocks are neutralised, not just the discussion.
+   *
+   * The spans block contains the same untrusted words, so neutralising only the
+   * discussion would leave the exact escape it was meant to close: a pasted
+   * "</spans>" would end the block early and everything after it would read as
+   * new instructions. Only what the MODEL sees is altered -- resolution reads
+   * the original characters from the span map, so evidence stays verbatim.
+   */
+  const neutralise = (text: string): string =>
+    text.replace(/<\/?discussion>/gi, "[discussion]").replace(/<\/?spans>/gi, "[spans]");
+
+  return [
+    "Extract the trip intent from the discussion below. Return JSON only.",
+    "",
+    'These are the spans you may cite in "evidence". Cite ids, never words.',
+    "",
+    "<spans>",
+    neutralise(renderSpansForPrompt(spans)),
+    "</spans>",
+    "",
+    "<discussion>",
+    neutralise(spans.discussion),
+    "</discussion>",
+  ].join("\n");
 }
 
 /**
@@ -219,17 +265,17 @@ export const INTENT_JSON_SCHEMA = {
         items: {
           type: "object",
           additionalProperties: false,
-          required: ["ref", "certainty", "source"],
+          required: ["ref", "certainty", "evidence"],
           properties: {
             ref: { type: "string" },
             displayName: { type: "string" },
             describedAs: { type: "string" },
             certainty: { type: "string", enum: ["EXPLICIT", "LIKELY", "AMBIGUOUS"] },
-            source: {
-              type: "object",
-              additionalProperties: false,
-              required: ["quote"],
-              properties: { quote: { type: "string" } },
+            evidence: {
+              type: "array",
+              minItems: 1,
+              maxItems: 4,
+              items: { type: "string" },
             },
           },
         },
@@ -239,17 +285,17 @@ export const INTENT_JSON_SCHEMA = {
         items: {
           type: "object",
           additionalProperties: false,
-          required: ["ownerRef", "value", "proposedStrength", "certainty", "source"],
+          required: ["ownerRef", "value", "proposedStrength", "certainty", "evidence"],
           properties: {
             ownerRef: { type: "string" },
             value: { type: "object" },
             proposedStrength: { type: "string", enum: ["HARD", "SOFT", "UNKNOWN"] },
             certainty: { type: "string", enum: ["EXPLICIT", "LIKELY", "AMBIGUOUS"] },
-            source: {
-              type: "object",
-              additionalProperties: false,
-              required: ["quote"],
-              properties: { quote: { type: "string" } },
+            evidence: {
+              type: "array",
+              minItems: 1,
+              maxItems: 4,
+              items: { type: "string" },
             },
           },
         },

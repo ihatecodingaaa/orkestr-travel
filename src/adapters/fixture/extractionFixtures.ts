@@ -56,43 +56,43 @@ const HERO_RESPONSE = JSON.stringify({
       ref: "P1",
       displayName: "Ama",
       certainty: "EXPLICIT",
-      source: { quote: "Right, Tokyo in late August then? I'm thinking five nights." },
+      evidence: ["M01.S01", "M01.S02"],
     },
     {
       ref: "P2",
       displayName: "Bo",
       certainty: "EXPLICIT",
-      source: { quote: "I'm in. I can only get leave from the 24th" },
+      evidence: ["M02.S01", "M02.S02"],
     },
     {
       ref: "P3",
       displayName: "Cai",
       certainty: "EXPLICIT",
-      source: { quote: "Works for me. I have to check a bag though" },
+      evidence: ["M03.S01", "M03.S02"],
     },
     {
       ref: "P4",
       displayName: "Nadia",
       certainty: "EXPLICIT",
-      source: { quote: "Same dates are fine." },
+      evidence: ["M05.S01"],
     },
     {
       ref: "P5",
       displayName: "Gita",
       certainty: "EXPLICIT",
-      source: { quote: "I need step-free access the whole way through" },
+      evidence: ["M06.S01"],
     },
     {
       ref: "P6",
       displayName: "Elias",
       certainty: "EXPLICIT",
-      source: { quote: "Yes, I'll be with Gita the whole way." },
+      evidence: ["M07.S01"],
     },
     {
       ref: "P7",
       displayName: "Ryan",
       certainty: "LIKELY",
-      source: { quote: "Ryan hasn't replied yet, he might still come." },
+      evidence: ["M09.S01"],
     },
   ],
   constraints: [
@@ -101,9 +101,7 @@ const HERO_RESPONSE = JSON.stringify({
       value: { kind: "BUDGET_MAX", amountMajor: 600, currency: "SGD" },
       proposedStrength: "HARD",
       certainty: "EXPLICIT",
-      source: {
-        quote: "My absolute ceiling is 600 SGD each for flights, I genuinely cannot go above that.",
-      },
+      evidence: ["M04.S01"],
     },
     {
       ownerRef: "P2",
@@ -115,30 +113,28 @@ const HERO_RESPONSE = JSON.stringify({
       // LIKELY, not EXPLICIT: the start is stated, the end is read from the
       // trip window rather than from anything Bo actually said.
       certainty: "LIKELY",
-      source: {
-        quote: "I can only get leave from the 24th, so anything before that is out for me.",
-      },
+      evidence: ["M02.S02"],
     },
     {
       ownerRef: "P2",
       value: { kind: "DEPART_NOT_BEFORE", minutesOfDay: 540 },
       proposedStrength: "SOFT",
       certainty: "EXPLICIT",
-      source: { quote: "Early mornings are rough for me, ideally nothing before 9." },
+      evidence: ["M11.S01"],
     },
     {
       ownerRef: "P3",
       value: { kind: "CHECKED_BAGS_REQUIRED", bagCount: 1 },
       proposedStrength: "HARD",
       certainty: "EXPLICIT",
-      source: { quote: "I have to check a bag though, I'm bringing camera gear." },
+      evidence: ["M03.S02"],
     },
     {
       ownerRef: "P3",
       value: { kind: "MAX_STOPS", maxStops: 1 },
       proposedStrength: "SOFT",
       certainty: "LIKELY",
-      source: { quote: "One stop is fine by me if it saves money." },
+      evidence: ["M08.S01"],
     },
     {
       ownerRef: "P4",
@@ -147,9 +143,7 @@ const HERO_RESPONSE = JSON.stringify({
       // but it is not settled, so it is SOFT and AMBIGUOUS and raises a question.
       proposedStrength: "SOFT",
       certainty: "AMBIGUOUS",
-      source: {
-        quote: "I'd rather not do a connection if we can help it, direct is better.",
-      },
+      evidence: ["M05.S02"],
     },
   ],
   relationships: [
@@ -158,7 +152,7 @@ const HERO_RESPONSE = JSON.stringify({
       fromRef: "P5",
       toRef: "P6",
       certainty: "EXPLICIT",
-      source: { quote: "I need step-free access the whole way through, and Elias travels with me." },
+      evidence: ["M06.S01"],
     },
   ],
   assistanceNeeds: [
@@ -166,7 +160,7 @@ const HERO_RESPONSE = JSON.stringify({
       ownerRef: "P5",
       need: "STEP_FREE_ACCESS",
       certainty: "EXPLICIT",
-      source: { quote: "I need step-free access the whole way through" },
+      evidence: ["M06.S01"],
     },
   ],
   preferences: [
@@ -174,7 +168,7 @@ const HERO_RESPONSE = JSON.stringify({
       ownerRef: "P4",
       label: "food markets",
       certainty: "EXPLICIT",
-      source: { quote: "Can we do the food markets? That's the bit I actually want." },
+      evidence: ["M10.S01", "M10.S02"],
     },
   ],
   ambiguities: [
@@ -183,14 +177,14 @@ const HERO_RESPONSE = JSON.stringify({
       aboutRef: "P4",
       whyItMatters:
         "As a requirement it removes every connecting flight from the search; as a preference it can be weighed against price.",
-      source: { quote: "direct is better" },
+      evidence: ["M05.S02"],
     },
     {
       question: "Is Ryan coming?",
       aboutRef: "P7",
       whyItMatters:
         "The number of travellers changes which flights can carry the group in one piece.",
-      source: { quote: "Ryan hasn't replied yet, he might still come." },
+      evidence: ["M09.S01"],
     },
   ],
   tripContext: {
@@ -199,7 +193,7 @@ const HERO_RESPONSE = JSON.stringify({
     latestDate: "2026-08-31",
     nights: 5,
     certainty: "LIKELY",
-    source: { quote: "Right, Tokyo in late August then? I'm thinking five nights." },
+    evidence: ["M01.S01", "M01.S02"],
   },
 });
 

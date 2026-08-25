@@ -1,4 +1,6 @@
 import { describe, it, expect } from "vitest";
+import { resolveEvidence, segmentDiscussion } from "@/core/intent/spans";
+import type { SourceSpan } from "@/domain/intent";
 import { validateIntentSemantics } from "@/core/intent/semantic";
 import { mapIntentToDomain, minorUnitScaleFor } from "@/core/intent/mapping";
 import { runExtractionPipeline } from "@/core/intent/pipeline";
@@ -16,21 +18,37 @@ const DISCUSSION = [
   "Gita: I need step-free access, and Elias travels with me.",
 ].join("\n");
 
+const SPANS = segmentDiscussion(DISCUSSION);
+
+/**
+ * Build a SourceSpan the way the product does: cite spans, let software slice
+ * the words out.
+ *
+ * Writing { quote: "..." } by hand here would reintroduce, in the test data,
+ * exactly what the architecture removed from the model -- a quotation nobody
+ * checked against the discussion.
+ */
+function ev(...ids: string[]): SourceSpan {
+  const resolved = resolveEvidence(ids, SPANS);
+  if (!resolved.ok) throw new Error(resolved.reason);
+  return { quote: resolved.quote, spanIds: resolved.spanIds };
+}
+
 function intent(overrides: Partial<ProposedTripIntent> = {}): ProposedTripIntent {
   return {
-    promptVersion: "orkestr-intent-v2",
+    promptVersion: "orkestr-intent-v3",
     travellers: [
       {
         ref: "P1",
         displayName: "Ama",
         certainty: "EXPLICIT",
-        source: { quote: "I cannot go above 450 SGD each." },
+        source: ev("M01.S01"),
       },
       {
         ref: "P2",
         displayName: "Bo",
         certainty: "EXPLICIT",
-        source: { quote: "I can only travel from the 24th." },
+        source: ev("M02.S01"),
       },
     ],
     constraints: [
@@ -39,7 +57,7 @@ function intent(overrides: Partial<ProposedTripIntent> = {}): ProposedTripIntent
         value: { kind: "BUDGET_MAX", amountMajor: 450, currency: "SGD" },
         proposedStrength: "HARD",
         certainty: "EXPLICIT",
-        source: { quote: "I cannot go above 450 SGD each." },
+        source: ev("M01.S01"),
       },
     ],
     relationships: [],
@@ -64,7 +82,7 @@ describe("semantic validation: the reading must be possible", () => {
             value: { kind: "MAX_STOPS", maxStops: 0 },
             proposedStrength: "SOFT",
             certainty: "EXPLICIT",
-            source: { quote: "I cannot go above 450 SGD each." },
+            source: ev("M01.S01"),
           },
         ],
       }),
@@ -115,8 +133,8 @@ describe("semantic validation: the reading must be possible", () => {
     const result = validateIntentSemantics(
       intent({
         travellers: [
-          { ref: "P1", certainty: "EXPLICIT", source: { quote: "I cannot go above 450 SGD each." } },
-          { ref: "P1", certainty: "EXPLICIT", source: { quote: "I can only travel from the 24th." } },
+          { ref: "P1", certainty: "EXPLICIT", source: ev("M01.S01") },
+          { ref: "P1", certainty: "EXPLICIT", source: ev("M02.S01") },
         ],
       }),
       DISCUSSION,
@@ -136,7 +154,7 @@ describe("semantic validation: the reading must be possible", () => {
             },
             proposedStrength: "HARD",
             certainty: "EXPLICIT",
-            source: { quote: "I can only travel from the 24th." },
+            source: ev("M02.S01"),
           },
         ],
       }),
@@ -155,7 +173,7 @@ describe("semantic validation: the reading must be possible", () => {
             fromRef: "P1",
             toRef: "P1",
             certainty: "EXPLICIT",
-            source: { quote: "I cannot go above 450 SGD each." },
+            source: ev("M01.S01"),
           },
         ],
       }),
@@ -172,7 +190,7 @@ describe("semantic validation: the reading must be possible", () => {
             ownerRef: "P1",
             need: "CUSTOM",
             certainty: "EXPLICIT",
-            source: { quote: "I cannot go above 450 SGD each." },
+            source: ev("M01.S01"),
           },
         ],
       }),
@@ -209,14 +227,14 @@ describe("safe mapping: the model proposes, it never confirms", () => {
             value: { kind: "BUDGET_MAX", amountMajor: 450, currency: "SGD" },
             proposedStrength: "HARD",
             certainty: "EXPLICIT",
-            source: { quote: "I cannot go above 450 SGD each." },
+            source: ev("M01.S01"),
           },
           {
             ownerRef: "P2",
             value: { kind: "DEPART_NOT_BEFORE", minutesOfDay: 540 },
             proposedStrength: "SOFT",
             certainty: "EXPLICIT",
-            source: { quote: "I can only travel from the 24th." },
+            source: ev("M02.S01"),
           },
         ],
       }),
@@ -234,7 +252,7 @@ describe("safe mapping: the model proposes, it never confirms", () => {
             value: { kind: "FREE_TEXT_REQUIREMENT", text: "would like a window seat" },
             proposedStrength: "SOFT",
             certainty: "LIKELY",
-            source: { quote: "I cannot go above 450 SGD each." },
+            source: ev("M01.S01"),
           },
         ],
       }),
@@ -290,7 +308,7 @@ describe("safe mapping: privacy and assistance", () => {
             ownerRef: "P1",
             need: "STEP_FREE_ACCESS",
             certainty: "EXPLICIT",
-            source: { quote: "I cannot go above 450 SGD each." },
+            source: ev("M01.S01"),
           },
         ],
       }),
@@ -329,7 +347,7 @@ describe("safe mapping: relationships and money", () => {
             fromRef: "P1",
             toRef: "P2",
             certainty: "EXPLICIT",
-            source: { quote: "I cannot go above 450 SGD each." },
+            source: ev("M01.S01"),
           },
         ],
       }),
@@ -349,7 +367,7 @@ describe("safe mapping: relationships and money", () => {
             fromRef: "P1",
             toRef: "P2",
             certainty: "LIKELY",
-            source: { quote: "I cannot go above 450 SGD each." },
+            source: ev("M01.S01"),
           },
         ],
       }),
@@ -380,7 +398,7 @@ describe("safe mapping: relationships and money", () => {
             value: { kind: "BUDGET_MAX", amountMajor: 12000, currency: "JPY" },
             proposedStrength: "HARD",
             certainty: "EXPLICIT",
-            source: { quote: "I cannot go above 450 SGD each." },
+            source: ev("M01.S01"),
           },
         ],
       }),
@@ -403,7 +421,7 @@ describe("the pipeline refuses to apply anything partially", () => {
       operation: "EXTRACT_INTENT" as const,
       providerName: "test",
       model: "test",
-      promptVersion: "orkestr-intent-v2" as const,
+      promptVersion: "orkestr-intent-v3" as const,
       durationMs: 5,
       startedAt: NOW,
     },
@@ -425,7 +443,7 @@ describe("the pipeline refuses to apply anything partially", () => {
   it("accepts JSON wrapped in a markdown fence, which is a formatting habit", () => {
     const body = JSON.stringify({
       travellers: [
-        { ref: "P1", certainty: "EXPLICIT", source: { quote: "I cannot go above 450 SGD each." } },
+        { ref: "P1", certainty: "EXPLICIT", evidence: ["M01.S01"] },
       ],
     });
     const result = runExtractionPipeline({
@@ -438,7 +456,7 @@ describe("the pipeline refuses to apply anything partially", () => {
   it("keeps nothing at all when one constraint of several is invalid", () => {
     const body = JSON.stringify({
       travellers: [
-        { ref: "P1", certainty: "EXPLICIT", source: { quote: "I cannot go above 450 SGD each." } },
+        { ref: "P1", certainty: "EXPLICIT", evidence: ["M01.S01"] },
       ],
       constraints: [
         {
@@ -446,14 +464,14 @@ describe("the pipeline refuses to apply anything partially", () => {
           value: { kind: "BUDGET_MAX", amountMajor: 450, currency: "SGD" },
           proposedStrength: "HARD",
           certainty: "EXPLICIT",
-          source: { quote: "I cannot go above 450 SGD each." },
+          evidence: ["M01.S01"],
         },
         {
           ownerRef: "P1",
           value: { kind: "BUDGET_MAX", amountMajor: 450, currency: "not a code" },
           proposedStrength: "HARD",
           certainty: "EXPLICIT",
-          source: { quote: "I cannot go above 450 SGD each." },
+          evidence: ["M01.S01"],
         },
       ],
     });
@@ -468,13 +486,13 @@ describe("the pipeline refuses to apply anything partially", () => {
       ...base,
       rawResponse: JSON.stringify({
         travellers: [
-          { ref: "P1", certainty: "EXPLICIT", source: { quote: "I cannot go above 450 SGD each." } },
+          { ref: "P1", certainty: "EXPLICIT", evidence: ["M01.S01"] },
         ],
         ambiguities: [
           {
             question: "Whose budget is that?",
             whyItMatters: "It changes which flights are affordable.",
-            source: { quote: "I cannot go above 450 SGD each." },
+            evidence: ["M01.S01"],
           },
         ],
       }),
@@ -499,14 +517,14 @@ describe("certainty travels with the constraint, not with its position", () => {
             value: { kind: "BUDGET_MAX", amountMajor: 450, currency: "SGD" },
             proposedStrength: "HARD",
             certainty: "EXPLICIT",
-            source: { quote: "I cannot go above 450 SGD each." },
+            source: ev("M01.S01"),
           },
           {
             ownerRef: "P2",
             value: { kind: "MAX_STOPS", maxStops: 0 },
             proposedStrength: "SOFT",
             certainty: "AMBIGUOUS",
-            source: { quote: "I can only travel from the 24th." },
+            source: ev("M02.S01"),
           },
         ],
         assistanceNeeds: [
@@ -514,7 +532,7 @@ describe("certainty travels with the constraint, not with its position", () => {
             ownerRef: "P1",
             need: "STEP_FREE_ACCESS",
             certainty: "LIKELY",
-            source: { quote: "I cannot go above 450 SGD each." },
+            source: ev("M01.S01"),
           },
         ],
       }),

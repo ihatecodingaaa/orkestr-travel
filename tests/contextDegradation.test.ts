@@ -1,8 +1,9 @@
 import { describe, it, expect } from "vitest";
 import { validateIntentSchema } from "@/core/intent/schema";
+import { segmentDiscussion } from "@/core/intent/spans";
 import { runExtractionPipeline } from "@/core/intent/pipeline";
 import { asIsoDateTime } from "@/domain/index";
-import { INTENT_SYSTEM_PROMPT } from "@/adapters/modelStudio/prompts/intentV2";
+import { INTENT_SYSTEM_PROMPT } from "@/adapters/modelStudio/prompts/intentV3";
 
 /**
  * The blast-radius correction, and the boundary it must not weaken.
@@ -28,6 +29,8 @@ const DISCUSSION = [
   "Dara: I can do about 600 for the flights, I think.",
 ].join("\n");
 
+const SPANS = segmentDiscussion(DISCUSSION);
+
 const base = {
   discussion: DISCUSSION,
   mapping: { now: NOW, idPrefix: "REQ-1", extractedBy: "test" },
@@ -46,25 +49,25 @@ const AMA = {
   ref: "P1",
   displayName: "Ama",
   certainty: "EXPLICIT",
-  source: { quote: "I cannot go above 450 SGD each." },
+  evidence: ["M01.S02"],
 };
 const BO = {
   ref: "P2",
   displayName: "Bo",
   certainty: "EXPLICIT",
-  source: { quote: "I can only travel from the 24th." },
+  evidence: ["M02.S01"],
 };
 const GITA = {
   ref: "P3",
   displayName: "Gita",
   certainty: "EXPLICIT",
-  source: { quote: "I need step-free access, and Elias travels with me." },
+  evidence: ["M03.S01"],
 };
 const ELIAS = {
   ref: "P4",
   displayName: "Elias",
   certainty: "LIKELY",
-  source: { quote: "Elias travels with me" },
+  evidence: ["M03.S01"],
 };
 
 const GOOD_BUDGET = {
@@ -72,7 +75,7 @@ const GOOD_BUDGET = {
   value: { kind: "BUDGET_MAX", amountMajor: 450, currency: "SGD" },
   proposedStrength: "HARD",
   certainty: "EXPLICIT",
-  source: { quote: "I cannot go above 450 SGD each." },
+  evidence: ["M01.S02"],
 };
 
 const MUST_TRAVEL_WITH = {
@@ -80,7 +83,7 @@ const MUST_TRAVEL_WITH = {
   fromRef: "P3",
   toRef: "P4",
   certainty: "EXPLICIT",
-  source: { quote: "I need step-free access, and Elias travels with me." },
+  evidence: ["M03.S01"],
 };
 
 function run(response: Record<string, unknown>) {
@@ -247,7 +250,7 @@ describe("C. the authority boundary is unchanged", () => {
           value: { kind: "AVAILABLE_DATES", ranges: [{ from: "four nights", to: "2026-08-30" }] },
           proposedStrength: "HARD",
           certainty: "EXPLICIT",
-          source: { quote: "I can only travel from the 24th." },
+          evidence: ["M02.S01"],
         },
       ],
     });
@@ -293,7 +296,7 @@ describe("I. authority escalation is still refused, including through context", 
           need: "STEP_FREE_ACCESS",
           certainty: "EXPLICIT",
           confirmation: "PROVIDER_CONFIRMED",
-          source: { quote: "I need step-free access" },
+          evidence: ["M03.S01"],
         },
       ],
     });
@@ -308,14 +311,14 @@ describe("D-F. money without a currency creates nothing", () => {
   it("D. rejects a budget with an empty currency rather than storing a hole", () => {
     // The exact shape the live model produced when told not to guess.
     const result = run({
-      travellers: [{ ...AMA, ref: "P1", displayName: "Dara", source: { quote: "I can do about 600 for the flights, I think." } }],
+      travellers: [{ ...AMA, ref: "P1", displayName: "Dara", evidence: ["M04.S01"] }],
       constraints: [
         {
           ownerRef: "P1",
           value: { kind: "BUDGET_MAX", amountMajor: 600, currency: "" },
           proposedStrength: "SOFT",
           certainty: "LIKELY",
-          source: { quote: "I can do about 600 for the flights, I think." },
+          evidence: ["M04.S01"],
         },
       ],
     });
@@ -331,7 +334,7 @@ describe("D-F. money without a currency creates nothing", () => {
           ref: "P1",
           displayName: "Dara",
           certainty: "EXPLICIT",
-          source: { quote: "I can do about 600 for the flights, I think." },
+          evidence: ["M04.S01"],
         },
       ],
       constraints: [],
@@ -340,7 +343,7 @@ describe("D-F. money without a currency creates nothing", () => {
           question: "Which currency is the 600 in?",
           aboutRef: "P1",
           whyItMatters: "A budget cannot be compared to a fare without a currency.",
-          source: { quote: "I can do about 600 for the flights, I think." },
+          evidence: ["M04.S01"],
         },
       ],
     });
@@ -371,7 +374,7 @@ describe("D-F. money without a currency creates nothing", () => {
           value: { kind: "BUDGET_MAX", amountMajor: 600 },
           proposedStrength: "SOFT",
           certainty: "LIKELY",
-          source: { quote: "I cannot go above 450 SGD each." },
+          evidence: ["M01.S02"],
         },
       ],
       tripContext: { destinationLabel: "Tokyo", originLabel: "Singapore" },
@@ -420,7 +423,7 @@ describe("G-H. durations never become calendar dates", () => {
         {
           question: "Is the trip four nights or six?",
           whyItMatters: "The duration changes which date pairs are searched.",
-          source: { quote: "Tokyo in August. I cannot go above 450 SGD each." },
+          evidence: ["M01.S01", "M01.S02"],
         },
       ],
     });
@@ -452,7 +455,7 @@ describe("the schema layer reports warnings alongside a valid intent", () => {
     const result = validateIntentSchema({
       travellers: [],
       tripContext: { certainty: "NOT_A_VALUE" },
-    });
+    }, SPANS);
     if (!result.ok) throw new Error("expected success");
     expect(result.warnings).toHaveLength(1);
     expect(result.warnings[0]?.path).toBe("tripContext.certainty");
@@ -462,15 +465,15 @@ describe("the schema layer reports warnings alongside a valid intent", () => {
     const result = validateIntentSchema({
       travellers: [],
       tripContext: { certainty: "NOT_A_VALUE" },
-    });
+    }, SPANS);
     if (!result.ok) throw new Error("expected success");
     // A shell with every field dropped is not context.
     expect(result.intent.tripContext).toBeUndefined();
   });
 
   it("stamps the prompt version we actually sent", () => {
-    const result = validateIntentSchema({ travellers: [] });
+    const result = validateIntentSchema({ travellers: [] }, SPANS);
     if (!result.ok) throw new Error("expected success");
-    expect(result.intent.promptVersion).toBe("orkestr-intent-v2");
+    expect(result.intent.promptVersion).toBe("orkestr-intent-v3");
   });
 });

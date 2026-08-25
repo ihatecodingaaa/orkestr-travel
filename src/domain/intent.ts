@@ -31,9 +31,15 @@ import type { ConstraintStrength } from "./constraint";
  * v2 corrected two semantic instructions after a live evaluation: never emit an
  * empty currency, and never put a duration or description in a calendar-date
  * field. Both changed what the model is asked to DO, not merely how it is
- * worded, so the version moved. See prompts/intentV2.ts.
+ * worded, so the version moved.
+ *
+ * v3 stopped asking for quotations altogether. The discussion is segmented into
+ * addressable spans and the model cites their ids; software resolves them back
+ * to the original characters. That is the largest change the contract has had,
+ * because it removes a field the model was reliably getting wrong rather than
+ * asking it more firmly to get it right. See prompts/intentV3.ts.
  */
-export type PromptVersion = "orkestr-intent-v1" | "orkestr-intent-v2";
+export type PromptVersion = "orkestr-intent-v1" | "orkestr-intent-v2" | "orkestr-intent-v3";
 
 /**
  * A temporary, within-response person reference such as "P1".
@@ -57,10 +63,27 @@ export type TempTravellerRef = string;
  */
 export type ExtractionCertainty = "EXPLICIT" | "LIKELY" | "AMBIGUOUS";
 
-/** The traveller's own words that produced a reading. */
+/**
+ * The traveller's own words that produced a reading.
+ *
+ * NOT WRITTEN BY THE MODEL. Since v3 the model cites span ids and software
+ * slices `quote` out of the supplied discussion, so this text is verbatim by
+ * construction rather than by inspection. The previous arrangement asked the
+ * model to copy the words, and a generator asked to transcribe will tidy
+ * punctuation, merge two sentences, or invent a plausible line -- which is
+ * exactly what it did, and what the validator then correctly refused.
+ */
 export interface SourceSpan {
-  /** Verbatim from the supplied text. Validation rejects anything not present. */
+  /** Verbatim from the supplied text, sliced by software. */
   readonly quote: string;
+  /**
+   * The spans this reading cited, in the order cited.
+   *
+   * Optional because fixtures and recorded results predate spans, and because a
+   * reading is still meaningful without provenance ids. When present, the first
+   * id is the span `quote` was taken from.
+   */
+  readonly spanIds?: readonly string[];
 }
 
 export interface ProposedTraveller {

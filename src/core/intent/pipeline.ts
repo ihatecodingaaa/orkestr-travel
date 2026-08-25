@@ -4,6 +4,7 @@ import type {
   ExtractionResult,
 } from "../../domain/extraction";
 import { validateIntentSchema } from "./schema";
+import { segmentDiscussion } from "./spans";
 import { validateIntentSemantics } from "./semantic";
 import { mapIntentToDomain } from "./mapping";
 import type { MappingOptions } from "./mapping";
@@ -12,11 +13,18 @@ import type { MappingOptions } from "./mapping";
  * The extraction pipeline.
  *
  *     raw response text
- *        -> JSON parse            MALFORMED_JSON
- *        -> schema validation     SCHEMA_INVALID / UNSAFE_OUTPUT
- *        -> semantic validation   SEMANTIC_VALIDATION_FAILED
+ *        -> JSON parse                  MALFORMED_JSON
+ *        -> schema validation           SCHEMA_INVALID / UNSAFE_OUTPUT
+ *           and evidence resolution     SCHEMA_INVALID
+ *        -> semantic validation         SEMANTIC_VALIDATION_FAILED
  *        -> safe mapping
- *        -> proposed state        SUCCESS
+ *        -> proposed state              SUCCESS
+ *
+ * Evidence resolution sits inside schema validation because a citation naming a
+ * span that does not exist is the same class of fault as a person reference
+ * that was never declared: the response is structurally pointing at nothing.
+ * Resolving it is also what PRODUCES the quotes, so by the time semantic
+ * validation runs, every quote is already a slice of the discussion.
  *
  * Each stage either passes its whole result to the next or fails outright. There
  * is deliberately no path that keeps the parts that validated: a response where
@@ -95,7 +103,18 @@ export function runExtractionPipeline(input: PipelineInput): ExtractionResult {
     );
   }
 
-  const schema = validateIntentSchema(parsed);
+  /**
+   * The same segmentation the prompt was built from.
+   *
+   * Derived rather than passed, because `segmentDiscussion` is deterministic:
+   * the builder and the parser both cut the same string and therefore agree on
+   * every id without a map having to travel with the request. If it were passed
+   * around instead, the two could drift and a correct citation would start
+   * failing for reasons nobody could see.
+   */
+  const spans = segmentDiscussion(input.discussion);
+
+  const schema = validateIntentSchema(parsed, spans);
   if (!schema.ok) return fail(schema.code, schema.problems, input.diagnostics);
 
   const semantics = validateIntentSemantics(schema.intent, input.discussion);

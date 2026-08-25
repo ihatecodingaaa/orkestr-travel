@@ -1,5 +1,17 @@
 import { describe, it, expect } from "vitest";
 import { validateIntentSchema } from "@/core/intent/schema";
+import { segmentDiscussion } from "@/core/intent/spans";
+
+/**
+ * A discussion whose spans the fixtures below cite.
+ *
+ * Evidence is now a reference, so a test response can only be valid against a
+ * discussion that actually contains the spans it names. That is the point of
+ * the change: there is no longer a way to write a passing fixture whose
+ * evidence came from nowhere.
+ */
+const TEST_DISCUSSION = ["Ama: Ama is coming. I cannot go above 450.", "Bo: I need to be back Sunday."].join("\n");
+const SPANS = segmentDiscussion(TEST_DISCUSSION);
 
 /**
  * Schema validation.
@@ -12,7 +24,7 @@ import { validateIntentSchema } from "@/core/intent/schema";
 function validResponse(): Record<string, unknown> {
   return {
     travellers: [
-      { ref: "P1", displayName: "Ama", certainty: "EXPLICIT", source: { quote: "Ama is coming" } },
+      { ref: "P1", displayName: "Ama", certainty: "EXPLICIT", evidence: ["M01.S01"] },
     ],
     constraints: [],
     relationships: [],
@@ -28,26 +40,26 @@ function budgetConstraint(overrides: Record<string, unknown> = {}): Record<strin
     value: { kind: "BUDGET_MAX", amountMajor: 450, currency: "SGD" },
     proposedStrength: "HARD",
     certainty: "EXPLICIT",
-    source: { quote: "I cannot go above 450" },
+    evidence: ["M01.S02"],
     ...overrides,
   };
 }
 
 describe("intent schema: the happy path", () => {
   it("accepts a well formed minimal response", () => {
-    const result = validateIntentSchema(validResponse());
+    const result = validateIntentSchema(validResponse(), SPANS);
     expect(result.ok).toBe(true);
   });
 
   it("always stamps the prompt version from our side, never from the response", () => {
     const response = { ...validResponse(), promptVersion: "attacker-supplied-v9" };
-    const result = validateIntentSchema(response);
+    const result = validateIntentSchema(response, SPANS);
     if (!result.ok) throw new Error("expected success");
-    expect(result.intent.promptVersion).toBe("orkestr-intent-v2");
+    expect(result.intent.promptVersion).toBe("orkestr-intent-v3");
   });
 
   it("treats missing optional arrays as empty rather than as a failure", () => {
-    const result = validateIntentSchema({ travellers: [] });
+    const result = validateIntentSchema({ travellers: [] }, SPANS);
     if (!result.ok) throw new Error("expected success");
     expect(result.intent.constraints).toEqual([]);
     expect(result.intent.ambiguities).toEqual([]);
@@ -66,7 +78,7 @@ describe("intent schema: the happy path", () => {
     ];
     for (const value of kinds) {
       const response = { ...validResponse(), constraints: [budgetConstraint({ value })] };
-      const result = validateIntentSchema(response);
+      const result = validateIntentSchema(response, SPANS);
       expect(result.ok, `${String(value["kind"])} was rejected`).toBe(true);
     }
   });
@@ -75,7 +87,7 @@ describe("intent schema: the happy path", () => {
 describe("intent schema: shape failures", () => {
   it("rejects a response that is not an object", () => {
     for (const value of ["a string", 42, null, [1, 2, 3], true]) {
-      const result = validateIntentSchema(value);
+      const result = validateIntentSchema(value, SPANS);
       expect(result.ok).toBe(false);
     }
   });
@@ -85,7 +97,7 @@ describe("intent schema: shape failures", () => {
       ...validResponse(),
       constraints: [budgetConstraint({ value: { kind: "SEAT_PREFERENCE", seat: "window" } })],
     };
-    const result = validateIntentSchema(response);
+    const result = validateIntentSchema(response, SPANS);
     if (result.ok) throw new Error("expected failure");
     expect(result.code).toBe("SCHEMA_INVALID");
     expect(result.problems.some((p) => p.path.endsWith("value.kind"))).toBe(true);
@@ -96,7 +108,7 @@ describe("intent schema: shape failures", () => {
       ...validResponse(),
       constraints: [budgetConstraint({ certainty: "VERY_SURE" })],
     };
-    const result = validateIntentSchema(response);
+    const result = validateIntentSchema(response, SPANS);
     if (result.ok) throw new Error("expected failure");
     expect(result.problems.some((p) => p.path.endsWith("certainty"))).toBe(true);
   });
@@ -109,11 +121,11 @@ describe("intent schema: shape failures", () => {
           ownerRef: "P1",
           need: "NEEDS_A_NAP",
           certainty: "EXPLICIT",
-          source: { quote: "tired" },
+          evidence: ["M01.S01"],
         },
       ],
     };
-    expect(validateIntentSchema(response).ok).toBe(false);
+    expect(validateIntentSchema(response, SPANS).ok).toBe(false);
   });
 
   it("rejects a strength that is not HARD, SOFT or UNKNOWN", () => {
@@ -121,21 +133,56 @@ describe("intent schema: shape failures", () => {
       ...validResponse(),
       constraints: [budgetConstraint({ proposedStrength: "VERY_HARD" })],
     };
-    expect(validateIntentSchema(response).ok).toBe(false);
+    expect(validateIntentSchema(response, SPANS).ok).toBe(false);
   });
 
   it("rejects a person reference that is not the temporary form", () => {
     for (const ref of ["T-001", "Ama", "P0", "PX", "1", ""]) {
       const response = { ...validResponse(), constraints: [budgetConstraint({ ownerRef: ref })] };
-      expect(validateIntentSchema(response).ok, `${ref} was accepted`).toBe(false);
+      expect(validateIntentSchema(response, SPANS).ok, `${ref} was accepted`).toBe(false);
     }
   });
 
-  it("rejects a constraint with no supporting quote", () => {
-    const response = { ...validResponse(), constraints: [budgetConstraint({ source: {} })] };
-    const result = validateIntentSchema(response);
+  it("rejects a constraint that cites no evidence at all", () => {
+    const response = { ...validResponse(), constraints: [budgetConstraint({ evidence: [] })] };
+    const result = validateIntentSchema(response, SPANS);
     if (result.ok) throw new Error("expected failure");
-    expect(result.problems.some((p) => p.path.endsWith("source.quote"))).toBe(true);
+    expect(result.problems.some((p) => p.path.endsWith("evidence"))).toBe(true);
+  });
+
+  it("rejects a constraint with no evidence key", () => {
+    const response = {
+      ...validResponse(),
+      constraints: [budgetConstraint({ evidence: undefined })],
+    };
+    expect(validateIntentSchema(response, SPANS).ok).toBe(false);
+  });
+
+  /**
+   * The heart of the change: a citation is checked against spans this software
+   * cut itself, so a plausible-looking id that was never issued is refused.
+   */
+  it("rejects an evidence id that was never in the supplied spans", () => {
+    const response = {
+      ...validResponse(),
+      constraints: [budgetConstraint({ evidence: ["M99.S99"] })],
+    };
+    const result = validateIntentSchema(response, SPANS);
+    if (result.ok) throw new Error("expected failure");
+    expect(result.problems.some((p) => /not one of the spans/i.test(p.detail))).toBe(true);
+  });
+
+  it("resolves a valid citation into the exact words of that span", () => {
+    const response = {
+      ...validResponse(),
+      constraints: [budgetConstraint({ evidence: ["M01.S02"] })],
+    };
+    const result = validateIntentSchema(response, SPANS);
+    if (!result.ok) throw new Error("expected success");
+    const quote = result.intent.constraints[0]?.source.quote ?? "";
+    expect(quote).toBe("I cannot go above 450.");
+    expect(TEST_DISCUSSION).toContain(quote);
+    expect(result.intent.constraints[0]?.source.spanIds).toEqual(["M01.S02"]);
   });
 });
 
@@ -147,7 +194,7 @@ describe("intent schema: money", () => {
         budgetConstraint({ value: { kind: "BUDGET_MAX", amountMajor: 449.99, currency: "SGD" } }),
       ],
     };
-    const result = validateIntentSchema(response);
+    const result = validateIntentSchema(response, SPANS);
     if (result.ok) throw new Error("expected failure");
     expect(result.problems.some((p) => p.path.endsWith("amountMajor"))).toBe(true);
   });
@@ -161,7 +208,7 @@ describe("intent schema: money", () => {
         }),
       ],
     };
-    expect(validateIntentSchema(response).ok).toBe(false);
+    expect(validateIntentSchema(response, SPANS).ok).toBe(false);
   });
 
   it("rejects a currency that is not a three-letter code", () => {
@@ -172,7 +219,7 @@ describe("intent schema: money", () => {
           budgetConstraint({ value: { kind: "BUDGET_MAX", amountMajor: 450, currency } }),
         ],
       };
-      expect(validateIntentSchema(response).ok, `${currency} was accepted`).toBe(false);
+      expect(validateIntentSchema(response, SPANS).ok, `${currency} was accepted`).toBe(false);
     }
   });
 
@@ -183,7 +230,7 @@ describe("intent schema: money", () => {
         budgetConstraint({ value: { kind: "BUDGET_MAX", amountMajor: -1, currency: "SGD" } }),
       ],
     };
-    expect(validateIntentSchema(response).ok).toBe(false);
+    expect(validateIntentSchema(response, SPANS).ok).toBe(false);
   });
 
   it("accepts a budget of exactly zero, which is a real statement", () => {
@@ -193,7 +240,7 @@ describe("intent schema: money", () => {
         budgetConstraint({ value: { kind: "BUDGET_MAX", amountMajor: 0, currency: "SGD" } }),
       ],
     };
-    expect(validateIntentSchema(response).ok).toBe(true);
+    expect(validateIntentSchema(response, SPANS).ok).toBe(true);
   });
 });
 
@@ -210,7 +257,7 @@ describe("intent schema: numeric boundaries", () => {
         ...validResponse(),
         constraints: [budgetConstraint({ value: { kind: "DEPART_NOT_BEFORE", minutesOfDay } })],
       };
-      expect(validateIntentSchema(response).ok, `${String(minutesOfDay)}`).toBe(expected);
+      expect(validateIntentSchema(response, SPANS).ok, `${String(minutesOfDay)}`).toBe(expected);
     }
   });
 
@@ -219,13 +266,13 @@ describe("intent schema: numeric boundaries", () => {
       ...validResponse(),
       constraints: [budgetConstraint({ value: { kind: "MAX_STOPS", maxStops: 0 } })],
     };
-    expect(validateIntentSchema(zero).ok).toBe(true);
+    expect(validateIntentSchema(zero, SPANS).ok).toBe(true);
 
     const negative = {
       ...validResponse(),
       constraints: [budgetConstraint({ value: { kind: "MAX_STOPS", maxStops: -1 } })],
     };
-    expect(validateIntentSchema(negative).ok).toBe(false);
+    expect(validateIntentSchema(negative, SPANS).ok).toBe(false);
   });
 
   it("rejects a date that is not a real calendar date", () => {
@@ -238,7 +285,7 @@ describe("intent schema: numeric boundaries", () => {
           }),
         ],
       };
-      expect(validateIntentSchema(response).ok, `${from} was accepted`).toBe(false);
+      expect(validateIntentSchema(response, SPANS).ok, `${from} was accepted`).toBe(false);
     }
   });
 
@@ -247,7 +294,7 @@ describe("intent schema: numeric boundaries", () => {
       ...validResponse(),
       constraints: [budgetConstraint({ value: { kind: "AVAILABLE_DATES", ranges: [] } })],
     };
-    expect(validateIntentSchema(response).ok).toBe(false);
+    expect(validateIntentSchema(response, SPANS).ok).toBe(false);
   });
 });
 
@@ -270,7 +317,7 @@ describe("intent schema: the model may not grant itself authority", () => {
       ...validResponse(),
       constraints: [budgetConstraint({ [field]: field === "confirmed" ? true : "anything" })],
     };
-    const result = validateIntentSchema(response);
+    const result = validateIntentSchema(response, SPANS);
     if (result.ok) throw new Error("expected failure");
     expect(result.code).toBe("UNSAFE_OUTPUT");
   });
@@ -282,11 +329,11 @@ describe("intent schema: the model may not grant itself authority", () => {
           ref: "P1",
           travellerId: "T-001",
           certainty: "EXPLICIT",
-          source: { quote: "Ama is coming" },
+          evidence: ["M01.S01"],
         },
       ],
     };
-    const result = validateIntentSchema(response);
+    const result = validateIntentSchema(response, SPANS);
     if (result.ok) throw new Error("expected failure");
     expect(result.code).toBe("UNSAFE_OUTPUT");
   });
@@ -297,7 +344,7 @@ describe("intent schema: the model may not grant itself authority", () => {
       ...validResponse(),
       constraints: [budgetConstraint({ confirmed: true, certainty: "NONSENSE" })],
     };
-    const result = validateIntentSchema(response);
+    const result = validateIntentSchema(response, SPANS);
     if (result.ok) throw new Error("expected failure");
     expect(result.code).toBe("UNSAFE_OUTPUT");
     expect(result.problems.length).toBeGreaterThan(1);
@@ -309,21 +356,43 @@ describe("intent schema: bounds", () => {
     const travellers = Array.from({ length: 60 }, (_, i) => ({
       ref: `P${String(i + 1)}`,
       certainty: "EXPLICIT",
-      source: { quote: "x" },
+      evidence: ["M01.S01"],
     }));
-    expect(validateIntentSchema({ travellers }).ok).toBe(false);
+    expect(validateIntentSchema({ travellers }, SPANS).ok).toBe(false);
   });
 
-  it("rejects a quote longer than any real message", () => {
+  it("rejects a citation of more spans than one reading may rest on", () => {
     const response = {
       ...validResponse(),
-      constraints: [budgetConstraint({ source: { quote: "x".repeat(500) } })],
+      constraints: [
+        budgetConstraint({ evidence: ["M01.S01", "M01.S02", "M02.S01", "M01.S01", "M01.S02"] }),
+      ],
     };
-    expect(validateIntentSchema(response).ok).toBe(false);
+    expect(validateIntentSchema(response, SPANS).ok).toBe(false);
+  });
+
+  it("rejects an evidence id that is not a string", () => {
+    const response = {
+      ...validResponse(),
+      constraints: [budgetConstraint({ evidence: [{ id: "M01.S01" }] })],
+    };
+    expect(validateIntentSchema(response, SPANS).ok).toBe(false);
+  });
+
+  /**
+   * There is no longer a field for model-authored evidence text, and a response
+   * that invents one is refused rather than quietly ignored.
+   */
+  it("rejects a response that tries to supply its own quote", () => {
+    const response = {
+      ...validResponse(),
+      constraints: [budgetConstraint({ source: { quote: "words nobody said" } })],
+    };
+    expect(validateIntentSchema(response, SPANS).ok).toBe(false);
   });
 
   it("rejects an array where an object was required", () => {
-    expect(validateIntentSchema({ travellers: "not an array" }).ok).toBe(false);
-    expect(validateIntentSchema({ ...validResponse(), constraints: {} }).ok).toBe(false);
+    expect(validateIntentSchema({ travellers: "not an array" }, SPANS).ok).toBe(false);
+    expect(validateIntentSchema({ ...validResponse(), constraints: {} }, SPANS).ok).toBe(false);
   });
 });

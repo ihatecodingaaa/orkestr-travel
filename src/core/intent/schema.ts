@@ -16,6 +16,8 @@ import type {
   ProposedTripIntent,
   SourceSpan,
 } from "../../domain/intent";
+import type { DiscussionSpans } from "./spans";
+import { MAX_EVIDENCE_SPANS, resolveEvidence } from "./spans";
 import type { ConstraintStrength } from "../../domain/constraint";
 import type { AssistanceNeedType } from "../../domain/assistance";
 import { isValidIsoDate } from "../time/civilDate";
@@ -91,6 +93,17 @@ const FORBIDDEN_AUTHORITY_FIELDS: readonly string[] = [
   "ownerTravellerId",
   "constraintId",
   "id",
+  /**
+   * Evidence text is authored by software, never by the model.
+   *
+   * Since v3 a reading cites span ids and the quote is sliced out of the
+   * discussion. A response supplying its own `source` or `quote` is claiming
+   * evidentiary authority it does not have, and it fails loudly rather than
+   * being ignored -- because "ignored" is how a prompt regression quietly
+   * reintroduces model-authored quotations without anything going red.
+   */
+  "source",
+  "quote",
 ];
 
 /** A temporary person reference: "P" followed by one or more digits. */
@@ -105,6 +118,8 @@ const LIMITS = {
   preferences: 60,
   ambiguities: 40,
   quoteLength: 400,
+  /** How many spans one reading may cite. Bounded so a citation cannot be an essay. */
+  evidenceIds: MAX_EVIDENCE_SPANS,
   textLength: 300,
   dateRanges: 12,
 } as const;
@@ -195,7 +210,7 @@ function rejectForbiddenFields(
     if (Object.prototype.hasOwnProperty.call(value, field)) {
       problems.addUnsafe(
         `${path}.${field}`,
-        `The response supplied "${field}". Confirmation, origin and identity are decided by Orkestr, never by a model.`,
+        `The response supplied "${field}". Confirmation, origin, identity and evidence text are decided by Orkestr, never by a model.`,
       );
     }
   }
@@ -289,16 +304,50 @@ function readArray(
   return value;
 }
 
-function readSource(value: unknown, path: string, problems: Problems): SourceSpan | undefined {
-  if (!isRecord(value)) {
-    problems.add(path, "Expected a source object carrying the quote it came from.");
+/**
+ * Read a citation and resolve it to the words it points at.
+ *
+ * THE MODEL NO LONGER SUPPLIES EVIDENCE TEXT. It supplies span ids, and this
+ * turns them back into the original characters by slicing the discussion. A
+ * fabricated quotation is therefore not something to detect -- there is no
+ * field to put one in.
+ *
+ * An unresolvable id is SCHEMA_INVALID rather than a new failure code: the
+ * response is structurally referring to something that does not exist, which is
+ * the same class of fault as naming a person reference that was never declared.
+ * The detail says exactly which id, so it stays diagnosable without adding a
+ * code that every screen would then have to learn.
+ *
+ * DROPPING THE EVIDENCE IS NOT AN OPTION. A citation that cannot be resolved
+ * fails the reading it belongs to, because quietly discarding it would convert
+ * a fabricated source into an unsupported claim that still got through.
+ */
+function readEvidence(
+  value: unknown,
+  path: string,
+  problems: Problems,
+  spans: DiscussionSpans,
+): SourceSpan | undefined {
+  const raw = readArray(value, path, problems, LIMITS.evidenceIds);
+  if (raw === undefined) return undefined;
+  if (raw.length === 0) {
+    problems.add(path, "Cites no evidence; every reading must point at a supplied span.");
     return undefined;
   }
-  const quote = readString(value["quote"], `${path}.quote`, problems, {
-    max: LIMITS.quoteLength,
-    required: true,
-  });
-  return quote === undefined ? undefined : { quote };
+  const ids: string[] = [];
+  for (const entry of raw) {
+    if (typeof entry !== "string") {
+      problems.add(path, "An evidence id was not a string.");
+      return undefined;
+    }
+    ids.push(entry);
+  }
+  const resolved = resolveEvidence(ids, spans);
+  if (!resolved.ok) {
+    problems.add(path, resolved.reason);
+    return undefined;
+  }
+  return { quote: resolved.quote, spanIds: resolved.spanIds };
 }
 
 function readRef(value: unknown, path: string, problems: Problems): string | undefined {
@@ -437,6 +486,7 @@ function readConstraintValue(
 function readTravellers(
   raw: unknown,
   problems: Problems,
+  spans: DiscussionSpans,
 ): readonly ProposedTraveller[] {
   const entries = readArray(raw, "travellers", problems, LIMITS.travellers);
   const out: ProposedTraveller[] = [];
@@ -449,7 +499,7 @@ function readTravellers(
     rejectForbiddenFields(entry, path, problems);
     const ref = readRef(entry["ref"], `${path}.ref`, problems);
     const certainty = readCertainty(entry["certainty"], `${path}.certainty`, problems);
-    const source = readSource(entry["source"], `${path}.source`, problems);
+    const source = readEvidence(entry["evidence"], `${path}.evidence`, problems, spans);
     const displayName = readString(entry["displayName"], `${path}.displayName`, problems, {
       max: 80,
       required: false,
@@ -470,7 +520,11 @@ function readTravellers(
   return out;
 }
 
-function readConstraints(raw: unknown, problems: Problems): readonly ProposedConstraint[] {
+function readConstraints(
+  raw: unknown,
+  problems: Problems,
+  spans: DiscussionSpans,
+): readonly ProposedConstraint[] {
   const entries = readArray(raw, "constraints", problems, LIMITS.constraints);
   const out: ProposedConstraint[] = [];
   entries.forEach((entry, index) => {
@@ -489,7 +543,7 @@ function readConstraints(raw: unknown, problems: Problems): readonly ProposedCon
       STRENGTHS,
     );
     const certainty = readCertainty(entry["certainty"], `${path}.certainty`, problems);
-    const source = readSource(entry["source"], `${path}.source`, problems);
+    const source = readEvidence(entry["evidence"], `${path}.evidence`, problems, spans);
     if (
       ownerRef === undefined ||
       value === undefined ||
@@ -504,7 +558,11 @@ function readConstraints(raw: unknown, problems: Problems): readonly ProposedCon
   return out;
 }
 
-function readRelationships(raw: unknown, problems: Problems): readonly ProposedRelationship[] {
+function readRelationships(
+  raw: unknown,
+  problems: Problems,
+  spans: DiscussionSpans,
+): readonly ProposedRelationship[] {
   const entries = readArray(raw, "relationships", problems, LIMITS.relationships);
   const out: ProposedRelationship[] = [];
   entries.forEach((entry, index) => {
@@ -523,7 +581,7 @@ function readRelationships(raw: unknown, problems: Problems): readonly ProposedR
     const fromRef = readRef(entry["fromRef"], `${path}.fromRef`, problems);
     const toRef = readRef(entry["toRef"], `${path}.toRef`, problems);
     const certainty = readCertainty(entry["certainty"], `${path}.certainty`, problems);
-    const source = readSource(entry["source"], `${path}.source`, problems);
+    const source = readEvidence(entry["evidence"], `${path}.evidence`, problems, spans);
     if (
       kind === undefined ||
       fromRef === undefined ||
@@ -541,6 +599,7 @@ function readRelationships(raw: unknown, problems: Problems): readonly ProposedR
 function readAssistanceNeeds(
   raw: unknown,
   problems: Problems,
+  spans: DiscussionSpans,
 ): readonly ProposedAssistanceNeed[] {
   const entries = readArray(raw, "assistanceNeeds", problems, LIMITS.assistanceNeeds);
   const out: ProposedAssistanceNeed[] = [];
@@ -559,7 +618,7 @@ function readAssistanceNeeds(
       ASSISTANCE_NEEDS,
     );
     const certainty = readCertainty(entry["certainty"], `${path}.certainty`, problems);
-    const source = readSource(entry["source"], `${path}.source`, problems);
+    const source = readEvidence(entry["evidence"], `${path}.evidence`, problems, spans);
     const description = readString(entry["description"], `${path}.description`, problems, {
       max: LIMITS.textLength,
       required: false,
@@ -583,7 +642,11 @@ function readAssistanceNeeds(
   return out;
 }
 
-function readPreferences(raw: unknown, problems: Problems): readonly ProposedPreference[] {
+function readPreferences(
+  raw: unknown,
+  problems: Problems,
+  spans: DiscussionSpans,
+): readonly ProposedPreference[] {
   const entries = readArray(raw, "preferences", problems, LIMITS.preferences);
   const out: ProposedPreference[] = [];
   entries.forEach((entry, index) => {
@@ -598,7 +661,7 @@ function readPreferences(raw: unknown, problems: Problems): readonly ProposedPre
       required: true,
     });
     const certainty = readCertainty(entry["certainty"], `${path}.certainty`, problems);
-    const source = readSource(entry["source"], `${path}.source`, problems);
+    const source = readEvidence(entry["evidence"], `${path}.evidence`, problems, spans);
     const ownerRef =
       entry["ownerRef"] === undefined || entry["ownerRef"] === null
         ? undefined
@@ -609,7 +672,11 @@ function readPreferences(raw: unknown, problems: Problems): readonly ProposedPre
   return out;
 }
 
-function readAmbiguities(raw: unknown, problems: Problems): readonly ProposedAmbiguity[] {
+function readAmbiguities(
+  raw: unknown,
+  problems: Problems,
+  spans: DiscussionSpans,
+): readonly ProposedAmbiguity[] {
   const entries = readArray(raw, "ambiguities", problems, LIMITS.ambiguities);
   const out: ProposedAmbiguity[] = [];
   entries.forEach((entry, index) => {
@@ -627,7 +694,7 @@ function readAmbiguities(raw: unknown, problems: Problems): readonly ProposedAmb
       max: 240,
       required: true,
     });
-    const source = readSource(entry["source"], `${path}.source`, problems);
+    const source = readEvidence(entry["evidence"], `${path}.evidence`, problems, spans);
     const aboutRef =
       entry["aboutRef"] === undefined || entry["aboutRef"] === null
         ? undefined
@@ -680,6 +747,7 @@ function readTripContext(
   raw: unknown,
   problems: Problems,
   warnings: Warnings,
+  spans: DiscussionSpans,
 ): ProposedTripContext | undefined {
   if (raw === undefined || raw === null) return undefined;
   if (!isRecord(raw)) {
@@ -745,12 +813,12 @@ function readTripContext(
         );
 
   const source =
-    raw["source"] === undefined || raw["source"] === null
+    raw["evidence"] === undefined || raw["evidence"] === null
       ? undefined
       : attempt<SourceSpan>(
-          "tripContext.source",
-          "The supporting quote could not be read.",
-          (probe) => readSource(raw["source"], "tripContext.source", probe),
+          "tripContext.evidence",
+          "The supporting evidence could not be read.",
+          (probe) => readEvidence(raw["evidence"], "tripContext.evidence", probe, spans),
         );
 
   /**
@@ -797,8 +865,14 @@ function readTripContext(
  * Returns EVERY problem found rather than the first, because a person debugging
  * a prompt needs the whole list. It still fails the extraction outright: a list
  * of problems is a diagnostic, not a licence to keep the valid half.
+ *
+ * `spans` is the segmentation of the discussion this response was produced
+ * from. Evidence is resolved against it here rather than trusted from the
+ * response, so validation and rehydration are the same pass: a citation either
+ * names a span that exists, in which case its words are sliced out of the
+ * original text, or the reading that carried it fails.
  */
-export function validateIntentSchema(parsed: unknown): SchemaResult {
+export function validateIntentSchema(parsed: unknown, spans: DiscussionSpans): SchemaResult {
   const problems = new Problems();
 
   if (!isRecord(parsed)) {
@@ -817,14 +891,14 @@ export function validateIntentSchema(parsed: unknown): SchemaResult {
 
   rejectForbiddenFields(parsed, "$", problems);
 
-  const travellers = readTravellers(parsed["travellers"], problems);
-  const constraints = readConstraints(parsed["constraints"], problems);
-  const relationships = readRelationships(parsed["relationships"], problems);
-  const assistanceNeeds = readAssistanceNeeds(parsed["assistanceNeeds"], problems);
-  const preferences = readPreferences(parsed["preferences"], problems);
-  const ambiguities = readAmbiguities(parsed["ambiguities"], problems);
+  const travellers = readTravellers(parsed["travellers"], problems, spans);
+  const constraints = readConstraints(parsed["constraints"], problems, spans);
+  const relationships = readRelationships(parsed["relationships"], problems, spans);
+  const assistanceNeeds = readAssistanceNeeds(parsed["assistanceNeeds"], problems, spans);
+  const preferences = readPreferences(parsed["preferences"], problems, spans);
+  const ambiguities = readAmbiguities(parsed["ambiguities"], problems, spans);
   const warnings = new Warnings();
-  const tripContext = readTripContext(parsed["tripContext"], problems, warnings);
+  const tripContext = readTripContext(parsed["tripContext"], problems, warnings, spans);
 
   if (problems.any) {
     return { ok: false, code: problems.code, problems: problems.all };
@@ -837,7 +911,7 @@ export function validateIntentSchema(parsed: unknown): SchemaResult {
       // Set by Orkestr, never read from the response. The prompt version records
       // which prompt WE sent; a model claiming a different one would be
       // describing a request that did not happen.
-      promptVersion: "orkestr-intent-v2",
+      promptVersion: "orkestr-intent-v3",
       travellers,
       constraints,
       relationships,

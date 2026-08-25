@@ -13,7 +13,8 @@ import {
   INTENT_PROMPT_VERSION,
   INTENT_SYSTEM_PROMPT,
   buildIntentUserMessage,
-} from "./prompts/intentV2";
+} from "./prompts/intentV3";
+import { segmentDiscussion } from "../../core/intent/spans";
 
 /**
  * Structured extraction through Alibaba Cloud Model Studio.
@@ -79,7 +80,7 @@ export class QwenLanguageUnderstandingProvider implements LanguageUnderstandingP
         model: this.config.extractionModel,
         messages: [
           { role: "system", content: INTENT_SYSTEM_PROMPT },
-          { role: "user", content: buildIntentUserMessage(request.discussion) },
+          { role: "user", content: buildIntentUserMessage(segmentDiscussion(request.discussion)) },
         ],
         // Structured output. The word JSON appears in the system prompt, which
         // json_object mode requires.

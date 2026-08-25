@@ -93,7 +93,7 @@ describe("the scorer accepts a correct reading", () => {
           ref: "P1",
           displayName: "Ama",
           certainty: "EXPLICIT",
-          source: { quote: "my absolute limit is 450 SGD each for the flights" },
+          evidence: ["M01.S01"],
         },
       ],
       constraints: [
@@ -102,7 +102,7 @@ describe("the scorer accepts a correct reading", () => {
           value: { kind: "BUDGET_MAX", amountMajor: 450, currency: "SGD" },
           proposedStrength: "HARD",
           certainty: "EXPLICIT",
-          source: { quote: "my absolute limit is 450 SGD each for the flights" },
+          evidence: ["M01.S01"],
         },
       ],
     });
@@ -120,7 +120,7 @@ describe("the scorer catches what matters", () => {
           ref: "P1",
           displayName: "Ama",
           certainty: "EXPLICIT",
-          source: { quote: "my absolute limit is 450 SGD each for the flights" },
+          evidence: ["M01.S01"],
         },
       ],
       constraints: [],
@@ -137,7 +137,7 @@ describe("the scorer catches what matters", () => {
           ref: "P1",
           displayName: "Bo",
           certainty: "EXPLICIT",
-          source: { quote: "my absolute limit is 450 SGD each for the flights" },
+          evidence: ["M01.S01"],
         },
       ],
       constraints: [
@@ -146,7 +146,7 @@ describe("the scorer catches what matters", () => {
           value: { kind: "BUDGET_MAX", amountMajor: 450, currency: "SGD" },
           proposedStrength: "HARD",
           certainty: "EXPLICIT",
-          source: { quote: "my absolute limit is 450 SGD each for the flights" },
+          evidence: ["M01.S01"],
         },
       ],
     });
@@ -163,7 +163,7 @@ describe("the scorer catches what matters", () => {
           ref: "P1",
           displayName: "Ama",
           certainty: "EXPLICIT",
-          source: { quote: "my mother who is 78" },
+          evidence: ["M01.S01"],
         },
       ],
       constraints: [],
@@ -172,7 +172,7 @@ describe("the scorer catches what matters", () => {
           ownerRef: "P1",
           need: "REDUCED_WALKING",
           certainty: "LIKELY",
-          source: { quote: "my mother who is 78" },
+          evidence: ["M01.S01"],
         },
       ],
     });
@@ -188,7 +188,7 @@ describe("the scorer catches what matters", () => {
           ref: "P1",
           displayName: "Ama",
           certainty: "EXPLICIT",
-          source: { quote: "Did anyone watch the match last night?" },
+          evidence: ["M01.S01"],
         },
       ],
       constraints: [
@@ -197,7 +197,7 @@ describe("the scorer catches what matters", () => {
           value: { kind: "BUDGET_MAX", amountMajor: 500, currency: "SGD" },
           proposedStrength: "SOFT",
           certainty: "LIKELY",
-          source: { quote: "Did anyone watch the match last night?" },
+          evidence: ["M01.S01"],
         },
       ],
     });
@@ -221,7 +221,7 @@ describe("the scorer catches what matters", () => {
           ref: "P1",
           displayName: "Ama",
           certainty: "EXPLICIT",
-          source: { quote: "my absolute limit is 450 SGD each for the flights" },
+          evidence: ["M01.S01"],
         },
       ],
       constraints: [
@@ -230,7 +230,7 @@ describe("the scorer catches what matters", () => {
           value: { kind: "BUDGET_MAX", amountMajor: 450, currency: "SGD" },
           proposedStrength: "HARD",
           certainty: "EXPLICIT",
-          source: { quote: "my absolute limit is 450 SGD each for the flights" },
+          evidence: ["M01.S01"],
         },
       ],
     });

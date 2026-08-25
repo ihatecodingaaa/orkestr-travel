@@ -285,7 +285,7 @@ describe("the live extraction adapter", () => {
     const discussion = "Ama: I cannot spend more than 400 SGD.";
     const body = JSON.stringify({
       travellers: [
-        { ref: "P1", displayName: "Ama", certainty: "EXPLICIT", source: { quote: "I cannot spend more than 400 SGD." } },
+        { ref: "P1", displayName: "Ama", certainty: "EXPLICIT", evidence: ["M01.S01"] },
       ],
       constraints: [],
     });
