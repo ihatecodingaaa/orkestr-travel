@@ -775,3 +775,63 @@
 .worked-out-body {
   margin-top: 0.85rem;
 }
+
+/* -------------------------------------------------------------------------- */
+/*  A pasted link, and what it turned out to be                               */
+/* -------------------------------------------------------------------------- */
+
+.source-card {
+  border-left: 3px solid var(--accent);
+}
+.source-head {
+  display: flex;
+  gap: 0.9rem;
+  align-items: flex-start;
+}
+/*
+  A thumbnail from an arbitrary public host. Bounded so a very tall or very wide
+  image cannot rearrange the card, and never allowed to grow past its column.
+*/
+.source-thumb {
+  width: 5.5rem;
+  height: 5.5rem;
+  flex: none;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+  background: var(--paper-sunken);
+  max-width: 100%;
+}
+.source-evidence {
+  border-top: 1px dashed var(--line);
+  padding-top: 0.6rem;
+  margin: 0;
+}
+.candidate-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.75rem;
+}
+.candidate {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem 1rem;
+  align-items: flex-start;
+  justify-content: space-between;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--paper-raised);
+  padding: 0.8rem 0.9rem;
+}
+.candidate > .stack {
+  flex: 1 1 12rem;
+  min-width: 0;
+}
+/* The words the reading came from, so "why this" is answerable in place. */
+.candidate-why {
+  color: var(--ink-faint);
+  font-size: 0.88rem;
+  font-style: italic;
+  overflow-wrap: anywhere;
+}

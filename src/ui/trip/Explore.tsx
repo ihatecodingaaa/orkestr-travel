@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { PasteLink } from "@/ui/trip/PasteLink";
 import type { ConsumerTrip } from "@/domain/consumerTrip";
 import type { IdeaCategory, TripIdea } from "@/domain/livingTrip";
 import { IDEA_CATEGORIES, categoryLabel } from "@/domain/livingTrip";
@@ -44,6 +45,7 @@ export function Explore({
 }) {
   const [filter, setFilter] = useState<IdeaCategory | "ALL">("ALL");
   const [showAdd, setShowAdd] = useState(false);
+  const [showPaste, setShowPaste] = useState(false);
 
   const ranked = byPopularity(trip.ideas);
   const visible =
@@ -72,16 +74,44 @@ export function Explore({
               : `${String(trip.ideas.length)} places · ${String(saved.length)} saved by you`}
           </p>
         </div>
-        <button
-          className="btn btn-secondary"
-          onClick={() => {
-            setShowAdd(!showAdd);
-          }}
-          type="button"
-        >
-          {showAdd ? "Close" : "+ Add your own"}
-        </button>
+        <div className="choice-row">
+          {/*
+            PASTING A LINK IS THE PRIMARY ACTION NOW, because it is what people
+            actually have: somebody sent them a TikTok. Typing a place in by hand
+            is still here, because sometimes you just know where you want to go.
+          */}
+          <button
+            className="btn btn-primary"
+            onClick={() => {
+              setShowPaste(!showPaste);
+              setShowAdd(false);
+            }}
+            type="button"
+          >
+            {showPaste ? "Close" : "Paste a link"}
+          </button>
+          <button
+            className="btn btn-secondary"
+            onClick={() => {
+              setShowAdd(!showAdd);
+              setShowPaste(false);
+            }}
+            type="button"
+          >
+            {showAdd ? "Close" : "Add your own"}
+          </button>
+        </div>
       </div>
+
+      {showPaste && (
+        <PasteLink
+          destination={trip.destination}
+          actions={actions}
+          onSaved={() => {
+            setShowPaste(false);
+          }}
+        />
+      )}
 
       {showAdd && (
         <AddIdea
@@ -92,9 +122,9 @@ export function Explore({
         />
       )}
 
-      {trip.ideas.length === 0 && !showAdd ? (
+      {trip.ideas.length === 0 && !showAdd && !showPaste ? (
         <div className="empty-panel">
-          <h3>Found something on TikTok or Maps?</h3>
+          <h3>Found something on TikTok?</h3>
           <p className="faint">
             Save it here. Orkestr uses what your group saves to suggest days — it never invents
             places nobody asked for.
