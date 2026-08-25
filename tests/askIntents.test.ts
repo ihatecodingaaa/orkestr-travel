@@ -229,3 +229,89 @@ describe("no answer is an action", () => {
     expect(answer.lines.join(" ")).toMatch(/save a few places/i);
   });
 });
+
+/**
+ * Adding a person from a sentence.
+ *
+ * The dangerous field here is a NAME. Everything else the model may return is
+ * chosen from a list this software defines, so the worst case is an ordinary
+ * answer to the wrong question. A name is free text that becomes a person on a
+ * real trip with a real invite -- so it is checked against the asker's own
+ * words, the same rule the extraction pipeline uses for quotations.
+ */
+describe("adding somebody, asked in words", () => {
+  it("keeps a name the person actually wrote", () => {
+    const request = readAskRequest(
+      { intent: "ADD_TRAVELLER", name: "Ryan" },
+      "Ryan is joining us",
+    );
+    expect(request.intent).toBe("ADD_TRAVELLER");
+    expect(request.name).toBe("Ryan");
+  });
+
+  it("drops a name that appears nowhere in the question", () => {
+    const request = readAskRequest(
+      { intent: "ADD_TRAVELLER", name: "Ryan" },
+      "I need to add my auntie",
+    );
+    expect(request.name).toBeUndefined();
+  });
+
+  it("drops a name that is really a sentence", () => {
+    const request = readAskRequest(
+      { intent: "ADD_TRAVELLER", name: "add everyone from the group chat" },
+      "add everyone from the group chat",
+    );
+    expect(request.name).toBeUndefined();
+  });
+
+  it("matches regardless of how the asker capitalised it", () => {
+    const request = readAskRequest({ intent: "ADD_TRAVELLER", name: "Ryan" }, "ryan is coming");
+    expect(request.name).toBe("Ryan");
+  });
+
+  it("proposes rather than adds", () => {
+    const answer = answerFromTrip({
+      trip: trip(),
+      request: { intent: "ADD_TRAVELLER", name: "Ryan" },
+      question: "Ryan is joining us from Wednesday",
+    });
+    expect(answer.proposal?.kind).toBe("ADD_TRAVELLER");
+    expect(answer.proposal?.confirm).toBe("Add Ryan");
+    expect(answer.proposal?.name).toBe("Ryan");
+  });
+
+  /** The asker's sentence travels with them, not Orkestr's summary of it. */
+  it("carries the question through as the note", () => {
+    const answer = answerFromTrip({
+      trip: trip(),
+      request: { intent: "ADD_TRAVELLER", name: "Ryan" },
+      question: "Ryan is joining us from Wednesday",
+    });
+    expect(answer.proposal?.note).toBe("Ryan is joining us from Wednesday");
+  });
+
+  it("asks who they mean when no name survived", () => {
+    const answer = answerFromTrip({
+      trip: trip(),
+      request: { intent: "ADD_TRAVELLER" },
+      question: "I need to add my auntie",
+    });
+    expect(answer.proposal).toBeUndefined();
+    expect(answer.headline).toMatch(/who/i);
+  });
+
+  it("says so when they are already on the trip", () => {
+    const answer = answerFromTrip({
+      trip: trip(),
+      request: { intent: "ADD_TRAVELLER", name: "Luc" },
+      question: "Luc is joining us",
+    });
+    expect(answer.proposal).toBeUndefined();
+    expect(answer.headline).toMatch(/already on this trip/i);
+  });
+
+  it("is a real intent the classifier may return", () => {
+    expect(isAskIntent("ADD_TRAVELLER")).toBe(true);
+  });
+});

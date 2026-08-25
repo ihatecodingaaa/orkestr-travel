@@ -58,8 +58,15 @@ export interface AskRequest {
   readonly name?: string;
 }
 
-/** A plausible personal name, and nothing that could be a sentence. */
-const NAME_SHAPE = /^[\p{L}][\p{L}'’\- ]{0,39}$/u;
+/**
+ * A plausible personal name, and nothing that could be a sentence.
+ *
+ * At most three words, which is the same bound the deterministic `add <name>`
+ * command already uses -- so the two ways of adding somebody agree on what a
+ * name is. Without the word limit "add everyone from the group chat" is letters
+ * and spaces inside forty characters, and would become a traveller.
+ */
+const NAME_SHAPE = /^[\p{L}][\p{L}'’-]{0,19}(?: [\p{L}][\p{L}'’-]{0,19}){0,2}$/u;
 
 /**
  * Read model output into a request, or refuse it.
