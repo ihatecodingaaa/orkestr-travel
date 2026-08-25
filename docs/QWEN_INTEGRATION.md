@@ -287,15 +287,36 @@ model put on it.
   still one thing. Strength is part of the key, because the same value proposed
   once as firm and once as flexible is a disagreement rather than a repetition.
 
-**THE INVARIANT IS THAT IT ONLY EVER WEAKENS.** No path turns SOFT into HARD,
-widens a range, adds a field or raises a certainty. A false positive costs a
-requirement being treated as a preference, which a person can correct. The
-opposite error invents a requirement nobody stated, which they may never notice.
+**THE SEMANTIC POLICY NEVER STRENGTHENS A CLAIM.** Within
+`semanticPolicy.ts` there is no path that turns SOFT into HARD, widens a range,
+adds a field or raises a certainty. A proposal that arrives SOFT or UNKNOWN is
+returned unchanged whatever its wording, including for access needs. A false
+positive costs a requirement being treated as a preference, which a person can
+correct; the opposite error invents a requirement nobody stated, which they may
+never notice.
 
-**Accessibility is exempt, deliberately.** Reading "I'd prefer step-free access"
-as a preference can cost somebody the journey; reading a preference as a
-requirement costs a narrower search. The asymmetry is real, so the rule is
-asymmetric.
+**Access needs are exempt from SOFTENING, which is not the same as being
+strengthened.** When a model proposes an access requirement as HARD, the policy
+declines to weaken it rather than reading the wording. The outcome of that branch
+is *unchanged*, never *raised*.
+
+**There is, separately, one conservative path that does assert strength**, and it
+is named here rather than tucked inside the sentence above. When the model
+declares an access need in `assistanceNeeds`, `mapping.ts` materialises it as a
+HARD `ASSISTANCE_REQUIRED` constraint without consulting the wording at all. That
+is a deliberate safety rule, and it predates this policy layer.
+
+Both exist for the same reason and it is worth stating plainly: reading "I'd
+prefer step-free access" as a preference can exclude a traveller from the
+journey, while reading a preference as a requirement costs a narrower search. The
+asymmetry is real, so the rule is asymmetric — and it is documented as an
+exception rather than hidden behind a claim that no strengthening path exists.
+
+**NEITHER MAKES ANYTHING OWNER-CONFIRMED.** An access need still arrives with
+`confirmedByOwner: false`, and its constraint with `confirmation: "PROPOSED"` and
+`origin: "MODEL_PROPOSED"`. Conservative classification and binding authority are
+different guarantees; the existing owner-confirmation rules remain the only route
+to the second, and nothing in either path touches them.
 
 ### Abstention, and the question that replaces a guess
 

@@ -29,11 +29,24 @@ import type {
  * is ALLOWED to carry the weight the model put on it. The model still proposes;
  * this only refuses the dangerous direction.
  *
- * THE ONE INVARIANT: THIS MODULE ONLY EVER WEAKENS. There is no path here that
- * turns SOFT into HARD, adds a field, widens a range, or upgrades a certainty. A
- * false positive costs a requirement being treated as a preference, which a
- * person can correct. The opposite error invents a requirement nobody stated,
- * which they may never notice.
+ * THE INVARIANT: THIS MODULE NEVER STRENGTHENS A CLAIM. No path here turns SOFT
+ * into HARD, adds a field, widens a range, or upgrades a certainty. A proposal
+ * arriving SOFT or UNKNOWN is returned unchanged whatever its wording, access
+ * needs included. A false positive costs a requirement being treated as a
+ * preference, which a person can correct. The opposite error invents a
+ * requirement nobody stated, which they may never notice.
+ *
+ * ONE BRANCH DECLINES TO WEAKEN, WHICH IS NOT THE SAME THING. An access need
+ * proposed as HARD is left HARD without the wording being read. Its outcome is
+ * *unchanged*, never *raised* -- see `assessStrength`.
+ *
+ * THE ASSERTIVE PATH IS ELSEWHERE AND IS NAMED SO IT IS NOT MISSED. `mapping.ts`
+ * materialises a declared assistance need as a HARD `ASSISTANCE_REQUIRED`
+ * constraint without consulting any wording at all. That is a deliberate
+ * conservative safety rule and it predates this module. Neither it nor the
+ * branch above confirms anything: an access need still arrives
+ * `confirmedByOwner: false` and its constraint `confirmation: "PROPOSED"`.
+ * Conservative classification and binding authority are different guarantees.
  */
 
 /* -------------------------------------------------------------------------- */
@@ -156,13 +169,19 @@ export interface StrengthAssessment {
 }
 
 /**
- * Accessibility is exempt from softening, deliberately.
+ * Access needs are exempt from SOFTENING, deliberately.
+ *
+ * Exempt from being weakened, not promoted: this branch is reached only when the
+ * model already proposed HARD, because the SOFT/UNKNOWN case returns above it.
+ * The result is that the wording is not consulted, so the claim is left as it
+ * arrived.
  *
  * Everywhere else, treating a requirement as a preference is the safe error.
  * Here it is not. Reading "I'd prefer step-free access" as a preference and
- * booking a route without it costs somebody the journey; reading a preference as
- * a requirement costs a slightly narrower search. The asymmetry is real, so the
- * rule is asymmetric, and it is written down rather than left implicit.
+ * booking a route without it can exclude a traveller from the journey; reading a
+ * preference as a requirement costs a slightly narrower search. The asymmetry is
+ * real, so the rule is asymmetric, and it is written down rather than left
+ * implicit.
  */
 function isAccessibility(value: ProposedConstraintValue): boolean {
   return value.kind === "ASSISTANCE_REQUIRED";

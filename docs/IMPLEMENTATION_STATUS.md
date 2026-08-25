@@ -996,8 +996,10 @@ Three guarantees, kept apart — see `docs/QWEN_INTEGRATION.md` §5b:
 | A hedge may not become a requirement | IMPLEMENTED + TESTED |
 | A citation supports one field, not its siblings | IMPLEMENTED + TESTED |
 | A date already past is dropped, not repaired | IMPLEMENTED + TESTED |
-| Accessibility exempt from softening | IMPLEMENTED + TESTED, and argued |
-| Policy may only ever weaken | IMPLEMENTED + TESTED |
+| Semantic policy never strengthens a claim | IMPLEMENTED + TESTED |
+| Access needs exempt from *softening* (outcome unchanged, never raised) | IMPLEMENTED + TESTED, and argued |
+| Access need → HARD constraint in mapping, a separate conservative safety rule | PRE-EXISTING, DOCUMENTED |
+| Conservative classification never implies confirmation | UNCHANGED + ASSERTED |
 | Extraction never confirms, however firmly read | UNCHANGED + ASSERTED |
 
 **Tests: 1,460 across 65 files**, plus 4 browser-bundle and 32 live database.
@@ -1013,6 +1015,26 @@ Three guarantees, kept apart — see `docs/QWEN_INTEGRATION.md` §5b:
 On the deployed page: Bo's 9am reads *"Read as a preference"*, Ama's ceiling
 still reads *"Read as a requirement"*, Gita's access requirement appears once,
 and no date carries a year nobody stated.
+
+### Live calls spent on this stage
+
+**40 paid Model Studio calls**, all local except the last:
+
+| | Calls |
+| --- | --- |
+| Baseline evaluation, 17 cases | 17 |
+| Single-case diagnostics (`npm run eval:case`) | 5 |
+| Final evaluation, 17 cases | 17 |
+| Production `/understand` verification | 1 |
+| **Total** | **40** |
+
+The single-case harness exists because the alternative to those 5 calls was
+re-running all seventeen three times to learn about one case each time, which is
+27 calls to answer three questions.
+
+> **Correction.** The stage report first gave this total as 25 while listing
+> components that sum to 40. 40 is the number. It is recorded here so the
+> corrected figure outlives the message that got it wrong.
 
 ### The things not to overclaim
 
