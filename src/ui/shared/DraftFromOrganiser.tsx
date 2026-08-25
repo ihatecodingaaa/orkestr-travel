@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import type { ConsumerTrip } from "@/domain/consumerTrip";
+import type { MemberView } from "@/core/shared/views";
 import { describeDraft } from "@/core/trips/lateJoin";
 import { sharedActions } from "./sharedActions";
 
@@ -25,20 +26,28 @@ import { sharedActions } from "./sharedActions";
 export function DraftFromOrganiser({
   trip,
   version,
-  viewerId,
+  you,
   base,
 }: {
   readonly trip: ConsumerTrip;
   readonly version: number;
-  readonly viewerId: string;
+  /**
+   * The whole member, not one of their two ids.
+   *
+   * A `MemberView` carries `id` (membership) and `travellerId` (the planning
+   * model), both strings, so a `viewerId: string` prop accepts the wrong one
+   * and typechecks. It did, and this panel rendered nothing at all for the one
+   * person it exists for. Taking the member removes the choice.
+   */
+  readonly you: MemberView;
   readonly base: string;
 }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | undefined>(undefined);
 
-  const you = trip.travellers.find((one) => one.id === viewerId);
-  const draft = you?.draft;
+  const traveller = trip.travellers.find((one) => one.id === you.travellerId);
+  const draft = traveller?.draft;
   if (draft === undefined) return null;
 
   const actions = sharedActions(trip.id, version, () => {

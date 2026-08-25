@@ -90,10 +90,16 @@ export function SharedTripView({
         because leaving it further down is how a guess quietly becomes an
         answer nobody ever gave.
       */}
+      {/*
+        `travellerId`, not `id`. A member and a traveller are the same person
+        under two keys -- membership owns one, the planning model owns the
+        other -- and handing the wrong one to a lookup over `trip.travellers`
+        finds nobody and renders nothing, silently.
+      */}
       <DraftFromOrganiser
         trip={trip}
         version={version}
-        viewerId={you.id}
+        you={you}
         base={base}
       />
 
