@@ -87,6 +87,16 @@ afterAll(() => {
     failed: outcomes.length - passed,
     totalDurationMs: totalMs,
     meanDurationMs: Math.round(totalMs / outcomes.length),
+    /**
+     * The number this evaluation exists to keep at zero.
+     *
+     * Since evidence is resolved by software against spans it cut itself, a
+     * fabricated quotation has nowhere to live. A non-zero count here would
+     * mean the grounding itself had broken, which is worth knowing loudly.
+     */
+    quotesChecked: outcomes.reduce((n, o) => n + o.quotesChecked, 0),
+    fabricatedQuotes: outcomes.reduce((n, o) => n + o.quotesInvalid, 0),
+    fabricatedCitations: outcomes.reduce((n, o) => n + o.spanIdsInvalid, 0),
     failing: outcomes
       .filter((o) => !o.passed)
       .map((o) => o.id)

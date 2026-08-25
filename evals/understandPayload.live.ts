@@ -4,6 +4,7 @@ import { HttpModelStudioTransport } from "@/adapters/modelStudio/transport";
 import { QwenLanguageUnderstandingProvider } from "@/adapters/modelStudio/qwenLanguageUnderstanding";
 import { FIXTURE_DISCUSSION } from "@/adapters/fixture/extractionFixtures";
 import { asIsoDateTime } from "@/domain/time";
+import { segmentDiscussion } from "@/core/intent/spans";
 import { loadLocalEnv, report } from "./harness";
 
 /**
@@ -35,7 +36,9 @@ describe("the /understand payload", () => {
       discussion: FIXTURE_DISCUSSION,
       now: asIsoDateTime(new Date().toISOString()),
     });
+    const spans = segmentDiscussion(FIXTURE_DISCUSSION);
     report("understand payload", {
+      spansOffered: spans.spans.length,
       discussionChars: FIXTURE_DISCUSSION.length,
       outcome: result.outcome,
       code: result.outcome === "FAILED" ? result.code : "n/a",
@@ -49,5 +52,25 @@ describe("the /understand payload", () => {
       proposals: result.diagnostics.proposalCount ?? -1,
       ambiguities: result.diagnostics.ambiguityCount ?? -1,
     });
+
+    if (result.outcome === "SUCCESS") {
+      const sources = [
+        ...result.intent.travellers.map((t) => t.source),
+        ...result.intent.constraints.map((c) => c.source),
+        ...result.intent.assistanceNeeds.map((a) => a.source),
+        ...result.intent.preferences.map((p) => p.source),
+        ...result.intent.ambiguities.map((a) => a.source),
+      ];
+      const notInText = sources.filter((s) => !FIXTURE_DISCUSSION.includes(s.quote));
+      const unknownIds = sources.flatMap((s) => (s.spanIds ?? []).filter((id) => !spans.byId.has(id)));
+      report("evidence", {
+        readingsWithEvidence: sources.length,
+        quotesNotInDiscussion: notInText.length,
+        citationsNeverIssued: unknownIds.length,
+        multiSpanCitations: sources.filter((s) => (s.spanIds ?? []).length > 1).length,
+        exampleCitation: (sources[0]?.spanIds ?? []).join(",") || "(none)",
+        exampleQuote: (sources[0]?.quote ?? "").slice(0, 70),
+      });
+    }
   });
 });
