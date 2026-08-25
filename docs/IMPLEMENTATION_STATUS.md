@@ -912,3 +912,60 @@ correctly, so **visitors are unaffected**. It appeared partway through automated
 acceptance and was most likely triggered by that traffic. It blocks scripted
 verification, so the remaining production checks were run in a real browser
 window. Worth confirming in Vercel → Firewall before a public demo.
+
+## EVIDENCE-GROUNDED EXTRACTION (25 August 2026)
+
+`/understand` is **LIVE VERIFIED in production**. A real `qwen3.7-plus` call
+completes from Vercel `sin1`, the structured reading parses, semantic validation
+passes, and every quotation on the screen is an exact slice of the text that was
+submitted.
+
+**The model no longer writes evidence.** The discussion is cut into addressable
+spans by software, the model cites span ids, and software resolves them back to
+the original characters. See `docs/QWEN_INTEGRATION.md` §5a.
+
+| Thing | Status |
+| --- | --- |
+| **`/understand` end to end in production** | **LIVE VERIFIED** — 7/7 acceptance checks |
+| **Every rendered quotation is a real slice of the input** | **LIVE VERIFIED** — 20 of 20 on the deployed page |
+| **Fabricated quotations accepted** | **ZERO** — 63 checked across the live evaluation |
+| **Fabricated citations accepted** | **ZERO** |
+| Evidence resolution is deterministic and pure | IMPLEMENTED + TESTED |
+| Model-authored evidence text | **STRUCTURALLY REFUSED** — `source`/`quote` are forbidden fields |
+| Span ids treated as untrusted input | IMPLEMENTED + TESTED — Map lookup, bounded, per-request |
+| Adversarial corpus (paraphrase, cross-speaker, fabricated id, injection, Unicode) | IMPLEMENTED — 22 tests |
+| Historical production failure | REGRESSION TESTED, not hidden |
+| Live evaluation, v3 prompt | **14/17** (baseline was 15/17 under v2; see below) |
+| `enable_thinking: false` for extraction | UNCHANGED + ASSERTED |
+
+**Tests: 1,422 across 64 files**, plus 4 browser-bundle tests and 32 live
+database tests.
+
+### Measured, before and after
+
+| | before | after |
+| --- | --- | --- |
+| production outcome | `SEMANTIC_VALIDATION_FAILED` | **SUCCESS** |
+| fabricated quotes | 5 problems | **0** |
+| output tokens | 1,650–1,859 | **1,404–1,528** |
+| input tokens | 2,291 | 3,024 |
+| latency | 30.4–32.8s | **24.6–27.1s** |
+
+### The things not to overclaim
+
+1. **The evaluation moved from 15/17 to 14/17, and that is not a regression in
+   evidence.** The extra failure is `04-stretchable-budget`, which fails a
+   hard/soft check that did not exist before: the model reads "I'd like to keep
+   it around 400 SGD if we can, but I could stretch a bit" as a HARD ceiling.
+   That is a real weakness, newly measured rather than newly introduced, and the
+   expectation that found it was deliberately not loosened.
+2. **Correct evidence is not correct extraction.** A citation can be real and
+   the reading built on it still wrong. The production run produced one
+   duplicated assistance need for the same person from the same span, and read
+   an availability ceiling and a calendar year that the cited sentence does not
+   state. Both are quality issues in what is proposed, not in what is quoted.
+3. **Segmentation is heuristic at the sentence boundary.** "Mr." splits. That
+   only ever produces finer evidence, never wrong evidence, because every span
+   is still verbatim and a reading may cite several.
+4. **This is still a proposal layer.** Nothing it produces is confirmed, and the
+   deterministic engines still decide what is possible.

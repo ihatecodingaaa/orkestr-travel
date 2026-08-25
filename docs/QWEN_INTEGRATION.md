@@ -170,9 +170,79 @@ confirmed. `AMBIGUOUS` raises a clarification candidate when, and only when, the
 difference would change a decision.
 
 What a person sees instead of a number is **the words the reading came from**,
-as visible text rather than a tooltip. Semantic validation rejects any quote
-that does not appear in the supplied discussion, so the explanation is real
-provenance and not generated text that resembles it.
+as visible text rather than a tooltip. Those words are sliced out of the
+discussion by software, not written by the model -- see section 5a -- so the
+explanation is real provenance rather than generated text that resembles it.
+
+---
+
+## 5a. Evidence is a reference, not a quotation
+
+**The model proposes facts and cites span ids. Software resolves the evidence,
+software validates it, and unsupported claims fail or are omitted.**
+
+Until 25 August 2026 the prompt asked for `source.quote`: "the exact words from
+the discussion, copied verbatim". That instruction was followed badly and could
+not be followed well. A model does not copy, it re-generates, so quotes came
+back tidied, re-punctuated, merged from two sentences, or plausibly invented.
+Deterministic validation refused the whole response, correctly, and in
+production `/understand` failed every time on the product's own sample
+discussion:
+
+    SEMANTIC_VALIDATION_FAILED at constraints[0].source.quote
+    "The supporting quote does not appear in the supplied discussion."
+
+The validator was right. The request was wrong.
+
+### How it works now
+
+    1. segmentDiscussion()   software cuts the supplied text into spans,
+                             deterministically, recording offsets
+    2. the prompt sends      [M02.S01] Bo: I can only get leave from the 24th.
+    3. the model returns     "evidence": ["M02.S01"]
+    4. resolveEvidence()     software slices the original characters back out
+
+A hallucinated quotation is not something to detect after the fact. **There is
+no field to put one in.** The worst a model can do is cite a wrong id or one
+that does not exist, and both are decidable by lookup rather than by judgement.
+
+### The guarantees
+
+* **Every quote is an exact substring of the supplied discussion.** Adjacent
+  spans are returned as one slice including the original separator, so a
+  two-sentence quotation is still text somebody can find by looking.
+  Non-adjacent citations quote the first span and keep the rest as `spanIds`,
+  because a quote stitched from two ends of a conversation is words in an order
+  nobody wrote.
+* **Ids are untrusted input.** They resolve through a `Map` for the current
+  request only, so `__proto__` is absent rather than clever, an id from another
+  conversation does not resolve, and a citation list is bounded at four.
+* **The model may not author evidence text at all.** `source` and `quote` are
+  forbidden response fields, failing as `UNSAFE_OUTPUT` rather than being
+  ignored -- because ignored is how a prompt regression quietly reintroduces the
+  original defect.
+* **The old quote check stays.** It is now redundant by construction, which is
+  the point of defence in depth.
+
+### What it cost and what it saved
+
+Measured on the same payload, before and after:
+
+| | before | after |
+| --- | --- | --- |
+| outcome | `SEMANTIC_VALIDATION_FAILED` | **SUCCESS** |
+| fabricated quotes | 5 problems | **0** |
+| output tokens | 1,650-1,859 | **1,404-1,528** |
+| input tokens | 2,291 | 3,024 |
+| latency | 30.4-32.8s | **24.6-27.1s** |
+
+Evidence text was the most repeated content in every response and an id is a
+handful of tokens, so removing the field that was wrong also made the response
+smaller and faster. The spans block costs about 700 input tokens, which is the
+cheaper half of the trade.
+
+Across the 17-case live evaluation: **63 quotes checked, 0 fabricated quotes, 0
+fabricated citations.**
 
 ---
 
