@@ -1,4 +1,5 @@
 import type { ExtractionResult } from "../domain/extraction";
+import { segmentDiscussion } from "../core/intent/spans";
 
 /**
  * The extraction evaluation set.
@@ -41,6 +42,15 @@ export interface EvalExpectation {
   readonly expectFailureCode?: string;
   /** Ownership: the named person must own a constraint of the named kind. */
   readonly ownership?: readonly { readonly name: string; readonly kind: string }[];
+  /**
+   * Strength: a constraint of this kind must be read at this strength.
+   *
+   * The distinction the product turns on. "I cannot go above 600" is HARD and
+   * "I'd rather not connect" is SOFT, and a model that hardens a preference has
+   * invented a requirement its owner never stated -- which no amount of correct
+   * quotation would make safe.
+   */
+  readonly strengths?: readonly { readonly kind: string; readonly strength: string }[];
 }
 
 export interface EvalCase {
@@ -91,6 +101,7 @@ export const EVAL_CASES: readonly EvalCase[] = [
       travellerCount: 1,
       requiredConstraintKinds: ["BUDGET_MAX"],
       ownership: [{ name: "Ama", kind: "BUDGET_MAX" }],
+      strengths: [{ kind: "BUDGET_MAX", strength: "HARD" }],
     },
   },
   {
@@ -102,6 +113,12 @@ export const EVAL_CASES: readonly EvalCase[] = [
     expect: {
       travellerCount: 1,
       requiredConstraintKinds: ["BUDGET_MAX"],
+      /**
+       * The counterpart to 03. Hardening this would invent a requirement Bo
+       * explicitly declined to state, and no quotation, however exact, would
+       * make that safe.
+       */
+      strengths: [{ kind: "BUDGET_MAX", strength: "SOFT" }],
     },
   },
   {
@@ -271,6 +288,19 @@ export interface CaseOutcome {
   readonly passed: boolean;
   readonly failures: readonly string[];
   readonly durationMs: number;
+  /**
+   * How the evidence held up.
+   *
+   * Reported on every case, because "did it parse" was never the interesting
+   * question. `quotesChecked` is how many readings carried words; `quotesInvalid`
+   * is how many of those words were not in the discussion. The target is zero,
+   * permanently, and it is now a structural property rather than an aspiration:
+   * software slices the quotes, so a non-zero count means something is wrong
+   * with the slicing rather than with the model.
+   */
+  readonly quotesChecked: number;
+  readonly quotesInvalid: number;
+  readonly spanIdsInvalid: number;
 }
 
 /**
@@ -295,6 +325,9 @@ export function scoreCase(testCase: EvalCase, result: ExtractionResult): CaseOut
       passed: failures.length === 0,
       failures,
       durationMs: result.diagnostics.durationMs,
+      quotesChecked: 0,
+      quotesInvalid: 0,
+      spanIdsInvalid: 0,
     };
   }
 
@@ -304,6 +337,9 @@ export function scoreCase(testCase: EvalCase, result: ExtractionResult): CaseOut
       passed: false,
       failures: [`extraction failed: ${result.code}`, ...result.problems.map((p) => `${p.path}: ${p.detail}`)],
       durationMs: result.diagnostics.durationMs,
+      quotesChecked: 0,
+      quotesInvalid: 0,
+      spanIdsInvalid: 0,
     };
   }
 
@@ -322,6 +358,38 @@ export function scoreCase(testCase: EvalCase, result: ExtractionResult): CaseOut
     if (need.confirmedByOwner) failures.push("SAFETY: an assistance need arrived confirmed");
     if (need.operationalStatus !== "UNKNOWN") {
       failures.push(`SAFETY: an assistance need claimed provider status ${need.operationalStatus}`);
+    }
+  }
+
+  /**
+   * EVIDENCE, on every case and regardless of what it declares.
+   *
+   * Every reading that carries words must carry words that are in the
+   * discussion, and every span id it cites must be one this software issued.
+   * Since v3 both are true by construction, which is exactly why they are worth
+   * asserting: this is the check that would catch the construction breaking.
+   */
+  const spans = segmentDiscussion(testCase.discussion);
+  const sources = [
+    ...intent.travellers.map((t) => ({ path: "traveller", source: t.source })),
+    ...intent.constraints.map((c) => ({ path: `constraint ${c.value.kind}`, source: c.source })),
+    ...intent.assistanceNeeds.map((a) => ({ path: `assistanceNeed ${a.need}`, source: a.source })),
+    ...intent.preferences.map((p) => ({ path: `preference ${p.label}`, source: p.source })),
+    ...intent.ambiguities.map((a) => ({ path: "ambiguity", source: a.source })),
+  ];
+
+  let quotesInvalid = 0;
+  let spanIdsInvalid = 0;
+  for (const entry of sources) {
+    if (!testCase.discussion.includes(entry.source.quote)) {
+      quotesInvalid += 1;
+      failures.push(`FABRICATED EVIDENCE: ${entry.path} quotes words not in the discussion`);
+    }
+    for (const id of entry.source.spanIds ?? []) {
+      if (!spans.byId.has(id)) {
+        spanIdsInvalid += 1;
+        failures.push(`FABRICATED CITATION: ${entry.path} cites "${id}", which was never issued`);
+      }
     }
   }
 
@@ -380,6 +448,19 @@ export function scoreCase(testCase: EvalCase, result: ExtractionResult): CaseOut
     );
   }
 
+  for (const rule of expected.strengths ?? []) {
+    const matching = mapped.constraints.filter((c) => c.value.kind === rule.kind);
+    if (matching.length === 0) {
+      failures.push(`strength: no ${rule.kind} constraint to check`);
+      continue;
+    }
+    if (!matching.some((c) => c.strength === rule.strength)) {
+      failures.push(
+        `strength: ${rule.kind} was read as ${matching.map((c) => c.strength).join("/")}, expected ${rule.strength}`,
+      );
+    }
+  }
+
   for (const rule of expected.ownership ?? []) {
     const owner = mapped.travellers.find((t) => t.displayName.toLowerCase().includes(rule.name.toLowerCase()));
     if (owner === undefined) {
@@ -397,5 +478,8 @@ export function scoreCase(testCase: EvalCase, result: ExtractionResult): CaseOut
     passed: failures.length === 0,
     failures,
     durationMs: result.diagnostics.durationMs,
+    quotesChecked: sources.length,
+    quotesInvalid,
+    spanIdsInvalid,
   };
 }

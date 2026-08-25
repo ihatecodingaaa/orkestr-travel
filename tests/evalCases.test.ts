@@ -248,3 +248,63 @@ describe("the scorer catches what matters", () => {
     expect(outcome.failures.join(" ")).toContain("SAFETY");
   });
 });
+
+/**
+ * The evidence audit has to be able to fail.
+ *
+ * It runs on every case and reports zero every time, which is exactly the
+ * condition under which a check quietly stops working. These two prove it fires
+ * -- one for a quotation that is not in the discussion, one for a citation that
+ * was never issued -- so "zero fabricated quotes" means something.
+ */
+describe("the eval harness can actually detect fabricated evidence", () => {
+  const forged = (source: unknown) => ({
+    outcome: "SUCCESS" as const,
+    intent: {
+      promptVersion: "orkestr-intent-v3" as const,
+      travellers: [
+        { ref: "P1", displayName: "Ama", certainty: "EXPLICIT" as const, source },
+      ],
+      constraints: [],
+      relationships: [],
+      assistanceNeeds: [],
+      preferences: [],
+      ambiguities: [],
+    },
+    mapped: { travellers: [], constraints: [], assistanceNeeds: [], preferences: [] },
+    warnings: [],
+    diagnostics: {
+      requestId: "R", operation: "EXTRACT_INTENT" as const, providerName: "p",
+      model: "m", promptVersion: "orkestr-intent-v3" as const, durationMs: 1,
+      startedAt: NOW, travellerCount: 0, proposalCount: 0, ambiguityCount: 0, warningCount: 0,
+    },
+  });
+
+  it("counts a quote that is not in the discussion", () => {
+    const outcome = scoreCase(
+      budgetCase,
+      forged({ quote: "words Ama never wrote" }) as never,
+    );
+    expect(outcome.quotesInvalid).toBe(1);
+    expect(outcome.passed).toBe(false);
+    expect(outcome.failures.some((f) => f.startsWith("FABRICATED EVIDENCE"))).toBe(true);
+  });
+
+  it("counts a span id that was never issued", () => {
+    const real = budgetCase.discussion.split("\n")[0]?.replace(/^Ama: /, "") ?? "";
+    const outcome = scoreCase(
+      budgetCase,
+      forged({ quote: real, spanIds: ["M42.S42"] }) as never,
+    );
+    expect(outcome.spanIdsInvalid).toBe(1);
+    expect(outcome.failures.some((f) => f.startsWith("FABRICATED CITATION"))).toBe(true);
+  });
+
+  it("reports zero for a reading whose evidence is genuinely grounded", () => {
+    const real = budgetCase.discussion.split("\n")[0]?.replace(/^Ama: /, "") ?? "";
+    const outcome = scoreCase(budgetCase, forged({ quote: real, spanIds: ["M01.S01"] }) as never);
+    expect(outcome.quotesInvalid).toBe(0);
+    expect(outcome.spanIdsInvalid).toBe(0);
+    expect(outcome.quotesChecked).toBe(1);
+  });
+});
