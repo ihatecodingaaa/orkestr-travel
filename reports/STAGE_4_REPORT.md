@@ -23,9 +23,14 @@ region.
 
 Two things are **not** true and are recorded as such throughout:
 
-1. **Model Studio does not work from production.** It is not slow; nothing
+1. ~~**Model Studio does not work from production.** It is not slow; nothing
    answers. This is an infrastructure question for the founder, not a code
-   change. Section 12.
+   change.~~ **CORRECTED 25 August 2026:** this was wrong. The network,
+   credential and inference all work from production. The 30 s extraction
+   ceiling was below a 30.4–32.8 s job; raising it to 50 s fixed it. What still
+   blocks `/understand` is a separate defect — the model invents supporting
+   quotes and the traceability guard refuses them. Section 12, and
+   `reports/INCIDENT_MODEL_STUDIO_CONNECTIVITY.md`.
 2. **There is no custom domain.** DNS is deliberately untouched. Section 15.
 
 Public acceptance also found a **real defect that every unit test missed and
@@ -242,6 +247,27 @@ across the replay. Confirmed again after the concurrency fix, on the new build.
 
 ## 12. Model Studio from production: NOT WORKING
 
+> **CORRECTED 25 August 2026 — this section's conclusion was wrong.**
+>
+> It was not a connectivity problem. The network path from Vercel to Model
+> Studio Singapore was healthy the whole time: DNS, TCP, TLS, an authenticated
+> listing request (HTTP 200 in 37 ms) and a real `qwen3.7-plus` completion
+> (1,300 ms) all succeed from the deployed runtime.
+>
+> The actual cause was that the 30,000 ms extraction ceiling was below a job
+> that takes 30,384–32,809 ms. A non-streaming completion sends no headers until
+> it has a response, so the abort produced *"the provider did not answer at
+> all"* — which reads like a network fault. I inferred the layer from a single
+> absent number instead of testing it.
+>
+> Fixed by raising the ceiling to 50,000 ms with `maxDuration = 60` on the page.
+> Full account: `reports/INCIDENT_MODEL_STUDIO_CONNECTIVITY.md`.
+>
+> The original text is kept below unaltered, because a report that quietly
+> edits its own wrong conclusion is worth less than one that shows it.
+
+
+
 Recorded as **not working**, not as slow, because the distinction changes what
 the fix is.
 
@@ -426,8 +452,10 @@ in any commit.** History was not rewritten and nothing was force-pushed.
 
 Stated plainly, because a report that only lists successes is not a report.
 
-1. **Model Studio does not work from production.** Section 12. Infrastructure,
-   not code.
+1. **`/understand` does not succeed end to end.** Not for the reason this report
+   originally gave: Model Studio itself is now LIVE VERIFIED from production and
+   the extraction completes in ~32.5 s. It is refused afterwards by the
+   quote-traceability guard, which is a separate defect. Section 12.
 2. **There is no custom domain**, and no DNS has been configured.
 3. **There are no global user accounts**, and no email or cross-device recovery.
    Access is a browser session plus an invite link.

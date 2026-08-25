@@ -833,7 +833,8 @@ these runs is fictional. The synthetic data is removed by `npm run db:cleanup`.
 | **Cross-origin server-action replay** | **LIVE VERIFIED REFUSED** — mutates nothing |
 | **Optimistic concurrency in the deployed interface** | **LIVE VERIFIED** — after fixing a real defect, below |
 | **Browser bundle contains no server module** | **VERIFIED** — 753,629 bytes, 14 assets, positive control |
-| **Model Studio from the Vercel runtime** | **NOT WORKING** — see below |
+| **Model Studio from the Vercel runtime** | **LIVE VERIFIED** — reachability, credential and a real completion; see the correction below |
+| **`/understand` end to end** | **BLOCKED** — `SEMANTIC_VALIDATION_FAILED`, a separate defect |
 | **Custom domain / DNS** | **NOT CONFIGURED** — deliberately |
 | **Global user accounts** | **NOT IMPLEMENTED** |
 | Atlas production | NOT AUTHORISED |
@@ -866,6 +867,19 @@ changed while you were editing. Orkestr has refreshed it — please check your
 change still makes sense."* and its write is not persisted.
 
 ### Model Studio does not work from production
+
+> **CORRECTED 25 August 2026.** The conclusion below is wrong and is kept for
+> the record. It was never a connectivity problem — the network path, the
+> credential and inference itself all work from the deployed runtime. The 30 s
+> extraction ceiling was simply below a 30.4–32.8 s job, and a non-streaming
+> completion sends no headers until it finishes, so the abort looked like a
+> network fault. Raising the ceiling to 50 s fixed it and the extraction now
+> completes in production in ~32.5 s. What still blocks `/understand` is a
+> separate defect: the model invents supporting quotes and the traceability
+> guard correctly refuses them. See
+> `reports/INCIDENT_MODEL_STUDIO_CONNECTIVITY.md`.
+
+
 
 This is recorded as **NOT WORKING**, not as slow.
 
