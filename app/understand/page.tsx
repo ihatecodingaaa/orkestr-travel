@@ -7,6 +7,17 @@ import { resolveProviders } from "@/adapters/registry";
 import { FIXTURE_DISCUSSION } from "@/adapters/fixture/extractionFixtures";
 
 /**
+ * The platform ceiling for the server action on this page.
+ *
+ * Extraction is allowed 50s (see DEFAULT_TIMEOUT_MS, set from measurement).
+ * The function it runs inside must outlive that, or the platform kills the
+ * request before our own deadline can fire -- and the person is shown a
+ * platform error page instead of the honest sentence the product wrote for
+ * exactly this case. The two numbers are related and have to move together.
+ */
+export const maxDuration = 60;
+
+/**
  * The understanding screen.
  *
  * Phase 5 shipped this box DISABLED, because nothing parsed language and a box

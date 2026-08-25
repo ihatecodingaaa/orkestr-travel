@@ -142,7 +142,7 @@ describe("configuration", () => {
     if (!result.configured) throw new Error("expected configured");
     expect(result.extractionModel).toBe("qwen3.7-max");
     expect(result.researchModel).toBe("qwen3.7-plus");
-    expect(result.timeoutMs).toBe(30_000);
+    expect(result.timeoutMs).toBe(50_000);
   });
 
   it("never puts the key, its length or its prefix into a description", () => {

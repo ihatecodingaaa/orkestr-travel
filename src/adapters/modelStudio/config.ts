@@ -126,8 +126,35 @@ export interface ModelStudioNotConfigured {
 
 export type ModelStudioConfigResult = ModelStudioConfig | ModelStudioNotConfigured;
 
-/** Default deadline for a single EXTRACTION call. Overridable, never unbounded. */
-export const DEFAULT_TIMEOUT_MS = 30_000;
+/**
+ * Default deadline for a single EXTRACTION call. Overridable, never unbounded.
+ *
+ * FIFTY SECONDS, FROM MEASUREMENT RATHER THAN TASTE.
+ *
+ * This was 30s, and 30s was below the workload. The discussion the product puts
+ * in front of a first-time visitor is 763 characters, and extracting it takes:
+ *
+ *   30,384ms and 32,809ms   measured locally with a deliberately generous cap
+ *   ~15,600ms               for the smaller smoke discussion, same code path
+ *
+ * A ceiling of 30,000ms against a job that takes 30,384ms fails by four hundred
+ * milliseconds, every time, and reports it as "the provider did not answer at
+ * all" -- which reads like a network fault and is not one. The same endpoint,
+ * from the same deployed runtime, returns a minimal completion in 1,300ms and
+ * an authenticated listing request in 37ms, so nothing about the path is slow.
+ * The generation is simply long: ~1,650 to 1,859 output tokens of structured
+ * JSON at roughly 50 tokens per second.
+ *
+ * Fifty seconds is about 1.5x the slowest run observed, and it stays inside the
+ * 60s ceiling that the platform gives a server action -- see `maxDuration` on
+ * the /understand page, which has to be the larger of the two or the function
+ * is killed before the deadline it is enforcing can fire.
+ *
+ * This is NOT "the timeout was too low" as a reflex. It was raised only after
+ * the layers underneath it were each proven healthy, because raising a ceiling
+ * over a broken connection just buys a slower failure.
+ */
+export const DEFAULT_TIMEOUT_MS = 50_000;
 
 /**
  * Default deadline for a single RESEARCH call.

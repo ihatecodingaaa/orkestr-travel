@@ -178,3 +178,56 @@ describe("the compatible path is one constant", () => {
     expect(SHARED_SINGAPORE_BASE_URL.endsWith(COMPATIBLE_PATH)).toBe(true);
   });
 });
+
+/**
+ * The extraction ceiling must exceed the extraction workload.
+ *
+ * THE DEFECT THIS PREVENTS WAS LIVE. The ceiling was 30,000ms and the job took
+ * 30,384ms, so the product failed by four hundred milliseconds and reported it
+ * as "the provider did not answer at all" -- a sentence that reads like a
+ * network fault and sent an incident investigation after one that did not
+ * exist. Meanwhile the same runtime reached the same endpoint in 37ms and
+ * completed a minimal generation in 1,300ms.
+ *
+ * These numbers are asserted rather than merely written down, because a ceiling
+ * chosen from measurement is only correct while it still clears the
+ * measurement, and the next person to "tidy" it back to a round 30 seconds
+ * should have to argue with a failing test rather than with a comment.
+ */
+describe("the extraction deadline clears the measured workload", () => {
+  /** Slowest observed run of the /understand payload, in ms. */
+  const SLOWEST_OBSERVED_MS = 32_809;
+
+  it("leaves real headroom over the slowest run actually measured", () => {
+    const config = readModelStudioConfig({
+      MODEL_STUDIO_MODE: "live",
+      DASHSCOPE_API_KEY: "test-key-value",
+      MODEL_STUDIO_WORKSPACE_ID: "ws-abc",
+    });
+    expect(config.configured).toBe(true);
+    if (config.configured) {
+      expect(config.timeoutMs).toBeGreaterThan(SLOWEST_OBSERVED_MS);
+      // Not a token margin: the run-to-run spread on this workload is ~2x.
+      expect(config.timeoutMs).toBeGreaterThanOrEqual(Math.round(SLOWEST_OBSERVED_MS * 1.4));
+    }
+  });
+
+  /**
+   * The function must outlive the deadline it contains, or the platform kills
+   * the request first and the person sees a platform error page instead of the
+   * sentence the product wrote for this case.
+   */
+  it("fits inside the function lifetime the /understand page declares", async () => {
+    const page = await import("../app/understand/page");
+    const maxDurationSeconds = (page as { maxDuration?: number }).maxDuration;
+    expect(maxDurationSeconds, "/understand must declare maxDuration").toBeTypeOf("number");
+    const config = readModelStudioConfig({
+      MODEL_STUDIO_MODE: "live",
+      DASHSCOPE_API_KEY: "test-key-value",
+      MODEL_STUDIO_WORKSPACE_ID: "ws-abc",
+    });
+    if (config.configured && typeof maxDurationSeconds === "number") {
+      expect(config.timeoutMs).toBeLessThan(maxDurationSeconds * 1000);
+    }
+  });
+});
