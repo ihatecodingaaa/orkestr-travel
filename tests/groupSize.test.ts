@@ -259,3 +259,40 @@ describe("the group total counts everybody who is coming", () => {
     expect(summary.groupTotal).toBe(1200);
   });
 });
+
+/* --------------------------------------- SAYING IT IN CONVERSATION (§38) */
+
+/**
+ * "We're actually 8 people" is the same claim as "8 of us", said the way
+ * somebody says it to Ask Orkestr rather than the way they type it into a form.
+ */
+describe("telling Orkestr the group is a different size", () => {
+  it("reads the conversational phrasings", () => {
+    for (const [text, size] of [
+      ["We're actually 8 people.", 8],
+      ["we are 6 travellers", 6],
+      ["we're now 12 people", 12],
+      ["we're 8", 8],
+    ] as const) {
+      const reading = readGroupSize(text);
+      expect(reading.kind, text).toBe("FOUND");
+      if (reading.kind === "FOUND") expect(reading.size, text).toBe(size);
+    }
+  });
+
+  /**
+   * The dangerous neighbours. "We are N <unit>" is an extremely common English
+   * sentence that has nothing to do with how many people are going.
+   */
+  it("does not read a distance, a duration or a date as a group size", () => {
+    for (const text of [
+      "we are 3 hours from the airport",
+      "we're 2 days early",
+      "we are 20 minutes away",
+      "we're 5 km from the hotel",
+      "we are 4 nights in Beijing",
+    ]) {
+      expect(readGroupSize(text).kind, text).toBe("NONE");
+    }
+  });
+});

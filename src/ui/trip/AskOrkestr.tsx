@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import type { AskAnswer } from "@/core/ask/intents";
+import { askOrkestr } from "~/trip/[tripId]/ask/actions";
 import type { ConsumerTrip } from "@/domain/consumerTrip";
 import { answer, recognise, suggestedCommands, toAction } from "@/core/trips/commands";
 import type { Answer } from "@/core/trips/commands";
@@ -38,10 +40,41 @@ export function AskOrkestr({
     undefined,
   );
   const [done, setDone] = useState<string | undefined>(undefined);
+  /**
+   * The answer that came back when the fast path did not recognise the
+   * question. Kept separately from `reply` so the deterministic answers stay
+   * instant and unchanged.
+   */
+  const [thinking, setThinking] = useState(false);
+  const [asked, setAsked] = useState<AskAnswer | undefined>(undefined);
 
   function submit(event: React.FormEvent) {
     event.preventDefault();
     run(text);
+  }
+
+  /**
+   * Classify, then answer from state.
+   *
+   * The model picks one intent from a fixed list; software computes the answer
+   * and any proposal from the trip itself. A misclassification therefore costs a
+   * wrong answer, never a wrong action -- nothing here writes.
+   */
+  async function ask(input: string) {
+    setThinking(true);
+    setAsked(undefined);
+    try {
+      const result = await askOrkestr({ rawTrip: trip, question: input });
+      setAsked(result.answer);
+      setText("");
+    } catch {
+      setAsked({
+        headline: "I couldn't think that through just now.",
+        lines: ["Everything about your trip is still here."],
+      });
+    } finally {
+      setThinking(false);
+    }
   }
 
   function run(input: string) {
@@ -51,7 +84,15 @@ export function AskOrkestr({
 
     const recognised = recognise(input);
     if (!recognised.ok) {
-      setRefusal({ reason: recognised.reason, examples: recognised.examples });
+      /*
+        THE FAST PATH DID NOT RECOGNISE IT, WHICH IS NOT THE END.
+
+        This used to be where Ask refused and described its own architecture.
+        The deterministic answers above are still instant and still first --
+        paying a model to count empty days would be slower and worse -- but a
+        question it does not have a pattern for now goes to one that can read it.
+      */
+      void ask(input);
       return;
     }
 
@@ -163,6 +204,57 @@ export function AskOrkestr({
         <p className="ask-reply" role="status">
           {done}
         </p>
+      )}
+
+      {thinking && (
+        <p className="faint" role="status" aria-live="polite">
+          Reading your trip…
+        </p>
+      )}
+
+      {asked !== undefined && (
+        <div className="panel stack gap-1 ask-answer" role="status">
+          <strong>{asked.headline}</strong>
+          {asked.lines.length > 0 && (
+            <ul className="tick-list">
+              {asked.lines.map((line) => (
+                <li key={line}>{line}</li>
+              ))}
+            </ul>
+          )}
+          {asked.proposal !== undefined && (
+            <div className="choice-row">
+              {/*
+                A PROPOSAL, NOT AN ACTION ALREADY TAKEN. Nothing typed into a box
+                changes the trip until somebody presses this.
+              */}
+              <button
+                type="button"
+                className="btn btn-primary btn-small"
+                onClick={() => {
+                  const proposal = asked.proposal;
+                  if (proposal === undefined) return;
+                  if (proposal.kind === "SET_GROUP_SIZE" && proposal.size !== undefined) {
+                    save({ ...trip, declaredGroupSize: proposal.size, updatedAt: nowIso() });
+                    setAsked(undefined);
+                    setDone(`Orkestr is planning for ${String(proposal.size)} travellers.`);
+                    return;
+                  }
+                  router.push(`${base}/plan`);
+                }}
+              >
+                {asked.proposal.confirm}
+              </button>
+              <button
+                type="button"
+                className="btn btn-secondary btn-small"
+                onClick={() => setAsked(undefined)}
+              >
+                Not now
+              </button>
+            </div>
+          )}
+        </div>
       )}
 
       {refusal !== undefined && (

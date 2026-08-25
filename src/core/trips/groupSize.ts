@@ -56,6 +56,18 @@ const WHOLE_GROUP_PATTERNS: readonly RegExp[] = [
   new RegExp(`\\btotal of ${COUNT}\\b`, "i"),
   new RegExp(`\\b${COUNT} (?:people|travell?ers|adults|passengers)(?:\\s+\\w+){0,2}\\s+(?:in total|total|altogether|all together)\\b`, "i"),
   new RegExp(`\\b${COUNT} (?:people|travell?ers) going\\b`, "i"),
+  /*
+    "We're actually 8 people."
+
+    "We" is the group, so this is a whole-party statement in the same way
+    "of us" is. The people-noun is required, because "we are 3 hours from
+    the airport" and "we're 2 days early" are not group sizes, and a bare
+    number after "we are" is common enough in ordinary sentences to be
+    dangerous.
+  */
+  new RegExp(`\\bwe(?:'re| are)(?: actually| now)? ${COUNT} (?:people|travell?ers|adults)\\b`, "i"),
+  /* The same thing with nothing after it: "we're 8". */
+  new RegExp(`\\bwe(?:'re| are)(?: actually| now)? ${COUNT}\\s*[.!?]?$`, "i"),
 ];
 
 export type GroupSizeReading =
