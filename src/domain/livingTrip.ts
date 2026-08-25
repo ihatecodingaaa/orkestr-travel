@@ -92,6 +92,18 @@ export interface TripIdea {
   readonly minutes?: number;
   /** Exactly as pasted. Never fetched. */
   readonly url?: string;
+  /**
+   * Further links that turned out to be about the same place.
+   *
+   * WHY A PLACE HAS SEVERAL. Three people send three different TikToks about
+   * one market. Three rows is a worse answer than one row that says three
+   * people wanted this, because the agreement is the thing the group needs to
+   * see -- but the links are not interchangeable, and somebody who saved one
+   * should still be able to open the one they saved.
+   *
+   * `url` stays the first one. These are the rest, in the order they arrived.
+   */
+  readonly sources?: readonly string[];
   readonly source: IdeaSource;
   /** Traveller id, or undefined when it came from example content. */
   readonly addedBy?: string;

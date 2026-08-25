@@ -1,4 +1,5 @@
 import type { ConsumerTrip, ConsumerTraveller } from "../../domain/consumerTrip";
+import { compareForMerge, mergeSavers } from "../inspiration/dedupe";
 import { safeUrl } from "./safeUrl";
 import type {
   AutopilotSettings,
@@ -163,6 +164,50 @@ export function addIdea(trip: ConsumerTrip, input: NewIdea, ctx: Ctx): ConsumerT
     savedBy: input.addedBy === undefined ? [] : [input.addedBy],
     addedAt: ctx.now,
   };
+
+  /**
+   * IS THIS ALREADY HERE?
+   *
+   * Merging happens on the way in, so both runtimes get it from one place and
+   * the screens do not have to reconcile anything. The verdict comes from
+   * `compareForMerge`, which merges only on an exact key with nothing
+   * contradicting it -- because two rows for one place is untidy and fixable,
+   * while one row for two places sends the group to the wrong restaurant.
+   *
+   * A merge keeps everything: every saver, and every link. The place is shared;
+   * the saving belongs to the person who did it.
+   */
+  const existing = trip.ideas.find(
+    (candidate) =>
+      compareForMerge(
+        { id: candidate.id, name: candidate.title, ...(candidate.area === undefined ? {} : { area: candidate.area }) },
+        { id: idea.id, name: title, ...(idea.area === undefined ? {} : { area: idea.area }) },
+      ).kind === "SAME",
+  );
+
+  if (existing !== undefined) {
+    const savedBy = mergeSavers(existing.savedBy, idea.savedBy);
+    const links = [
+      ...(existing.sources ?? []),
+      ...(url === undefined || url === existing.url ? [] : [url]),
+    ];
+    const merged: TripIdea = {
+      ...existing,
+      savedBy,
+      ...(links.length === 0 ? {} : { sources: [...new Set(links)] }),
+    };
+    return withUpdate(
+      { ...trip, ideas: trip.ideas.map((one) => (one.id === existing.id ? merged : one)) },
+      {
+        summary:
+          savedBy.length > existing.savedBy.length
+            ? `${existing.title} was saved by somebody else too`
+            : `Another link was added to ${existing.title}`,
+      },
+      ctx.now,
+      ctx.newId,
+    );
+  }
 
   return withUpdate(
     { ...trip, ideas: [...trip.ideas, idea] },

@@ -20,6 +20,7 @@ import type { IsoDate, IsoDateTime } from "../../domain/time";
 import { readGroupSize } from "./groupSize";
 import { asIsoDate } from "../../domain/time";
 import { compareIsoDate, isValidIsoDate } from "../time/civilDate";
+import { safeUrl } from "./safeUrl";
 
 /**
  * Trips, and where they live.
@@ -157,6 +158,17 @@ function parseIdeas(value: unknown): TripIdea[] {
     const url = readString(entry["url"]);
     const addedBy = readString(entry["addedBy"]);
     const minutes = entry["minutes"];
+    /*
+      The further links that turned out to be about the same place. Each is
+      re-validated on the way in, because a stored trip is still input: it may
+      have been written by an older build, or by somebody else's.
+    */
+    const sources = Array.isArray(entry["sources"])
+      ? entry["sources"]
+          .filter((value): value is string => typeof value === "string")
+          .map((value) => safeUrl(value))
+          .filter((value): value is string => value !== undefined)
+      : [];
     ideas.push({
       id,
       title,
@@ -165,6 +177,7 @@ function parseIdeas(value: unknown): TripIdea[] {
       ...(blurb === undefined ? {} : { blurb }),
       ...(area === undefined ? {} : { area }),
       ...(url === undefined ? {} : { url }),
+      ...(sources.length === 0 ? {} : { sources }),
       ...(addedBy === undefined ? {} : { addedBy }),
       ...(typeof minutes === "number" && Number.isSafeInteger(minutes) && minutes > 0
         ? { minutes }

@@ -243,6 +243,55 @@ function Savers({ trip, idea }: { readonly trip: ConsumerTrip; readonly idea: Tr
   );
 }
 
+
+/**
+ * Every link that turned out to be about this place.
+ *
+ * §9. Merging places must not collapse the links away. Somebody saved a
+ * particular TikTok, and "we combined yours with two others" is only acceptable
+ * if they can still open the one they saved.
+ */
+function Sources({ idea }: { readonly idea: TripIdea }) {
+  const links = [
+    ...(idea.url === undefined ? [] : [idea.url]),
+    ...(idea.sources ?? []),
+  ];
+  if (links.length === 0) return null;
+
+  return (
+    <p className="idea-sources">
+      {links.length > 1 && (
+        <span className="faint">{links.length} sources · </span>
+      )}
+      {links.map((link, index) => (
+        <a
+          key={link}
+          className="linkish"
+          href={link}
+          target="_blank"
+          rel="noreferrer noopener"
+        >
+          {sourceWords(link)}
+          {index < links.length - 1 ? " · " : ""}
+        </a>
+      ))}
+    </p>
+  );
+}
+
+/** The site a link points at, so a row of them is readable. */
+function sourceWords(url: string): string {
+  try {
+    const host = new URL(url).hostname.replace(/^www\./, "");
+    if (/tiktok\.com$/.test(host)) return "TikTok";
+    if (/youtube\.com$|youtu\.be$/.test(host)) return "YouTube";
+    if (/instagram\.com$/.test(host)) return "Instagram";
+    return host;
+  } catch {
+    return "Link";
+  }
+}
+
 /** Provenance beside the thing it describes, never in a table at the top. */
 function sourceNote(idea: TripIdea): string {
   /*
@@ -318,6 +367,7 @@ function FeaturedIdea({
         </div>
       </div>
       <Savers trip={trip} idea={idea} />
+      <Sources idea={idea} />
     </article>
   );
 }
@@ -359,6 +409,7 @@ function IdeaCard({
       )}
 
       <Savers trip={trip} idea={idea} />
+      <Sources idea={idea} />
       <p className="source-note">{sourceNote(idea)}</p>
 
       <div className="idea-actions">

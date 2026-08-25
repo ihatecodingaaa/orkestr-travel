@@ -375,3 +375,146 @@ describe("concurrency through the mutation path", () => {
     expect(events.map((e) => e.summary).join(" ")).toMatch(/something private/i);
   });
 });
+
+/* ------------------------------------------- A DRAFT IS ONE DECISION (§12) */
+
+/**
+ * Applying a generated draft, against a real database.
+ *
+ * THE DEFECT THIS PROVES FIXED was invisible on a device. `BuildDraft` looped
+ * over `addPlanItem`, and every shared write states the version it was made
+ * against -- so the first item moved the version and every item after it would
+ * have been refused as stale, by its own predecessor. A local trip has no
+ * versions, so the loop worked perfectly there and silently truncated in a
+ * group.
+ */
+describe("a first draft lands as one change", () => {
+  const draftItems = [
+    { day: asIsoDate("2026-09-06"), title: "Gwangjang Market", itemKind: "FOOD" as const, startTime: "10:00" },
+    { day: asIsoDate("2026-09-06"), title: "Bukchon", itemKind: "ACTIVITY" as const, startTime: "14:00" },
+    { day: asIsoDate("2026-09-07"), title: "Namsan", itemKind: "ACTIVITY" as const, startTime: "10:00" },
+  ];
+
+  it("applies every item, not just the first", async () => {
+    const { id, organiser } = await seed();
+
+    const result = await applySharedMutation(repo, organiser, {
+      mutation: { kind: "APPLY_DRAFT", items: draftItems },
+      expectedVersion: await versionOf(id),
+      now: NOW,
+    });
+    expect(result.ok).toBe(true);
+
+    const trip = await tripOf(id);
+    expect(trip.plan).toHaveLength(3);
+    expect(trip.plan.map((item) => item.title)).toContain("Namsan");
+  });
+
+  it("moves the version once, because it is one decision", async () => {
+    const { id, organiser } = await seed();
+    const before = await versionOf(id);
+
+    await applySharedMutation(repo, organiser, {
+      mutation: { kind: "APPLY_DRAFT", items: draftItems },
+      expectedVersion: before,
+      now: NOW,
+    });
+
+    expect(await versionOf(id)).toBe(before + 1);
+  });
+
+  /**
+   * §13. The draft was built against a trip that no longer exists. Applying it
+   * would schedule over whatever changed while it was open.
+   */
+  it("refuses a draft built before somebody else changed the trip", async () => {
+    const { id, organiser, zen } = await seed();
+    const asSeenByTheDraft = await versionOf(id);
+
+    // Zen does something in the meantime.
+    await applySharedMutation(repo, zen, {
+      mutation: { kind: "ADD_IDEA", title: "Zen's late idea", category: "FOOD" },
+      expectedVersion: asSeenByTheDraft,
+      now: NOW,
+    });
+
+    const stale = await applySharedMutation(repo, organiser, {
+      mutation: { kind: "APPLY_DRAFT", items: draftItems },
+      expectedVersion: asSeenByTheDraft,
+      now: NOW,
+    });
+
+    expect(stale.ok).toBe(false);
+    if (!stale.ok) expect(stale.reason).toBe("CONFLICT");
+
+    // And nothing of the draft landed. Not some of it.
+    const trip = await tripOf(id);
+    expect(trip.plan).toHaveLength(0);
+  });
+
+  /**
+   * §19. A generated item must be an ordinary item, or impact radius, repair
+   * and the decision inventory would each need to learn about a second kind.
+   */
+  it("produces ordinary plan items, indistinguishable from hand-made ones", async () => {
+    const { id, organiser } = await seed();
+    await applySharedMutation(repo, organiser, {
+      mutation: { kind: "APPLY_DRAFT", items: draftItems },
+      expectedVersion: await versionOf(id),
+      now: NOW,
+    });
+
+    const trip = await tripOf(id);
+    for (const item of trip.plan) {
+      expect(item.id).toBeTruthy();
+      expect(item.status).toBeTruthy();
+      expect(item.travellerIds).toBeDefined();
+      // Nothing marks it as machine-made, because nothing should treat it differently.
+      expect(JSON.stringify(item)).not.toMatch(/ai|generated|draft/i);
+    }
+  });
+
+  it("lets a traveller contribute ideas but not the plan", async () => {
+    const { id, zen } = await seed();
+    const refused = await applySharedMutation(repo, zen, {
+      mutation: { kind: "APPLY_DRAFT", items: draftItems },
+      expectedVersion: await versionOf(id),
+      now: NOW,
+    });
+    expect(refused.ok).toBe(false);
+    expect(await tripOf(id).then((trip) => trip.plan)).toHaveLength(0);
+  });
+});
+
+/* ------------------------------------------- CAPACITY, NOT PEOPLE (§15) */
+
+describe("being told the group is a different size, in a shared trip", () => {
+  it("records the number without creating anybody", async () => {
+    const { id, organiser } = await seed();
+    const namedBefore = (await tripOf(id)).travellers.length;
+
+    const result = await applySharedMutation(repo, organiser, {
+      mutation: { kind: "SET_GROUP_SIZE", size: 8 },
+      expectedVersion: await versionOf(id),
+      now: NOW,
+    });
+    expect(result.ok).toBe(true);
+
+    const trip = await tripOf(id);
+    expect(trip.declaredGroupSize).toBe(8);
+    // Capacity moved; membership did not.
+    expect(trip.travellers).toHaveLength(namedBefore);
+    expect(JSON.stringify(trip.travellers)).not.toMatch(/Traveller [2-9]|Unnamed/);
+  });
+
+  it("is the organiser's to state", async () => {
+    const { id, zen } = await seed();
+    const refused = await applySharedMutation(repo, zen, {
+      mutation: { kind: "SET_GROUP_SIZE", size: 8 },
+      expectedVersion: await versionOf(id),
+      now: NOW,
+    });
+    expect(refused.ok).toBe(false);
+    expect((await tripOf(id)).declaredGroupSize).toBeUndefined();
+  });
+});

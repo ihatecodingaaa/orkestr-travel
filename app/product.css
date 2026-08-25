@@ -886,3 +886,16 @@
     font-weight: 600;
   }
 }
+
+/*
+  The links behind one place.
+
+  Merging two saves into one place must not collapse the links away: somebody
+  saved a particular TikTok, and combining it with somebody else's is only fair
+  if they can still open theirs.
+*/
+.idea-sources {
+  margin: 0.35rem 0 0;
+  font-size: 0.85rem;
+  overflow-wrap: anywhere;
+}
