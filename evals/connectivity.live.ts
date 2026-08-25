@@ -5,6 +5,7 @@ import {
   checkCompatibleBaseUrl,
   maskUrl,
 } from "@/adapters/modelStudio/endpoints";
+import { HttpModelStudioTransport } from "@/adapters/modelStudio/transport";
 import { probeEndpoint, type EndpointProbe } from "@/server/diagnostics/modelStudioProbe";
 import { loadLocalEnv, report } from "./harness";
 
@@ -84,5 +85,36 @@ describe("Model Studio connectivity", () => {
     const probe = await probeEndpoint({ host: new URL(config.baseUrl).hostname });
     line("workspace-dedicated", probe);
     expect(probe.dns.ok).toBe(true);
+  });
+
+  /**
+   * Is the credential accepted from HERE?
+   *
+   * FREE: a listing request generates nothing. It is the check that separates
+   * three failures a hanging completion cannot -- 200 accepted, 401 refused,
+   * and 403, which is what an API-key source-IP restriction looks like from a
+   * runtime whose egress address is not on the allowlist.
+   */
+  it("asks whether the credential is accepted", { timeout: 30_000 }, async () => {
+    if (!config.configured) {
+      report("credential", { status: "skipped — not configured" });
+      return;
+    }
+    const transport = new HttpModelStudioTransport(config, () => Date.now());
+    const probe = await transport.probeCredential("/models", 12_000);
+    report("credential", {
+      status: probe.status ?? -1,
+      meaning:
+        probe.status === 200
+          ? "accepted from this network location"
+          : probe.status === 401
+            ? "REFUSED — key wrong, revoked, or for another region"
+            : probe.status === 403
+              ? "FORBIDDEN — consistent with a source-IP restriction"
+              : `no status (${probe.code ?? "unknown"})`,
+      headersAtMs: probe.headersAtMs ?? -1,
+      durationMs: probe.durationMs,
+    });
+    expect(probe.status).toBeDefined();
   });
 });
