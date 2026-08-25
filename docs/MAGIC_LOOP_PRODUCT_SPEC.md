@@ -178,7 +178,54 @@ and every provenance row still exists, one level down.
 **No database migration.** `ConsumerTrip` is stored as JSONB, so
 `declaredGroupSize` needed no schema change.
 
-## 8. What this pass did NOT do
+## 8. What the first pass did NOT do — and what happened next
+
+All four were named as unbuilt. Three are now built and verified; the fourth was
+measured and deliberately left alone. The original list is kept below.
+
+### Now built
+
+    SOURCE  →  PLACE  →  PLAN  →  ASK
+
+**Source → Place.** A pasted link is fetched safely, read for what it says about
+itself, and offered as a place to save. TikTok and YouTube through their own
+anonymous oEmbed endpoints, ordinary pages through OpenGraph — **no new provider
+credential**. Instagram is not pretended at: the link is kept and the person is
+asked. The caption is the ceiling and the record says so; nothing in this build
+can claim to have watched a video.
+
+**Place.** A place is not a source. One source can name several places, one
+place can be vouched for by several sources, and several people can save the
+same place from different links. Deduplication merges only on an exact key with
+nothing contradicting it, and asks otherwise — because two rows for one place is
+untidy and fixable, while one row for two places sends the group to the wrong
+restaurant.
+
+**Plan.** "Build our first draft" proposes through the model and decides through
+`validateDraft`, which refuses a place nobody saved, a day outside the trip, a
+duplicate, a double-booked slot, and anything that would land on top of a FIXED
+or BOOKED item. The model cannot invent a place because there is no field for a
+name. Everything is labelled suggested; no opening time, travel time, ticket or
+price has been checked.
+
+**Ask.** The model picks one word from an allowlist this software owns. It never
+names a function and never receives an id, so a misclassification costs a wrong
+answer rather than a wrong action. Answers are computed from trip state by a
+pure function; the only two things Ask can offer — a group-size change and a
+draft — come back as a proposal with a button.
+
+### Still not done
+
+**Mobile navigation is unchanged.** Measured again at 390, 430, 768, 1024 and
+1440: no horizontal overflow, no clipped tab bar. The crowding is density, not
+truncation, and a rewrite was not made under the banner of fixing a defect the
+evidence does not show.
+
+---
+
+## 9. The original list, kept
+
+
 
 Named plainly, because a spec that lists them as done would be worth less than
 no spec. Each is a stage in its own right:
