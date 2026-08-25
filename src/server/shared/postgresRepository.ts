@@ -251,7 +251,32 @@ export class PostgresTripRepository implements SharedTripRepository {
         });
       }
 
-      return { ok: true, trip: toTrip(next) };
+      /**
+       * Membership joins the payload change, inside this transaction.
+       *
+       * After the version check, so a stale caller never reaches it, and after
+       * the UPDATE, so a failed insert takes the payload change down with it.
+       * Either the trip gained a traveller and a member, or it gained neither.
+       */
+      let member: TripMember | undefined;
+      if (write.addMember !== undefined) {
+        const inserted = await client.query<MemberRow>(
+          `INSERT INTO trip_member (id, trip_id, traveller_id, name, role, created_at)
+           VALUES ($1, $2, $3, $4, $5, $6)
+           RETURNING *`,
+          [
+            randomUUID(),
+            write.tripId,
+            write.addMember.travellerId,
+            write.addMember.name,
+            write.addMember.role,
+            write.now,
+          ],
+        );
+        member = toMember(inserted.rows[0]!);
+      }
+
+      return { ok: true, trip: toTrip(next), ...(member === undefined ? {} : { member }) };
     });
   }
 

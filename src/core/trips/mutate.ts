@@ -1,4 +1,8 @@
-import type { ConsumerTrip, ConsumerTraveller } from "../../domain/consumerTrip";
+import type {
+  ConsumerTrip,
+  ConsumerTraveller,
+  TravellerDraft,
+} from "../../domain/consumerTrip";
 import { compareForMerge, mergeSavers } from "../inspiration/dedupe";
 import { safeUrl } from "./safeUrl";
 import type {
@@ -35,17 +39,118 @@ export interface Ctx {
 /*  People                                                                    */
 /* -------------------------------------------------------------------------- */
 
-export function addTraveller(trip: ConsumerTrip, name: string, ctx: Ctx): ConsumerTrip {
+export interface NewTraveller {
+  /**
+   * The id to use, when something outside this function has already committed
+   * to one.
+   *
+   * A shared trip stores a person twice on purpose: a `trip_member` row that
+   * owns their membership, and a traveller in the payload that the planner
+   * reads. The two are tied together by this id, so the server chooses it once
+   * and hands the same value to both. Left out, an id is generated here, which
+   * is what the local product wants.
+   */
+  readonly id?: string;
+  readonly name: string;
+  /** Somebody else's note about this person, awaiting their confirmation. */
+  readonly draft?: TravellerDraft;
+}
+
+/**
+ * Put a person on the trip.
+ *
+ * Accepts a bare name because that is what the local product has, and an object
+ * when the caller knows more -- an id it must reuse, or a note the organiser
+ * typed on this person's behalf.
+ *
+ * WHAT IT DOES NOT DO is answer anything for them. A new traveller has no
+ * availability and no `comingConfirmed`, because nobody has asked them yet, and
+ * silence has to stay distinguishable from "any time".
+ */
+export function addTraveller(
+  trip: ConsumerTrip,
+  input: string | NewTraveller,
+  ctx: Ctx,
+): ConsumerTrip {
+  const spec: NewTraveller = typeof input === "string" ? { name: input } : input;
+  const name = spec.name.trim();
+  if (name.length === 0) return trip;
+
   const traveller: ConsumerTraveller = {
-    id: ctx.newId(),
-    name: name.trim(),
+    id: spec.id ?? ctx.newId(),
+    name,
     isOrganiser: false,
     requirements: [],
     mustTravelWith: [],
+    ...(spec.draft === undefined ? {} : { draft: spec.draft }),
   };
   return withUpdate(
     { ...trip, travellers: [...trip.travellers, traveller] },
     { summary: `${traveller.name} was added to the trip` },
+    ctx.now,
+    ctx.newId,
+  );
+}
+
+/**
+ * The person a note was written about accepts it.
+ *
+ * This is the only place a `draft` turns into an answer, and it can only be
+ * reached by the person it belongs to -- the authority check lives with the
+ * mutation, but the shape here makes the intent plain: confirming is answering,
+ * so it sets availability the same way answering would.
+ */
+export function confirmDraft(
+  trip: ConsumerTrip,
+  travellerId: string,
+  ctx: Ctx,
+): ConsumerTrip {
+  const traveller = trip.travellers.find((one) => one.id === travellerId);
+  const draft = traveller?.draft;
+  if (traveller === undefined || draft === undefined) return trip;
+
+  const { draft: _dropped, ...rest } = traveller;
+  const confirmed: ConsumerTraveller = {
+    ...rest,
+    comingConfirmed: true,
+    ...(draft.proposedFrom === undefined
+      ? {}
+      : { availableFrom: draft.proposedFrom, availableTo: trip.endDate }),
+  };
+
+  return withUpdate(
+    {
+      ...trip,
+      travellers: trip.travellers.map((one) => (one.id === travellerId ? confirmed : one)),
+    },
+    { summary: `${traveller.name} confirmed what was noted for them` },
+    ctx.now,
+    ctx.newId,
+  );
+}
+
+/**
+ * The note was wrong, or they would rather answer themselves.
+ *
+ * Dismissing does NOT record a refusal to travel. It removes somebody else's
+ * guess and leaves the questions unanswered, which is the honest state: no one
+ * has said anything yet.
+ */
+export function dismissDraft(
+  trip: ConsumerTrip,
+  travellerId: string,
+  ctx: Ctx,
+): ConsumerTrip {
+  const traveller = trip.travellers.find((one) => one.id === travellerId);
+  if (traveller?.draft === undefined) return trip;
+
+  const { draft: _dropped, ...rest } = traveller;
+  return withUpdate(
+    {
+      ...trip,
+      travellers: trip.travellers.map((one) => (one.id === travellerId ? rest : one)),
+    },
+    { summary: `${traveller.name} is answering for themselves` },
     ctx.now,
     ctx.newId,
   );

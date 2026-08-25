@@ -1,6 +1,7 @@
 import type {
   ConsumerTrip,
   ConsumerTraveller,
+  TravellerDraft,
   TravellerRequirement,
   TripUpdate,
 } from "../../domain/consumerTrip";
@@ -18,7 +19,7 @@ import type {
 import { BUDGET_CATEGORIES, DEFAULT_AUTOPILOT, IDEA_CATEGORIES } from "../../domain/livingTrip";
 import type { IsoDate, IsoDateTime } from "../../domain/time";
 import { readGroupSize } from "./groupSize";
-import { asIsoDate } from "../../domain/time";
+import { asIsoDate, asIsoDateTime } from "../../domain/time";
 import { compareIsoDate, isValidIsoDate } from "../time/civilDate";
 import { safeUrl } from "./safeUrl";
 
@@ -107,6 +108,7 @@ function parseTraveller(value: unknown): ConsumerTraveller | undefined {
   const mustTravelWith = Array.isArray(value["mustTravelWith"])
     ? value["mustTravelWith"].filter((entry): entry is string => typeof entry === "string")
     : [];
+  const draft = parseDraft(value["draft"]);
 
   return {
     id,
@@ -119,6 +121,30 @@ function parseTraveller(value: unknown): ConsumerTraveller | undefined {
       : {}),
     requirements,
     mustTravelWith,
+    ...(draft === undefined ? {} : { draft }),
+  };
+}
+
+/**
+ * Somebody else's note about this person, or nothing.
+ *
+ * Parsed strictly, and dropped whole when any required part is missing. A draft
+ * that survived with no author would be shown as an unattributed statement
+ * about somebody -- which is the exact failure the field exists to prevent, so
+ * a half-read one is worth less than none.
+ */
+function parseDraft(value: unknown): TravellerDraft | undefined {
+  if (!isRecord(value)) return undefined;
+  const note = readString(value["note"]);
+  const byName = readString(value["byName"]);
+  const at = readString(value["at"]);
+  if (note === undefined || byName === undefined || at === undefined) return undefined;
+  const proposedFrom = readDate(value["proposedFrom"]);
+  return {
+    note,
+    byName,
+    at: asIsoDateTime(at),
+    ...(proposedFrom === undefined ? {} : { proposedFrom }),
   };
 }
 

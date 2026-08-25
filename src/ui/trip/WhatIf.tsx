@@ -235,12 +235,26 @@ export function buildPreview(trip: ConsumerTrip, scenario: Scenario): Preview {
   const kept: string[] = [];
 
   const allDates = [...new Set([...before, ...after].map((group) => group.departureDate))].sort();
+  /**
+   * A group that did not exist before is an ADDITION, not a change.
+   *
+   * This mattered the moment somebody could join late. A person arriving on a
+   * day nobody else travels creates a travel group that has no "before", and
+   * counting it as changed put a decision the group had never made into the
+   * denominator -- so "9 of 10 staying" became "9 of 11" and the number got
+   * worse for doing nothing wrong. It belongs with the new decisions, which are
+   * reported separately and deliberately not called preserved.
+   */
+  let added = 0;
   for (const date of allDates) {
     const label = `${weekdayOf(date)} travel group`;
     const a = before.find((group) => group.departureDate === date);
     const b = after.find((group) => group.departureDate === date);
+    if (a === undefined) {
+      if (b !== undefined) added += 1;
+      continue;
+    }
     const same =
-      a !== undefined &&
       b !== undefined &&
       a.travellerIds.length === b.travellerIds.length &&
       a.travellerIds.every((id, index) => id === b.travellerIds[index]);
@@ -274,11 +288,15 @@ export function buildPreview(trip: ConsumerTrip, scenario: Scenario): Preview {
     kept.push(`${weekdayOf(day)}: ${items.map((item) => item.title).join(", ")}`);
   }
 
+  /**
+   * The denominator is what the group had decided BEFORE this scenario.
+   *
+   * New decisions are counted on their own and never folded in here. Adding
+   * them would let a change that creates work report a better ratio than one
+   * that creates none, which is exactly backwards.
+   */
   const totalCount = kept.length + changed.length;
-  const addedCount =
-    scenario.kind === "TRAVELLER_JOINS" && groupByDeparture(result.travellers).groups.length > 0
-      ? 1
-      : 0;
+  const addedCount = added;
 
   const title =
     scenario.kind === "TRAVELLER_JOINS"

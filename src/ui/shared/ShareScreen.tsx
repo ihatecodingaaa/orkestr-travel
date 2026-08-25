@@ -39,12 +39,15 @@ export function ShareScreen({
   createInvite,
   revokeInvite,
   canManage,
+  compact = false,
 }: {
   readonly destination: string;
   readonly rows: readonly MemberInviteView[];
   readonly createInvite: ShareAction;
   readonly revokeInvite: (inviteId: string) => Promise<{ readonly ok: boolean }>;
   readonly canManage: boolean;
+  /** Rendered inside another screen's section, so it brings no heading. */
+  readonly compact?: boolean;
 }) {
   const [busy, setBusy] = useState<string | undefined>(undefined);
   const [copied, setCopied] = useState<string | undefined>(undefined);
@@ -143,13 +146,21 @@ export function ShareScreen({
 
   return (
     <div className="stack gap-3">
-      <div>
-        <h2>Your group</h2>
-        <p className="faint">
-          Send each person their own link. Orkestr gives everyone their own view — nobody has to
-          share a password, and nobody can answer for anyone else.
-        </p>
-      </div>
+      {/*
+        The heading is omitted where this list sits UNDER one.
+        §19: the Group screen shows who is here and who still needs an invite,
+        and repeating "Your group" above a list that is already under "Your
+        group" makes one screen look like two.
+      */}
+      {!compact && (
+        <div>
+          <h2>Your group</h2>
+          <p className="faint">
+            Send each person their own link. Orkestr gives everyone their own view — nobody has to
+            share a password, and nobody can answer for anyone else.
+          </p>
+        </div>
+      )}
 
       {error !== undefined && (
         <p className="notice notice-alert" role="alert">

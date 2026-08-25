@@ -70,10 +70,33 @@ export interface PayloadWrite {
   readonly mutate: (current: unknown) => unknown;
   readonly event?: Omit<TripEvent, "id" | "tripId" | "at">;
   readonly now: IsoDateTime;
+  /**
+   * A membership row to create in the SAME transaction as this payload change.
+   *
+   * A person on a shared trip exists in two places -- a `trip_member` row that
+   * owns their membership, and a traveller in the payload the planner reads --
+   * and the two must arrive together or not at all. Two separate calls have a
+   * window in between: a version conflict after the row was written leaves a
+   * member with no traveller, and `travellerIdFor` then resolves a session to
+   * somebody who is not in the trip.
+   *
+   * Passing it here rather than adding a second write path means the version
+   * check still guards it. A stale caller is refused before the row exists.
+   */
+  readonly addMember?: {
+    readonly travellerId: string;
+    readonly name: string;
+    readonly role: TripRole;
+  };
 }
 
 export type PayloadWriteResult =
-  | { readonly ok: true; readonly trip: SharedTripRecord }
+  | {
+      readonly ok: true;
+      readonly trip: SharedTripRecord;
+      /** Present only when `addMember` was asked for and therefore created. */
+      readonly member?: TripMember;
+    }
   | { readonly ok: false; readonly reason: "VERSION_CONFLICT"; readonly actualVersion: number }
   | { readonly ok: false; readonly reason: "NOT_FOUND" };
 

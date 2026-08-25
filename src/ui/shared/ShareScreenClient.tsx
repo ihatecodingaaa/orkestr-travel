@@ -18,16 +18,19 @@ export function ShareScreenClient({
   destination,
   rows,
   canManage,
+  compact = false,
 }: {
   readonly tripId: string;
   readonly destination: string;
   readonly rows: readonly MemberInviteView[];
   readonly canManage: boolean;
+  readonly compact?: boolean;
 }) {
   const router = useRouter();
 
   return (
     <ShareScreen
+      compact={compact}
       destination={destination}
       rows={rows}
       canManage={canManage}

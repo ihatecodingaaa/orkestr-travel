@@ -85,6 +85,38 @@ export interface TravellerRequirement {
   readonly private: boolean;
 }
 
+/**
+ * Something one person wrote down about ANOTHER person, before that person
+ * arrived to speak for themselves.
+ *
+ * An organiser who adds Ryan and types "he can only come from Wednesday" is
+ * being helpful, and is also guessing. The distinction matters because the
+ * planner cannot tell the difference between a guess and an answer -- it will
+ * build a plan around Wednesday, tell the group Ryan is sorted, and be wrong in
+ * a way nobody can see.
+ *
+ * So it is kept HERE, beside the traveller, and deliberately NOT in
+ * `availableFrom`. Nothing reads this when deciding anything. It exists to be
+ * shown to Ryan when he joins, with his name on the question, and it becomes an
+ * answer only when he says so.
+ */
+export interface TravellerDraft {
+  /** The organiser's words, unchanged. Never rewritten into Orkestr's voice. */
+  readonly note: string;
+  /** Who wrote it, so it can be attributed on screen rather than floating. */
+  readonly byName: string;
+  readonly at: IsoDateTime;
+  /**
+   * A date the note plainly refers to, when one could be read from it against
+   * this trip's own days -- so the person can confirm with one tap instead of
+   * retyping what somebody already knew.
+   *
+   * Absent whenever the note did not clearly name a day. A guess about a guess
+   * is worse than the note on its own.
+   */
+  readonly proposedFrom?: IsoDate;
+}
+
 export interface ConsumerTraveller {
   readonly id: string;
   readonly name: string;
@@ -116,6 +148,11 @@ export interface ConsumerTraveller {
   readonly hiddenPrivateCount?: number;
   /** Ids of people this traveller must travel with. Mutual by convention. */
   readonly mustTravelWith: readonly string[];
+  /**
+   * Present only while somebody else's note about this person is still waiting
+   * for them to confirm it. Cleared the moment they answer, either way.
+   */
+  readonly draft?: TravellerDraft;
 }
 
 export interface TripUpdate {

@@ -88,7 +88,25 @@ export interface TripActions {
   setBudgetLine(category: BudgetCategory, perPerson: number | undefined): Promise<ActionOutcome>;
   setCurrency(currency: string): Promise<ActionOutcome>;
 
+  /* --- the group ---------------------------------------------------------- */
+  /**
+   * Put somebody new on the trip, after it is already shared.
+   *
+   * `note` is what the organiser knows and is NOT an answer from the person it
+   * describes -- it travels as a draft they confirm or change when they arrive.
+   * Returns the new member's id in shared mode, so the caller can offer to send
+   * their invite without a second lookup.
+   */
+  addTraveller(input: {
+    readonly name: string;
+    readonly note?: string;
+  }): Promise<ActionOutcome>;
+
   /* --- yourself ----------------------------------------------------------- */
+  /** Accept the note somebody else wrote about you, as your answer. */
+  confirmMyDraft(): Promise<ActionOutcome>;
+  /** Drop it and answer yourself. Not a refusal to travel. */
+  dismissMyDraft(): Promise<ActionOutcome>;
   setMyAvailability(input: {
     readonly from?: IsoDate;
     readonly to?: IsoDate;

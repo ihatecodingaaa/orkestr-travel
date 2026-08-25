@@ -64,7 +64,7 @@ export function Overview({
           : { declaredGroupSize: trip.declaredGroupSize })}
       />
 
-      <AskOrkestr trip={trip} base={base} actions={localActions(trip, save, organiserId)} save={save} />
+      <AskOrkestr trip={trip} base={base} actions={localActions(trip, save, organiserId)} />
 
       {/* ------------------------------------------------------- milestone */}
       {milestone !== undefined && (

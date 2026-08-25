@@ -136,7 +136,26 @@ export class MemoryTripRepository implements SharedTripRepository {
       });
     }
 
-    return Promise.resolve({ ok: true, trip: next });
+    /* The same all-or-nothing shape as the real store, so tests written
+       against this one describe behaviour Postgres actually has. */
+    let member: TripMember | undefined;
+    if (write.addMember !== undefined) {
+      member = {
+        id: nextId("mem"),
+        tripId: write.tripId,
+        travellerId: write.addMember.travellerId,
+        name: write.addMember.name,
+        role: write.addMember.role,
+        createdAt: write.now,
+      };
+      this.members.set(member.id, member);
+    }
+
+    return Promise.resolve({
+      ok: true,
+      trip: next,
+      ...(member === undefined ? {} : { member }),
+    });
   }
 
   /* --- members ----------------------------------------------------------- */

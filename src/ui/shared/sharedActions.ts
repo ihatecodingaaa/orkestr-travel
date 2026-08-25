@@ -52,6 +52,14 @@ export function sharedActions(
         ...(input.fromIdeaId === undefined ? {} : { fromIdeaId: input.fromIdeaId }),
       }),
     setDeclaredGroupSize: (size) => send({ kind: "SET_GROUP_SIZE", size }),
+    addTraveller: (input) =>
+      send({
+        kind: "ADD_TRAVELLER",
+        name: input.name,
+        ...(input.note === undefined ? {} : { note: input.note }),
+      }),
+    confirmMyDraft: () => send({ kind: "CONFIRM_MY_DRAFT" }),
+    dismissMyDraft: () => send({ kind: "DISMISS_MY_DRAFT" }),
     applyDraft: (items) =>
       send({
         kind: "APPLY_DRAFT",

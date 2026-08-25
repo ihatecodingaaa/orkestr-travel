@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { LateJoinImpact } from "@/ui/trip/LateJoinImpact";
+import { DraftFromOrganiser } from "./DraftFromOrganiser";
 import { SharedAsk } from "./SharedAsk";
 import type { ConsumerTrip } from "@/domain/consumerTrip";
 import { readinessOf } from "@/domain/consumerTrip";
@@ -81,6 +83,25 @@ export function SharedTripView({
         straight to a device here, and the intents that would need it say so.
       */}
       <SharedAsk trip={trip} version={version} />
+
+      {/*
+        Somebody else's note about this reader, if there is one. High on the
+        page because it is the first thing a late joiner should be asked, and
+        because leaving it further down is how a guess quietly becomes an
+        answer nobody ever gave.
+      */}
+      <DraftFromOrganiser
+        trip={trip}
+        version={version}
+        viewerId={you.id}
+        base={base}
+      />
+
+      {/*
+        §10-11. Fires on a consequential ANSWER, not on membership: adding
+        somebody changes nothing until they say when they can travel.
+      */}
+      <LateJoinImpact trip={trip} base={base} />
 
       <section className="shared-banner">
         <div>

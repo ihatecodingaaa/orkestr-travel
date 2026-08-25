@@ -4,6 +4,9 @@ import type { ConsumerTrip } from "@/domain/consumerTrip";
 import {
   addIdea,
   addPlanItem,
+  addTraveller,
+  confirmDraft,
+  dismissDraft,
   movePlanItem,
   removeIdea,
   removePlanItem,
@@ -13,6 +16,7 @@ import {
   toggleSave,
   updateTraveller,
 } from "@/core/trips/mutate";
+import { readProposedArrival } from "@/core/trips/lateJoin";
 import { newId, nowIso } from "./TripsClient";
 import { OK, type ActionOutcome, type TripActions } from "./actions";
 
@@ -66,6 +70,35 @@ export function localActions(
       done(setBudgetLine(trip, category, perPerson, trip.budget.currency)),
     setCurrency: (currency) =>
       done({ ...trip, budget: { ...trip.budget, currency }, updatedAt: nowIso() }),
+
+    /*
+      On a device there is no membership to create and nobody else to confirm
+      anything, so the organiser's note is simply their own note. It is still
+      stored as a draft, because the trip may be shared later and the person it
+      is about should still get to answer it themselves.
+    */
+    addTraveller: (input) => {
+      const note = input.note?.trim();
+      const you = trip.travellers.find((one) => one.id === viewerId);
+      const draft =
+        note === undefined || note.length === 0
+          ? undefined
+          : {
+              note,
+              byName: you?.name ?? "The organiser",
+              at: nowIso(),
+              ...(() => {
+                const from = readProposedArrival(note, trip);
+                return from === undefined ? {} : { proposedFrom: from };
+              })(),
+            };
+      return done(
+        addTraveller(trip, { name: input.name, ...(draft === undefined ? {} : { draft }) }, ctx()),
+      );
+    },
+
+    confirmMyDraft: () => done(confirmDraft(trip, viewerId, ctx())),
+    dismissMyDraft: () => done(dismissDraft(trip, viewerId, ctx())),
 
     setMyAvailability: (input) =>
       done(

@@ -30,6 +30,7 @@ export const ASK_INTENTS = [
   "GROUP_SUMMARY",
   "SET_GROUP_SIZE",
   "BUILD_DRAFT",
+  "ADD_TRAVELLER",
   "UNKNOWN",
 ] as const;
 
@@ -46,7 +47,19 @@ export interface AskRequest {
   readonly category?: IdeaCategory;
   /** Only read when the intent is SET_GROUP_SIZE. */
   readonly size?: number;
+  /**
+   * Only read when the intent is ADD_TRAVELLER, and only when the question
+   * actually contains it.
+   *
+   * A model that may name a person is a model that may invent one. "Add my
+   * auntie" has no name in it, and the useful answer is to ask -- not to put
+   * somebody called Auntie on the trip and send them an invite.
+   */
+  readonly name?: string;
 }
+
+/** A plausible personal name, and nothing that could be a sentence. */
+const NAME_SHAPE = /^[\p{L}][\p{L}'’\- ]{0,39}$/u;
 
 /**
  * Read model output into a request, or refuse it.
@@ -56,7 +69,7 @@ export interface AskRequest {
  * there is dropped rather than passed on, so the worst a model can do is ask for
  * something ordinary.
  */
-export function readAskRequest(parsed: unknown): AskRequest {
+export function readAskRequest(parsed: unknown, question = ""): AskRequest {
   if (typeof parsed !== "object" || parsed === null) return { intent: "UNKNOWN" };
   const row = parsed as Record<string, unknown>;
   const intent = isAskIntent(row["intent"]) ? row["intent"] : "UNKNOWN";
@@ -73,10 +86,26 @@ export function readAskRequest(parsed: unknown): AskRequest {
       ? rawSize
       : undefined;
 
+  /**
+   * A name survives only if the person asking actually wrote it.
+   *
+   * The check is containment in their own words, which is the same rule the
+   * extraction pipeline uses for quotations: the model may point at something,
+   * and software decides whether it is there. A name it produced from nowhere
+   * fails this and the caller asks who they mean.
+   */
+  const rawName = row["name"];
+  const trimmedName = typeof rawName === "string" ? rawName.trim() : "";
+  const name =
+    NAME_SHAPE.test(trimmedName) && question.toLowerCase().includes(trimmedName.toLowerCase())
+      ? trimmedName
+      : undefined;
+
   return {
     intent,
     ...(category === undefined ? {} : { category }),
     ...(size === undefined ? {} : { size }),
+    ...(name === undefined ? {} : { name }),
   };
 }
 
@@ -94,9 +123,16 @@ export interface AskAnswer {
    * button, and the caller performs it only when it is pressed.
    */
   readonly proposal?: {
-    readonly kind: "SET_GROUP_SIZE" | "BUILD_DRAFT";
+    readonly kind: "SET_GROUP_SIZE" | "BUILD_DRAFT" | "ADD_TRAVELLER";
     readonly confirm: string;
     readonly size?: number;
+    /** Set for ADD_TRAVELLER. Checked against the question before it gets here. */
+    readonly name?: string;
+    /**
+     * The asker's own sentence, kept so it can travel with the new person as a
+     * note in their words rather than Orkestr's summary of them.
+     */
+    readonly note?: string;
   };
 }
 
@@ -215,6 +251,49 @@ export function answerFromTrip(input: {
               traveller.comingConfirmed ? "" : " — not confirmed"
             }`,
         ),
+      };
+    }
+
+    case "ADD_TRAVELLER": {
+      /**
+       * PROPOSES. It does not add anybody.
+       *
+       * §18. Membership is one of the few things on a trip that another person
+       * finds out about by being sent a link, so it is not something a sentence
+       * should be able to do on its own. The name has already been checked
+       * against the asker's own words; what comes back is a button.
+       */
+      const name = request.name;
+      if (name === undefined) {
+        return {
+          headline: "Who should Orkestr add?",
+          lines: ["Tell me their name and I'll add them and make an invite."],
+        };
+      }
+      const already = trip.travellers.find(
+        (one) => one.name.toLowerCase() === name.toLowerCase(),
+      );
+      if (already !== undefined) {
+        return { headline: `${already.name} is already on this trip.`, lines: [] };
+      }
+      /*
+        The asker's sentence travels with them, unedited. "My boyfriend is
+        coming from Friday" is worth showing to him exactly as it was written;
+        Orkestr's paraphrase of it is not.
+      */
+      const note = input.question.trim().slice(0, 200);
+      return {
+        headline: `Add ${name} to the trip?`,
+        lines: [
+          "They'll get their own invite and their own view.",
+          "Anything you've said about them is kept as your note until they confirm it.",
+        ],
+        proposal: {
+          kind: "ADD_TRAVELLER" as const,
+          confirm: `Add ${name}`,
+          name,
+          ...(note.length === 0 ? {} : { note }),
+        },
       };
     }
 

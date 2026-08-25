@@ -1,5 +1,8 @@
 import Link from "next/link";
+import { asIsoDateTime } from "@/domain/time";
+import { buildShareForActor } from "@/core/shared/views";
 import { loadSharedTrip } from "@/server/shared/loadTrip";
+import { getRepository } from "@/server/shared/service";
 import { SharedScreen } from "@/ui/shared/SharedScreen";
 import { SharedShell } from "@/ui/shared/SharedShell";
 import { LocalScreen } from "@/ui/trip/LocalScreen";
@@ -26,6 +29,24 @@ export default async function Page({
   const shared = await loadSharedTrip(tripId);
 
   if (shared.kind === "OK") {
+    /**
+     * Invite state is loaded HERE, on the group route only.
+     *
+     * §19 asks the group screen to show who still needs an invite, which needs
+     * the invitations table -- and that is a server concern the screen itself
+     * must not reach for. Loading it on the one route that renders it keeps
+     * every other screen's payload exactly as small as it was.
+     */
+    const repository = getRepository();
+    const inviteRows =
+      repository === undefined
+        ? []
+        : buildShareForActor(
+            await repository.listMembers(tripId),
+            await repository.listInvitations(tripId),
+            asIsoDateTime(new Date().toISOString()),
+          );
+
     return (
       <SharedShell trip={shared.trip} actor={shared.actor} current="group">
         <SharedScreen
@@ -33,6 +54,7 @@ export default async function Page({
           trip={shared.trip}
           actor={shared.actor}
           members={shared.members}
+          inviteRows={inviteRows}
           version={shared.version}
         />
       </SharedShell>

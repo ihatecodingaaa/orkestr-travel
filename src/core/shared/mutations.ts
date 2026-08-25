@@ -82,6 +82,30 @@ export type SharedMutation =
    * member is created, renamed or removed by it.
    */
   | { readonly kind: "SET_GROUP_SIZE"; readonly size: number }
+  /**
+   * Put somebody new on a trip that is ALREADY shared.
+   *
+   * A shared trip is not a closed snapshot of whoever happened to be there at
+   * conversion. People join groups late -- that is ordinary, and a product that
+   * cannot express it forces the group to start again somewhere else.
+   *
+   * No id is carried. The server chooses one, because the same value has to
+   * become both a membership row and a traveller in the payload, and a client
+   * that named it could name one that already exists.
+   */
+  | {
+      readonly kind: "ADD_TRAVELLER";
+      readonly name: string;
+      /** What the organiser knows, in their words. Never binding on the person. */
+      readonly note?: string;
+    }
+  /**
+   * The person a note was written about answers it. No target: like every other
+   * "my" mutation it applies to whoever the session resolved to, so it cannot
+   * reach somebody else's record.
+   */
+  | { readonly kind: "CONFIRM_MY_DRAFT" }
+  | { readonly kind: "DISMISS_MY_DRAFT" }
   | {
       readonly kind: "APPLY_DRAFT";
       readonly items: readonly {
@@ -163,7 +187,26 @@ export function checkMutation(actor: TripActor, mutation: SharedMutation): Mutat
     case "SET_MY_AVAILABILITY":
     case "ADD_MY_REQUIREMENT":
     case "REMOVE_MY_REQUIREMENT":
+    case "CONFIRM_MY_DRAFT":
+    case "DISMISS_MY_DRAFT":
       return { ok: true };
+
+    /**
+     * Adding a person is its own authority, not a plan edit.
+     *
+     * `ADD_MEMBER` already existed and was already organiser-only; this is the
+     * first mutation to use it. Reusing it rather than folding membership into
+     * `EDIT_PLAN` keeps one question answerable on its own: who may change who
+     * is on this trip.
+     */
+    case "ADD_TRAVELLER":
+      return can(actor, "ADD_MEMBER")
+        ? { ok: true }
+        : {
+            ok: false,
+            message:
+              "Only the organiser can add someone to this trip. Ask them and they'll send an invite.",
+          };
 
     /* --- the canonical itinerary ------------------------------------------ */
     case "SET_GROUP_SIZE":
@@ -263,6 +306,17 @@ export function describeMutation(mutation: SharedMutation, actorName: string): s
       return `${actorName} added ${mutation.title} to the plan`;
     case "SET_GROUP_SIZE":
       return `${actorName} said there are ${String(mutation.size)} of you`;
+    /*
+      The name, and nothing the organiser typed alongside it. "Ryan can only
+      come from Wednesday" is a note about Ryan written before Ryan arrived; an
+      activity feed is not the place for it to become a fact everyone has read.
+    */
+    case "ADD_TRAVELLER":
+      return `${actorName} added ${mutation.name} to the trip`;
+    case "CONFIRM_MY_DRAFT":
+      return `${actorName} confirmed what was noted for them`;
+    case "DISMISS_MY_DRAFT":
+      return `${actorName} is answering for themselves`;
     case "APPLY_DRAFT":
       /*
         One line for one decision. Listing every item would bury a real change

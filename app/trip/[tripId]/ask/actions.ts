@@ -39,7 +39,7 @@ export interface AskResult {
 
 const SYSTEM_PROMPT = `You classify one question somebody asked about their group trip. You return JSON only.
 
-Return {"intent": "...", "category": "...", "size": 0}
+Return {"intent": "...", "category": "...", "size": 0, "name": "..."}
 
 "intent" must be exactly one of:
 - EMPTY_DAYS — which days have nothing planned
@@ -49,9 +49,12 @@ Return {"intent": "...", "category": "...", "size": 0}
 - GROUP_SUMMARY — who is coming, how many of us are there
 - SET_GROUP_SIZE — they are telling you the group is a different size ("we're actually 8"); add "size" as the number
 - BUILD_DRAFT — they want a plan made ("plan the food stuff", "sort out the week")
+- ADD_TRAVELLER — somebody else is joining the trip ("Ryan is joining us", "I need to add my auntie", "my boyfriend is coming from Friday"); add "name" ONLY if a name appears in the question, copied from it exactly. If they describe the person without naming them, omit "name".
 - UNKNOWN — anything else, including booking, prices, weather, or anything about the world outside this trip
 
-Include "category" only for PLACES_BY_CATEGORY and "size" only for SET_GROUP_SIZE. Omit them otherwise.
+Include "category" only for PLACES_BY_CATEGORY, "size" only for SET_GROUP_SIZE, and "name" only for ADD_TRAVELLER. Omit them otherwise.
+
+Never invent a name. A name not present in the question is dropped, and inventing one would put a person nobody mentioned onto a real trip.
 
 Choose UNKNOWN rather than guessing. A wrong classification gives somebody a confident answer to a question they did not ask.
 
@@ -138,12 +141,13 @@ export async function askOrkestr(input: {
 
   const body = outcome.body as { choices?: { message?: { content?: unknown } }[] };
   const content = body.choices?.[0]?.message?.content;
-  let request = readAskRequest(undefined);
+  let request = readAskRequest(undefined, question);
   if (typeof content === "string") {
     try {
-      request = readAskRequest(JSON.parse(stripFence(content)));
+      /* The question is passed so a name can be checked against it. */
+      request = readAskRequest(JSON.parse(stripFence(content)), question);
     } catch {
-      request = readAskRequest(undefined);
+      request = readAskRequest(undefined, question);
     }
   }
 

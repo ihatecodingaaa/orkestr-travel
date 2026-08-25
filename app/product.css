@@ -577,6 +577,38 @@
   color: var(--tone-verified);
 }
 
+/*
+  A thing the group fixed that a late arrival lands after. Marked with a lock
+  rather than an arrow or a tick, because it is neither changing nor being
+  preserved by a decision -- it is simply not moving.
+*/
+.impact-fixed li::before {
+  content: "🔒";
+  position: absolute;
+  left: 0;
+  font-size: 0.8em;
+}
+
+/*
+  Two panels that appear only when somebody joins partway through. Both carry a
+  left edge in the pending tone: they are open questions, not results, and a
+  panel that looks finished is a panel people stop reading.
+*/
+.late-impact,
+.draft-from-organiser {
+  border-left: 3px solid var(--tone-pending);
+}
+
+/*
+  The lists inside the late-join panel sit closer together than a standalone
+  what-if. On a 390px screen the panel already carries a heading, two counts and
+  up to three lists, and the default 1rem margins push the action off-screen.
+*/
+.late-impact .impact-list {
+  margin: 0.35rem 0;
+  gap: 0.75rem;
+}
+
 .preserved {
   padding: 0.85rem 1rem;
   border-radius: var(--radius-sm);

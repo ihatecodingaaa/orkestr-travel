@@ -9,6 +9,9 @@ import { CONFLICT_MESSAGE } from "../../core/shared/concurrency";
 import {
   addIdea,
   addPlanItem,
+  addTraveller,
+  confirmDraft,
+  dismissDraft,
   movePlanItem,
   removeIdea,
   removePlanItem,
@@ -25,6 +28,7 @@ import {
   type SharedMutation,
 } from "../../core/shared/mutations";
 import { travellerIdFor } from "../../core/shared/actorTrip";
+import { readProposedArrival } from "../../core/trips/lateJoin";
 import { stripPrivateForSharing } from "../../core/shared/migration";
 import type { SharedTripRepository } from "./repository";
 
@@ -137,6 +141,62 @@ export async function applySharedMutation(
     }
   }
 
+  /**
+   * Adding a person writes a membership row as well as the payload.
+   *
+   * The id is generated HERE, once, and used for both: the traveller the
+   * planner reads and the member a session can later resolve to. Handing the
+   * same value to `writePayload` keeps them in one transaction, so a stale
+   * caller is refused before either exists.
+   */
+  if (mutation.kind === "ADD_TRAVELLER") {
+    const name = mutation.name.trim();
+    if (name.length === 0) {
+      return { ok: false, reason: "REFUSED", message: "That person needs a name." };
+    }
+    if (parsed.trip.travellers.some((one) => one.name.toLowerCase() === name.toLowerCase())) {
+      return {
+        ok: false,
+        reason: "REFUSED",
+        message: `${name} is already on this trip.`,
+      };
+    }
+
+    const travellerId = randomUUID();
+    const note = mutation.note?.trim();
+    const draft =
+      note === undefined || note.length === 0
+        ? undefined
+        : {
+            note,
+            byName: actorName,
+            at: now,
+            ...(() => {
+              const from = readProposedArrival(note, parsed.trip);
+              return from === undefined ? {} : { proposedFrom: from };
+            })(),
+          };
+
+    const addedTrip = await repository.writePayload({
+      tripId: actor.tripId,
+      expectedVersion: input.expectedVersion,
+      mutate: (current) => {
+        const currentParsed = parseTrip(current);
+        if (!currentParsed.ok) return current;
+        return addTraveller(
+          currentParsed.trip,
+          { id: travellerId, name, ...(draft === undefined ? {} : { draft }) },
+          { now, newId: () => randomUUID() },
+        );
+      },
+      event: { summary: describeMutation(mutation, actorName), memberId: actor.memberId },
+      now,
+      addMember: { travellerId, name, role: "TRAVELLER" },
+    });
+
+    return toResult(addedTrip);
+  }
+
   const written = await repository.writePayload({
     tripId: actor.tripId,
     expectedVersion: input.expectedVersion,
@@ -183,6 +243,18 @@ function applyToTrip(
   const ctx = { now, newId: () => randomUUID() };
 
   switch (mutation.kind) {
+    /*
+      Handled before this function, because it writes a membership row too and
+      needs an id that outlives the payload change.
+    */
+    case "ADD_TRAVELLER":
+      return trip;
+
+    case "CONFIRM_MY_DRAFT":
+      return confirmDraft(trip, actorTravellerId, ctx);
+    case "DISMISS_MY_DRAFT":
+      return dismissDraft(trip, actorTravellerId, ctx);
+
     case "ADD_IDEA":
       return addIdea(
         trip,

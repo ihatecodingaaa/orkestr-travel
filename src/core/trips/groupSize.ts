@@ -141,3 +141,35 @@ export function describeGroupSize(input: {
     detail: `${String(named)} named · ${String(declared - named)} still to add`,
   };
 }
+
+/**
+ * What adding one more person does to a number the group already stated.
+ *
+ * THE DEFECT THIS PREVENTS is silence. A trip that says "8 travellers total"
+ * and then gains a ninth named person has two numbers that disagree, and the
+ * one on screen is the wrong one. Quietly raising the declared size is no
+ * better: nobody said nine, and a capacity the product invented is exactly what
+ * `readGroupSize` refuses to do everywhere else.
+ *
+ * So it is a QUESTION, asked once, at the moment the two stop agreeing. The
+ * caller shows it; nothing here changes anything.
+ *
+ * Returns `undefined` when there is nothing to ask -- no declared size, or a
+ * declared size the new arrival still fits inside.
+ */
+export function groupSizeProposal(input: {
+  readonly declared?: number;
+  readonly namedAfterAdding: number;
+  readonly name: string;
+}): { readonly question: string; readonly proposed: number } | undefined {
+  const { declared, namedAfterAdding, name } = input;
+  if (declared === undefined) return undefined;
+  if (namedAfterAdding <= declared) return undefined;
+
+  return {
+    proposed: namedAfterAdding,
+    question:
+      `You said ${String(declared)} people in total. ` +
+      `Adding ${name} makes ${String(namedAfterAdding)}.`,
+  };
+}

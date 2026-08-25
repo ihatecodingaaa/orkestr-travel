@@ -8,8 +8,6 @@ import { askOrkestr } from "~/trip/[tripId]/ask/actions";
 import type { ConsumerTrip } from "@/domain/consumerTrip";
 import { answer, recognise, suggestedCommands, toAction } from "@/core/trips/commands";
 import type { Answer } from "@/core/trips/commands";
-import { addTraveller } from "@/core/trips/mutate";
-import { newId, nowIso } from "./TripsClient";
 
 /**
  * Ask Orkestr.
@@ -29,20 +27,18 @@ export function AskOrkestr({
   trip,
   base,
   actions,
-  save,
 }: {
   readonly trip: ConsumerTrip;
   readonly base: string;
-  readonly actions: TripActions;
   /**
-   * Local-only writes, absent in shared mode.
+   * Every write goes through here, in both modes.
    *
-   * The deterministic command layer can add a traveller straight to the device.
-   * A shared trip has no such thing -- people arrive through invitations -- so
-   * those intents simply are not offered there rather than being wired to
-   * something that would half-work.
+   * There used to be a second, local-only channel for the one intent that
+   * could add a person, because a shared trip had no way to add one. It does
+   * now, so the exception is gone -- and with it the possibility of an Ask that
+   * changes a device without the server ever hearing about it.
    */
-  readonly save?: (trip: ConsumerTrip) => void;
+  readonly actions: TripActions;
 }) {
   const router = useRouter();
   const [text, setText] = useState("");
@@ -124,21 +120,23 @@ export function AskOrkestr({
      * whether to do it. When a model eventually produces the same descriptions,
      * it will meet the same gate rather than a shortcut around it.
      */
-    const ctx = { now: nowIso(), newId };
     switch (action.kind) {
       case "ADD_TRAVELLER":
         /*
-          Local only, and deliberately so. In a shared trip people arrive
-          through an invitation, which is what ties a person to a session and a
-          set of private answers. Adding a row on somebody's behalf would create
-          a member nobody can be.
+          Through the actions boundary in BOTH modes.
+
+          This used to write straight to the device and refuse outright on a
+          shared trip, because a member nobody could be was worse than nothing.
+          Adding someone to a shared trip now creates a real membership with a
+          real invite, so the refusal is gone and the shortcut with it.
         */
-        if (save === undefined) {
-          setDone("Invite them from the Group screen so they get their own view.");
-          break;
-        }
-        save(addTraveller(trip, action.name, ctx));
-        setDone(`${action.name} was added.`);
+        void actions.addTraveller({ name: action.name }).then((outcome) => {
+          setDone(
+            outcome.ok
+              ? `${action.name} was added. Send them an invite from Group.`
+              : (outcome.message ?? "That didn't work."),
+          );
+        });
         break;
       case "SAVE_IDEA":
         /* Saving has a shared equivalent, so it goes through the boundary. */
@@ -281,6 +279,32 @@ export function AskOrkestr({
                           : (outcome.message ?? "That didn't work."),
                       );
                     });
+                    return;
+                  }
+                  /*
+                    THE SAME ACTION THE GROUP SCREEN USES.
+
+                    §18: there is no Ask-only path onto a trip's membership.
+                    This button is the organiser's confirmation; the server
+                    still checks that they are the organiser, and still refuses
+                    a stale version. Ask is a faster way to reach the one door,
+                    not a second one.
+                  */
+                  if (proposal.kind === "ADD_TRAVELLER" && proposal.name !== undefined) {
+                    const who = proposal.name;
+                    void actions
+                      .addTraveller({
+                        name: who,
+                        ...(proposal.note === undefined ? {} : { note: proposal.note }),
+                      })
+                      .then((outcome: ActionOutcome) => {
+                        setAsked(undefined);
+                        setDone(
+                          outcome.ok
+                            ? `${who} is on the trip. Send them an invite from Group.`
+                            : (outcome.message ?? "That didn't work."),
+                        );
+                      });
                     return;
                   }
                   router.push(`${base}/plan`);

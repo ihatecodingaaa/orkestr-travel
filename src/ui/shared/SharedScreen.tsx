@@ -3,13 +3,15 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { ConsumerTrip } from "@/domain/consumerTrip";
-import type { MemberView } from "@/core/shared/views";
+import type { MemberInviteView, MemberView } from "@/core/shared/views";
 import type { TripActor } from "@/domain/sharedTrip";
 import { Explore } from "@/ui/trip/Explore";
 import { Plan } from "@/ui/trip/Plan";
 import { Money } from "@/ui/trip/Money";
 import { GroupScreen, Inbox, Activity } from "@/ui/trip/GroupScreens";
 import { WhatIf } from "@/ui/trip/WhatIf";
+import { AddSomeone } from "./AddSomeone";
+import { ShareScreenClient } from "./ShareScreenClient";
 import { sharedActions } from "./sharedActions";
 import type { ActionOutcome, TripActions } from "@/ui/trip/actions";
 import { useTripSync } from "./useTripSync";
@@ -46,12 +48,20 @@ export function SharedScreen({
   trip,
   actor,
   members,
+  inviteRows,
   version,
 }: {
   readonly screen: ScreenName;
   readonly trip: ConsumerTrip;
   readonly actor: TripActor;
   readonly members: readonly MemberView[];
+  /**
+   * Invite state, loaded only by the group route.
+   *
+   * Absent everywhere else, because a screen that does not show membership has
+   * no business receiving it.
+   */
+  readonly inviteRows?: readonly MemberInviteView[];
   readonly version: number;
 }) {
   const router = useRouter();
@@ -95,7 +105,25 @@ export function SharedScreen({
       {screen === "explore" && <Explore trip={trip} actions={actions} viewerId={viewerId} />}
       {screen === "plan" && <Plan trip={trip} base={base} actions={actions} />}
       {screen === "group" && (
-        <GroupScreen trip={trip} base={base} viewerId={viewerId} />
+        <div className="stack gap-3">
+          <GroupScreen trip={trip} base={base} viewerId={viewerId} />
+          {/*
+            §19. Who is here, who still needs an invite, and one way to add
+            somebody new -- on the screen the group is actually looking at.
+            Membership used to be visible only on the share screen, which is
+            where an organiser goes when they already know who is missing.
+          */}
+          {actor.role === "ORGANISER" && <AddSomeone trip={trip} actions={actions} />}
+          {inviteRows !== undefined && inviteRows.length > 0 && (
+            <ShareScreenClient
+              compact
+              tripId={trip.id}
+              destination={trip.destination}
+              rows={inviteRows}
+              canManage={actor.role === "ORGANISER"}
+            />
+          )}
+        </div>
       )}
       {screen === "inbox" && <Inbox trip={trip} base={base} viewerId={viewerId} />}
       {screen === "money" && <Money trip={trip} actions={actions} viewerId={viewerId} />}
@@ -134,6 +162,9 @@ function wrap(
     removeIdea: (id) => report(actions.removeIdea(id)),
     addPlanItem: (input) => report(actions.addPlanItem(input)),
     setDeclaredGroupSize: (size) => report(actions.setDeclaredGroupSize(size)),
+    addTraveller: (input) => report(actions.addTraveller(input)),
+    confirmMyDraft: () => report(actions.confirmMyDraft()),
+    dismissMyDraft: () => report(actions.dismissMyDraft()),
     applyDraft: (items) => report(actions.applyDraft(items)),
     movePlanItem: (id, to) => report(actions.movePlanItem(id, to)),
     setPlanItemStatus: (id, status) => report(actions.setPlanItemStatus(id, status)),
