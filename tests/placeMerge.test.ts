@@ -1,4 +1,5 @@
 import { describe, it, expect } from "vitest";
+import { DEFAULT_AUTOPILOT } from "@/domain/livingTrip";
 import { addIdea } from "@/core/trips/mutate";
 import type { ConsumerTrip } from "@/domain/consumerTrip";
 import { asIsoDate, asIsoDateTime } from "@/domain/time";
@@ -36,7 +37,7 @@ function trip(): ConsumerTrip {
     ideas: [],
     plan: [],
     budget: { lines: [] },
-    autopilot: { pointOutStale: true, suggestRepair: true, neverMoveFixed: true },
+    autopilot: DEFAULT_AUTOPILOT,
   } as ConsumerTrip;
 }
 

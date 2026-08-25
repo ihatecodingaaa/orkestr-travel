@@ -1,4 +1,5 @@
 import { describe, it, expect } from "vitest";
+import { DEFAULT_AUTOPILOT } from "@/domain/livingTrip";
 import { answerFromTrip, isAskIntent, readAskRequest } from "@/core/ask/intents";
 import type { ConsumerTrip } from "@/domain/consumerTrip";
 import type { TripIdea, PlanItem } from "@/domain/livingTrip";
@@ -35,7 +36,7 @@ function trip(overrides: Partial<ConsumerTrip> = {}): ConsumerTrip {
     ideas: [idea("i1", "Gwangjang Market")],
     plan: [],
     budget: { lines: [] },
-    autopilot: { pointOutStale: true, suggestRepair: true, neverMoveFixed: true },
+    autopilot: DEFAULT_AUTOPILOT,
     ...overrides,
   } as ConsumerTrip;
 }

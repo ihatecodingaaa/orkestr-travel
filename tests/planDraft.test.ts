@@ -1,4 +1,5 @@
 import { describe, it, expect } from "vitest";
+import { DEFAULT_AUTOPILOT } from "@/domain/livingTrip";
 import { assessReadiness, tripDays, validateDraft, type DraftEntry } from "@/core/plan/draft";
 import type { ConsumerTrip } from "@/domain/consumerTrip";
 import type { TripIdea, PlanItem } from "@/domain/livingTrip";
@@ -49,7 +50,7 @@ function trip(overrides: Partial<ConsumerTrip> = {}): ConsumerTrip {
     ideas: [idea("i1", "Temple of Heaven"), idea("i2", "Qianmen")],
     plan: [],
     budget: { lines: [] },
-    autopilot: { pointOutStale: true, suggestRepair: true, neverMoveFixed: true },
+    autopilot: DEFAULT_AUTOPILOT,
     ...overrides,
   } as ConsumerTrip;
 }
