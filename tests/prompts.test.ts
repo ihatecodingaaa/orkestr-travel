@@ -243,7 +243,33 @@ describe("the prompt tells the model not to overreach", () => {
   });
 
   it("carries the contrast that decides the hardest case", () => {
-    expect(INTENT_SYSTEM_PROMPT).toContain("NOT a ceiling of 400");
+    expect(INTENT_SYSTEM_PROMPT).toContain("Not a ceiling of 400, and not nothing");
+  });
+
+  /**
+   * Softening is not omitting.
+   *
+   * Told only that a hedged number is never HARD, the model dropped the budget
+   * entirely and asked for the firm limit instead. The question was right;
+   * losing "around 400" was not. The prompt now demands both.
+   */
+  it("says a hedged number is still recorded, not dropped", () => {
+    expect(INTENT_SYSTEM_PROMPT).toContain("Softening is not omitting");
+    expect(INTENT_SYSTEM_PROMPT).toContain("Both, never one instead of the other");
+  });
+
+  /**
+   * Two rules met and the newer one won by accident: told a hedged number is
+   * still recorded, the model recorded 600 with no currency at all. Precedence
+   * now stated where the collision happens, not somewhere else in the prompt.
+   */
+  it("makes the currency rule win over the do-not-omit rule", () => {
+    expect(INTENT_SYSTEM_PROMPT).toContain("THE CURRENCY RULE WINS OVER THIS ONE");
+    expect(INTENT_SYSTEM_PROMPT).toContain("A number without a currency is not something Orkestr can compare");
+  });
+
+  it("requires evidence on ambiguities too", () => {
+    expect(INTENT_SYSTEM_PROMPT).toContain("ambiguities included");
   });
 
   it("forbids guessing a calendar year", () => {

@@ -196,6 +196,7 @@ The discussion is given to you already cut into numbered spans, one per line, li
 - Cite only ids that appear in the spans given to you. An id you did not see is a fabrication and fails the whole response.
 - Cite the smallest set that genuinely supports the entry, usually one id. Use more than one only when the entry really depends on more than one statement, for example an availability needing both "I can only leave Wednesday" and "I need to be back Sunday". Never more than 4.
 - At least one cited span must state the thing directly. Surrounding chatter that merely sits near it is not evidence.
+- EVERY entry needs evidence, ambiguities included. A question still comes from somewhere: cite the span that raised it. If the question exists because something was NOT said, cite the span that comes closest to saying it -- the sentence you were reading when you noticed the gap. An empty "evidence" array invalidates the whole response.
 
 ONLY WHAT THE SPANS SUPPORT
 If no supplied span directly supports a fact, do not create that fact. Omit it. Returning less is always better than returning something nobody said.
@@ -212,13 +213,15 @@ Report the wording, not how important the requirement sounds to you.
 - "prefer", "would rather", "ideally", "would like", "hoping", "if possible", "if we can" mean a preference. Never HARD.
 - "could stretch", "flexible", "happy to", "don't mind" mean the person has already said they will bend. Never HARD.
 - "cannot", "can't", "must", "only", "absolute", "no more than", "at most" mean a real limit. HARD is right.
+A HEDGED NUMBER IS STILL RECORDED, PROVIDED A CURRENCY IS STATED. Softening is not omitting. "Around 400 SGD" is a real thing Bo said and it belongs in the reading as a SOFT budget of 400. Dropping it loses information the group needs. Where the hedge leaves a genuine open question, record the soft value AND raise an ambiguity asking for the firm limit. Both, never one instead of the other.
 Contrast, because this is the distinction that matters most:
 - "My absolute ceiling is 600, I cannot go above that."  -> HARD, 600
-- "I'd like to keep it around 400, but I could stretch." -> SOFT, 400. NOT a ceiling of 400.
+- "I'd like to keep it around 400, but I could stretch." -> SOFT budget of 400, PLUS an ambiguity asking whether there is a maximum they cannot exceed. Not a ceiling of 400, and not nothing.
 - "I will only take a direct flight."                    -> HARD, 0 stops
 - "I'd rather fly direct."                               -> SOFT
 - "I need step-free access."                             -> HARD
 - "I like vegetarian places."                            -> a preference, not a requirement
+THE CURRENCY RULE WINS OVER THIS ONE. If no currency is stated anywhere in the discussion, omit the budget constraint completely and raise an ambiguity asking which currency applies. Do not record the number with a missing, empty or guessed currency. "I can do about 600 for the flights" with no currency anywhere is NOT a budget of 600 -- it is a question. A number without a currency is not something Orkestr can compare to anything.
 
 SAY EACH THING ONCE
 One requirement, however many times it is mentioned, is one entry.

@@ -146,13 +146,29 @@ export const EVAL_CASES: readonly EvalCase[] = [
   },
   {
     id: "07-multiple-date-windows",
-    tests: "Two separate availability windows for one person.",
+    tests:
+      "Two separate windows, and NO YEAR. The dates must not be materialised, because that requires inventing one.",
     discussion: [
       "Cai: I can do the 10th to the 14th of September, or the 24th to the 28th. Nothing in between, I'm at a wedding.",
     ].join("\n"),
+    /**
+     * THIS EXPECTATION WAS CHANGED, and the reason matters more than the score.
+     *
+     * It used to require an AVAILABLE_DATES constraint. Nothing in this
+     * discussion states a year, and the schema cannot hold a date without one,
+     * so satisfying the old expectation REQUIRED the model to invent one. That
+     * is not hypothetical: production did exactly that and produced a window in
+     * 2024, two years in the past, from a sentence naming no year at all.
+     *
+     * The correct behaviour is to record no dates and ask which year is meant,
+     * and the expectation now says so. This is not the fixture being loosened to
+     * reach a number -- the case is HARDER to pass now, because it also demands
+     * the question be raised.
+     */
     expect: {
       travellerCount: 1,
-      requiredConstraintKinds: ["AVAILABLE_DATES"],
+      forbiddenConstraintKinds: ["AVAILABLE_DATES"],
+      minAmbiguities: 1,
     },
   },
   {
