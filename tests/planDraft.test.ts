@@ -52,7 +52,7 @@ function trip(overrides: Partial<ConsumerTrip> = {}): ConsumerTrip {
     budget: { lines: [] },
     autopilot: DEFAULT_AUTOPILOT,
     ...overrides,
-  } as ConsumerTrip;
+  };
 }
 
 describe("counting the days a trip actually has", () => {

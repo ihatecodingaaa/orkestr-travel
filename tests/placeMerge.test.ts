@@ -38,7 +38,7 @@ function trip(): ConsumerTrip {
     plan: [],
     budget: { lines: [] },
     autopilot: DEFAULT_AUTOPILOT,
-  } as ConsumerTrip;
+  };
 }
 
 const TIKTOK = "https://www.tiktok.com/@a/video/1";

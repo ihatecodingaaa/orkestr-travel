@@ -38,7 +38,7 @@ function trip(overrides: Partial<ConsumerTrip> = {}): ConsumerTrip {
     budget: { lines: [] },
     autopilot: DEFAULT_AUTOPILOT,
     ...overrides,
-  } as ConsumerTrip;
+  };
 }
 
 const ask = (request: unknown, question = "") =>
